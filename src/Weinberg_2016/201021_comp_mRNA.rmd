@@ -1,0 +1,56 @@
+---
+title: "201021_comp_mRNA"
+author: "Jared Bard"
+date: "10/21/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+options(stringsAsFactors=FALSE)  # load character strings as strings
+library(tidyverse)
+library(cat.extras)
+library(cowplot)
+```
+# colors
+```{r}
+graycol <- "#333333cc"
+orangecol <- "#cc5500cc"
+bluecol <- "#0000aacc"
+greencol <- "#22cc00cc"
+purplecol <- "#cc22cccc"
+cyancol <- "#2aa198cc"
+redcol <- "#dc322fcc"
+violetcol <- "#6c71c4cc"
+condition.cols <- c("25C.control"="black","37C.10min"="#998ec3","37C.30min"="#5e3c99","42C.10min"="#fdb863","42C.30min"="#e66101")
+label.cols <- c("ribosomal"=bluecol,
+                "ribosome biogenesis"=cyancol,
+                "HSF1"="red",
+                "glycolytic"=greencol,
+                "other HS down"=purplecol,
+                "other HS up"=orangecol,
+                "other"="grey50")
+label.levels <- c("HSF1","glycolytic","other HS up",
+                  "ribosomal","ribosome biogenesis",
+                  "other HS down","other")
+```
+
+# input
+```{r}
+# Read in all data and smoosh together
+gene_list <- read_tsv("../../../utility/output/201014_labeled_genes_scer.txt")
+unselected <- read_tsv("src/GSM1969533_Unselected_RPKMs.txt",
+                       col_names = c("ORF","RPKM")) %>%
+  mutate(Depletion="unselected",Database="Weinberg_2016")
+polyA <- read_tsv("src/GSM1969534_Dynabeads_RPKMs.txt",
+                       col_names = c("ORF","RPKM")) %>%
+  mutate(Depletion="polyA",Database="Weinberg_2016")
+ribominus <- read_tsv("src/GSM1969535_RiboMinus_RPKMs.txt",
+                       col_names = c("ORF","RPKM")) %>%
+  mutate(Depletion="RiboMinus",Database="Weinberg_2016")
+ribozero <- read_tsv("src/Weinberg_GSE75897_RiboZero_RPKMs.txt",
+                       col_names = c("ORF","RPKM")) %>%
+  mutate(Depletion="RiboZero",Database="Weinberg_2016")
+d <- bind_rows(unselected,polyA,ribominus,ribozero)
+#write_tsv(d,"Weinberg_2016_comp_RPKM.tsv")
+```

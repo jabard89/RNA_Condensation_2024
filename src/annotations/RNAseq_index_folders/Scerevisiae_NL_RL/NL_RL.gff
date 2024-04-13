@@ -1,0 +1,17 @@
+###
+SSA2_Nanoluc_TPI1	spike	chromosome	1	861	.	.	.	ID=chromosome:SSA2_Nanoluc_TPI1
+###
+SSA2_Nanoluc_TPI1	spike	gene	1	861	.	+	.	ID=gene:SSA2_Nanoluc_TPI1; biotype=protein_coding;gene_id=SSA2_Nanoluc_TPI1
+SSA2_Nanoluc_TPI1	spike	mRNA	1	861	.	+	.	ID=transcript:SSA2_Nanoluc_TPI1; Parent=gene:SSA2_Nanoluc_TPI1; biotype=protein_coding; transcript_id=SSA2_Nanoluc_TPI1;gene_id=SSA2_Nanoluc_TPI1
+SSA2_Nanoluc_TPI1	spike	five_prime_UTR	1	39	.	+	.	ID=five_prime_UTR:SSA2_Nanoluc_TPI1; Parent=transcript:SSA2_Nanoluc_TPI1; gene_id=SSA2_Nanoluc_TPI1
+SSA2_Nanoluc_TPI1	spike	CDS	40	561	.	+	.	ID=CDS:SSA2_Nanoluc_TPI1; Parent=transcript:SSA2_Nanoluc_TPI1; gene_id=SSA2_Nanoluc_TPI1
+SSA2_Nanoluc_TPI1	spike	three_prime_UTR	562	861	.	+	.	ID=three_prime_UTR:SSA2_Nanoluc_TPI1; Parent=transcript:SSA2_Nanoluc_TPI1; gene_id=SSA2_Nanoluc_TPI1
+###
+PGK1_Renilla	spike	chromosome	1	1009	.	.	.	ID=chromosome:PGK1_Renilla
+###
+PGK1_Renilla	spike	gene	1	1009	.	+	.	ID=gene:PGK1_Renilla; biotype=protein_coding;gene_id=PGK1_Renilla
+PGK1_Renilla	spike	mRNA	1	1009	.	+	.	ID=transcript:PGK1_Renilla; Parent=gene:PGK1_Renilla; biotype=protein_coding; transcript_id=PGK1_Renilla;gene_id=PGK1_Renilla
+PGK1_Renilla	spike	five_prime_UTR	1	73	.	+	.	ID=five_prime_UTR:PGK1_Renilla; Parent=transcript:PGK1_Renilla; gene_id=PGK1_Renilla
+PGK1_Renilla	spike	CDS	74	1009	.	+	.	ID=CDS:PGK1_Renilla; Parent=transcript:PGK1_Renilla; gene_id=PGK1_Renilla
+###
+

@@ -1,0 +1,38 @@
+#superpathway of glucose fermentation
+
+Gene ID	Gene Accession	Gene name	Reaction id	Reaction EC	Enzymatic activity	Evidence
+YGL253W		HXK2	GLUCOKIN-RXN	2.7.1.1/2.7.1.2	glucokinase	No Evidence Code
+YFR053C		HXK1	GLUCOKIN-RXN	2.7.1.1/2.7.1.2	glucokinase	No Evidence Code
+YCL040W		GLK1	GLUCOKIN-RXN	2.7.1.1/2.7.1.2	glucokinase	No Evidence Code
+YBR196C		PGI1	PGLUCISOM-RXN	5.3.1.9	glucose-6-phosphate isomerase	No Evidence Code
+YGR240C		PFK1	6PFRUCTPHOS-RXN	2.7.1.11	phosphofructokinase	No Evidence Code
+YMR205C		PFK2	6PFRUCTPHOS-RXN	2.7.1.11	phosphofructokinase	No Evidence Code
+YLR377C		FBP1	F16BDEPHOS-RXN	3.1.3.11	fructose-1,6-bisphosphatase	No Evidence Code
+YKL060C		FBA1	F16ALDOLASE-RXN	4.1.2.13	aldolase	No Evidence Code
+YDR050C		TPI1	TRIOSEPISOMERIZATION-RXN	5.3.1.1	triosephosphate isomerase	No Evidence Code
+YJL052W		TDH1	GAPOXNPHOSPHN-RXN	1.2.1.12	glyceraldehyde-3-phosphate dehydrogenase	No Evidence Code
+YJR009C		TDH2	GAPOXNPHOSPHN-RXN	1.2.1.12	glyceraldehyde 3-phosphate dehydrogenase	No Evidence Code
+YGR192C		TDH3	GAPOXNPHOSPHN-RXN	1.2.1.12	glyceraldehyde-3-phosphate dehydrogenase	No Evidence Code
+YCR012W		PGK1	PHOSGLYPHOS-RXN	2.7.2.3	3-phosphoglycerate kinase	No Evidence Code
+YKL152C		GPM1	RXN-15513	5.4.2.11	phosphoglycerate mutase	No Evidence Code
+YKL152C		GPM1	3PGAREARR-RXN	5.4.2.12	phosphoglycerate mutase	No Evidence Code
+YHR174W		ENO2	2PGADEHYDRAT-RXN	4.2.1.11	enolase	No Evidence Code
+YGR254W		ENO1	2PGADEHYDRAT-RXN	4.2.1.11	enolase I	No Evidence Code
+YOR347C		PYK2	PEPDEPHOS-RXN	2.7.1.40	pyruvate kinase	No Evidence Code
+YAL038W		CDC19	PEPDEPHOS-RXN	2.7.1.40	pyruvate kinase	No Evidence Code
+YGR087C		PDC6	RXN-6161	4.1.1.1	pyruvate decarboxylase	No Evidence Code
+YLR134W		PDC5	RXN-6161	4.1.1.1	pyruvate decarboxylase	No Evidence Code
+YLR044C		PDC1	RXN-6161	4.1.1.1	pyruvate decarboxylase	No Evidence Code
+YOL086C		ADH1	ALCOHOL-DEHYDROG-RXN	1.1.1.1	alcohol dehydrogenase	No Evidence Code
+YMR303C		ADH2	ALCOHOL-DEHYDROG-RXN	1.1.1.1	alcohol dehydrogenase	No Evidence Code
+YMR083W		ADH3	ALCOHOL-DEHYDROG-RXN	1.1.1.1	alcohol dehydrogenase	No Evidence Code
+YGL256W		ADH4	ALCOHOL-DEHYDROG-RXN	1.1.1.1	alcohol dehydrogenase	No Evidence Code
+YBR145W		ADH5	ALCOHOL-DEHYDROG-RXN	1.1.1.1	alcohol dehydrogenase	No Evidence Code
+YMR170C		ALD2	ALDHDEHYDROG-RXN	1.2.1.3	acetaldehyde dehydrogenase	No Evidence Code
+YOR374W		ALD4	ALDHDEHYDROG-RXN	1.2.1.3	potassium-activated aldehyde dehydrogenase, mitochondrial	No Evidence Code
+YER073W		ALD5	ALDHDEHYDROG-RXN	1.2.1.3	aldehyde dehydrogenase, mitochondrial	No Evidence Code
+YOR374W		ALD4	RXN3O-274	1.2.1.5	aldehyde dehydrogenase (major  mitochondrial)	No Evidence Code
+YER073W		ALD5	RXN3O-274	1.2.1.5	aldehyde dehydrogenase (minor mitochondrial)	No Evidence Code
+YPL061W		ALD6	ALDEHYDE-DEHYDROGENASE-NADP+-RXN	1.2.1.4	aldehyde dehydrogenase (major cytoplasmic)	No Evidence Code
+YER073W		ALD5	ALDEHYDE-DEHYDROGENASE-NADP+-RXN	1.2.1.4	aldehyde dehydrogenase, mitochondrial	No Evidence Code
+YOR374W		ALD4	ALDEHYDE-DEHYDROGENASE-NADP+-RXN	1.2.1.4	potassium-activated aldehyde dehydrogenase, mitochondrial	No Evidence Code

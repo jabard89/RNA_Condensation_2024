@@ -1,0 +1,216 @@
+# Ribosome biogenesis genes according to SGD
+#
+# Generated Thu Feb 14 10:38:30 2019
+ORF	gene	description
+YDR161W	ACL4	Specific assembly chaperone for ribosomal protein Rpl4p
+YJL122W	ALB1	Shuttling pre-60S factor
+YER036C	ARB1	ATPase of the ATP-binding cassette (ABC) family
+YDR101C	ARX1	Nuclear export factor for the ribosomal pre-60S subunit
+YHR040W	BCD1	Essential protein required for the accumulation of box C/D snoRNA
+YDR299W	BFR2	Component of the SSU and 90S preribosomes
+YPL217C	BMS1	GTPase required for ribosomal subunit synthesis and rRNA processing
+YOL077C	BRX1	Nucleolar protein
+YOR078W	BUD21	Component of small ribosomal subunit (SSU) processosome
+YPL048W	CAM1	One of two isoforms of the gamma subunit of eEF1B
+YLR175W	CBF5	Pseudouridine synthase catalytic subunit of box H/ACA snoRNPs
+YKL208W	CBT1	Protein involved in 5' RNA end processing
+YGL029W	CGR1	Protein involved in nucleolar integrity and processing of pre-rRNA
+YHR052W	CIC1	Essential protein that interacts with proteasome components
+YHR109W	CTM1	Cytochrome c lysine methyltransferase
+YDL031W	DBP10	Putative ATP-dependent RNA helicase of the DEAD-box protein family
+YNL112W	DBP2	ATP-dependent RNA helicase of the DEAD-box protein family
+YGL078C	DBP3	RNA-Dependent ATPase, member of DExD/H-box family
+YNR038W	DBP6	Essential protein involved in ribosome biogenesis
+YKR024C	DBP7	Putative ATP-dependent RNA helicase of the DEAD-box family
+YHR169W	DBP8	ATPase, putative RNA helicase of the DEAD-box family
+YLR276C	DBP9	DEAD-box protein required for 27S rRNA processing
+YKL078W	DHR2	Predominantly nucleolar DEAH-box ATP-dependent RNA helicase
+YPL266W	DIM1	Essential 18S rRNA dimethylase (dimethyladenosine transferase)
+YLR129W	DIP2	Nucleolar protein
+YLL008W	DRS1	Nucleolar DEAD-box protein required for ribosome assembly and function
+YKL172W	EBP2	Required for 25S rRNA maturation and 60S ribosomal subunit assembly
+YAL059W	ECM1	Pre-ribosomal factor involved in 60S ribosomal protein subunit export
+YMR128W	ECM16	Essential DEAH-box ATP-dependent RNA helicase specific to U3 snoRNP
+YHL039W	EFM1	Lysine methyltransferase
+YLR186W	EMG1	Methyltransferase for rRNA
+YBR247C	ENP1	Protein associated with U3 and U14 snoRNAs
+YGR145W	ENP2	Component of the SSU
+YMR049C	ERB1	Constituent of 66S pre-ribosomal particles
+YDR365C	ESF1	Nucleolar protein involved in pre-rRNA processing
+YNR054C	ESF2	Essential nucleolar protein involved in pre-18S rRNA processing
+YIL019W	FAF1	Protein required for pre-rRNA processing
+YDR021W	FAL1	Nucleolar protein required for maturation of 18S rRNA
+YDL166C	FAP7	Essential NTPase required for small ribosome subunit synthesis
+YDR339C	FCF1	Putative PINc domain nuclease
+YLR051C	FCF2	Nucleolar protein involved in the early steps of 35S rRNA processing
+YHR089C	GAR1	Protein component of the H/ACA snoRNP pseudouridylase complex
+YMR290C	HAS1	ATP-dependent RNA helicase
+YJL033W	HCA4	DEAD box RNA helicase
+YHR148W	IMP3	Component of the SSU processome
+YNL075W	IMP4	Component of the SSU processome
+YHR085W	IPI1	Component of the Rix1 complex and possibly pre-replicative complexes
+YNL182C	IPI3	Component of the Rix1 complex and pre-replicative complexes (pre-RCs)
+YNL132W	KRE33	Protein required for biogenesis of the small ribosomal subunit
+YNL308C	KRI1	Essential nucleolar protein required for 40S ribosome biogenesis
+YCL059C	KRR1	Nucleolar protein required for rRNA synthesis and ribosomal assembly
+YER127W	LCP5	Essential protein involved in maturation of 18S rRNA
+YFR001W	LOC1	Nuclear protein involved in asymmetric localization of ASH1 mRNA
+YKL021C	MAK11	Protein involved in an early step of 60S ribosomal subunit biogenesis
+YDR060W	MAK21	Constituent of 66S pre-ribosomal particles
+YBR142W	MAK5	Essential nucleolar protein
+YJR002W	MPP10	Component of the SSU processome and 90S preribosome
+YDL202W	MRPL11	Mitochondrial ribosomal protein of the large subunit
+YKL009W	MRT4	Protein involved in mRNA turnover and ribosome assembly
+YMR097C	MTG1	Putative GTPase peripheral to the mitochondrial inner membrane
+YNL124W	NAF1	RNA-binding protein required for the assembly of box H/ACA snoRNPs
+YPL126W	NAN1	U3 snoRNP protein
+YDL208W	NHP2	Protein related to mammalian high mobility group (HMG) proteins
+YPL211W	NIP7	Nucleolar protein required for 60S ribosome subunit biogenesis
+YHR170W	NMD3	Protein involved in nuclear export of the large ribosomal subunit
+YOR056C	NOB1	Protein involved in proteasomal and 40S ribosomal subunit biogenesis
+YOR206W	NOC2	Protein involved in ribosome biogenesis
+YLR002C	NOC3	Subunit of a nuclear complex with Noc2p and pre-replicative complexes
+YPR144C	NOC4	Nucleolar protein
+YPL093W	NOG1	Putative GTPase
+YNR053C	NOG2	Putative GTPase
+YDL014W	NOP1	Histone glutamine methyltransferase, modifies H2A at Q105 in nucleolus
+YHR072W-A	NOP10	Subunit of box H/ACA snoRNP complex
+YOL041C	NOP12	Nucleolar protein involved in pre-25S rRNA processing
+YNL175C	NOP13	Nucleolar protein found in preribosomal complexes
+YDL148C	NOP14	Nucleolar protein
+YNL110C	NOP15	Constituent of 66S pre-ribosomal particles
+YER002W	NOP16	Constituent of 66S pre-ribosomal particles
+YGR251W	NOP19	Ribosome biogenesis factor
+YNL061W	NOP2	rRNA m5C methyltransferase
+YPL043W	NOP4	Nucleolar protein
+YPL146C	NOP53	Nucleolar protein
+YLR197W	NOP56	Essential evolutionarily-conserved nucleolar protein
+YOR310C	NOP58	Protein involved in producing mature rRNAs and snoRNAs
+YDL213C	NOP6	rRNA-binding protein required for 40S ribosomal subunit biogenesis
+YGR103W	NOP7	Component of several different pre-ribosomal particles
+YOL144W	NOP8	Nucleolar protein required for 60S ribosomal subunit biogenesis
+YJL010C	NOP9	Essential subunit of U3-containing 90S preribosome
+YDR432W	NPL3	RNA-binding protein
+YGL111W	NSA1	Constituent of 66S pre-ribosomal particles
+YER126C	NSA2	Protein constituent of 66S pre-ribosomal particles
+YER006W	NUG1	GTPase that associates with nuclear 60S pre-ribosomes
+YOR145C	PNO1	Essential nucleolar protein required for pre-18S rRNA processing
+YDR496C	PUF6	Pumilio-homology domain protein
+YOR243C	PUS7	Pseudouridine synthase
+YLR196W	PWP1	Protein with WD-40 repeats involved in rRNA processing
+YCR057C	PWP2	Conserved 90S pre-ribosomal component
+YGR280C	PXR1	Essential protein involved in rRNA and snoRNA maturation
+YOL010W	RCL1	Endonuclease that cleaves pre-rRNA at site A2 for 18S rRNA biogenesis
+YLR387C	REH1	Cytoplasmic 60S subunit biogenesis factor
+YBR267W	REI1	Cytoplasmic pre-60S factor
+YOL080C	REX4	Putative RNA exonuclease
+YNL163C	RIA1	Cytoplasmic GTPase/eEF2-like factor involved in ribosomal biogenesis
+YOR119C	RIO1	Serine kinase involved in cell cycle regulation and rDNA integrity
+YNL207W	RIO2	Essential serine kinase involved in the processing of 20S pre-rRNA
+YHR197W	RIX1	Component of the Rix1 complex and possibly pre-replicative complexes
+YLL034C	RIX7	Putative ATPase of the AAA family
+YPL208W	RKM1	SET-domain lysine-N-methyltransferase
+YDR198C	RKM2	Ribosomal protein lysine methyltransferase
+YDR091C	RLI1	Essential Fe-S protein
+YLR009W	RLP24	Essential protein required for ribosomal large subunit biogenesis
+YNL002C	RLP7	Nucleolar protein similar to large ribosomal subunit L7 proteins
+YGR276C	RNH70	3'-5' exoribonuclease
+YLL046C	RNP1	Ribonucleoprotein that contains two RNA recognition motifs (RRM)
+YGL171W	ROK1	RNA-dependent ATPase
+YJR063W	RPA12	RNA polymerase I subunit A12.2
+YPR010C	RPA135	RNA polymerase I second largest subunit A135
+YDR156W	RPA14	RNA polymerase I subunit A14
+YOR341W	RPA190	RNA polymerase I largest subunit A190
+YJL148W	RPA34	RNA polymerase I subunit A34.5
+YOR340C	RPA43	RNA polymerase I subunit A43
+YNL248C	RPA49	RNA polymerase I subunit A49
+YOR210W	RPB10	RNA polymerase subunit ABC10-beta
+YBR154C	RPB5	RNA polymerase subunit ABC27
+YOR224C	RPB8	RNA polymerase subunit ABC14.5
+YHR143W-A	RPC10	RNA polymerase subunit ABC10-alpha, found in RNA pol I, II, and III
+YNL113W	RPC19	RNA polymerase subunit AC19
+YPR110C	RPC40	RNA polymerase subunit AC40
+YHR088W	RPF1	Protein involved in assembly and export of the large ribosomal subunit
+YKR081C	RPF2	Essential protein involved in rRNA maturation and ribosomal assembly
+YER056C-A	RPL34A	Ribosomal 60S subunit protein L34A
+YIL052C	RPL34B	Ribosomal 60S subunit protein L34B
+YIL148W	RPL40A	Ubiquitin-ribosomal 60S subunit protein L40A fusion protein
+YKR094C	RPL40B	Ubiquitin-ribosomal 60S subunit protein L40B fusion protein
+YHL033C	RPL8A	Ribosomal 60S subunit protein L8A
+YLL045C	RPL8B	Ribosomal 60S subunit protein L8B
+YPR187W	RPO26	RNA polymerase subunit ABC23
+YLR340W	RPP0	Conserved ribosomal protein P0 of the ribosomal stalk
+YGR214W	RPS0A	Ribosomal 40S subunit protein S0A
+YLR048W	RPS0B	Protein component of the small (40S) ribosomal subunit
+YCR031C	RPS14A	Protein component of the small (40S) ribosomal subunit
+YJL191W	RPS14B	Protein component of the small (40S) ribosomal subunit
+YOL040C	RPS15	Protein component of the small (40S) ribosomal subunit
+YOL121C	RPS19A	Protein component of the small (40S) ribosomal subunit
+YNL302C	RPS19B	Protein component of the small (40S) ribosomal subunit
+YGL123W	RPS2	Protein component of the small (40S) subunit
+YLR167W	RPS31	Fusion protein cleaved to yield ribosomal protein S31 and ubiquitin
+YPL090C	RPS6A	Protein component of the small (40S) ribosomal subunit
+YBR181C	RPS6B	Protein component of the small (40S) ribosomal subunit
+YOR096W	RPS7A	Protein component of the small (40S) ribosomal subunit
+YNL096C	RPS7B	Protein component of the small (40S) ribosomal subunit
+YPL081W	RPS9A	Protein component of the small (40S) ribosomal subunit
+YBR189W	RPS9B	Protein component of the small (40S) ribosomal subunit
+YMR131C	RRB1	Specific chaperone for ribosomal protein Rpl3p
+YPL012W	RRP12	Protein required for export of the ribosomal subunits
+YKL082C	RRP14	Essential protein, constituent of 66S pre-ribosomal particles
+YPR143W	RRP15	Nucleolar protein
+YDR412W	RRP17	Component of the pre-60S pre-ribosomal particle
+YHR065C	RRP3	Protein involved in rRNA processing
+YOR287C	RRP36	Component of 90S preribosomes
+YMR229C	RRP5	RNA binding protein involved in synthesis of 18S and 5.8S rRNAs
+YCL031C	RRP7	Essential protein involved in rRNA processing and ribosome biogenesis
+YPR137W	RRP9	Protein involved in pre-rRNA processing
+YOR294W	RRS1	Essential protein that binds ribosomal protein L11
+YPL193W	RSA1	Protein involved in the assembly of 60S ribosomal subunits
+YLR221C	RSA3	Protein with a likely role in ribosomal maturation
+YCR072C	RSA4	WD-repeat protein involved in ribosome biogenesis
+YHR087W	RTC3	Protein of unknown function involved in RNA metabolism
+YPL183W-A	RTC6	Protein involved in translation
+YDL153C	SAS10	Subunit of U3-containing Small Subunit (SSU) processome complex
+YGR245C	SDA1	Protein required for actin organization and passage through Start
+YLR022C	SDO1	Guanine nucleotide exchange factor (GEF) for Ria1p
+YKR043C	SHB17	Sedoheptulose bisphosphatase involved in riboneogenesis
+YGR081C	SLX9	Protein required for pre-rRNA processing
+YEL026W	SNU13	RNA binding protein
+YLL011W	SOF1	Protein required for biogenesis of 40S (small) ribosomal subunit
+YCL054W	SPB1	AdoMet-dependent methyltransferase
+YFL002C	SPB4	Putative ATP-dependent RNA helicase
+YDL229W	SSB1	Cytoplasmic ATPase that is a ribosome-associated molecular chaperone
+YHR066W	SSF1	Constituent of 66S pre-ribosomal particles
+YDR312W	SSF2	Protein required for ribosomal large subunit maturation
+YNL081C	SWS2	Putative mitochondrial ribosomal protein of the small subunit
+YDL063C	SYO1	Transport adaptor or symportin
+YPR016C	TIF6	Constituent of 66S pre-ribosomal particles
+YIL137C	TMA108	Ribosome-associated, nascent chain binding factor
+YER007C-A	TMA20	Protein of unknown function that associates with ribosomes
+YMR269W	TMA23	Nucleolar protein implicated in ribosome biogenesis
+YJR066W	TOR1	PIK-related protein kinase and rapamycin target
+YKL203C	TOR2	PIK-related protein kinase and rapamycin target
+YDL060W	TSR1	Protein required for processing of 20S pre-rRNA in the cytoplasm
+YOR006C	TSR3	Protein required for 20S pre-rRNA processing
+YKL014C	URB1	Protein required for the normal accumulation of 25S and 5.8S rRNAs
+YJR041C	URB2	Protein required for normal metabolism of the rRNA primary transcript
+YJL109C	UTP10	Nucleolar protein
+YKL099C	UTP11	Subunit of U3-containing Small Subunit (SSU) processome complex
+YLR222C	UTP13	Nucleolar protein
+YML093W	UTP14	Subunit of U3-containing Small Subunit (SSU) processome complex
+YMR093W	UTP15	Nucleolar protein
+YJL069C	UTP18	Small-subunit processome protein involved in pre-18S rRNA maturation
+YBL004W	UTP20	Component of the small-subunit (SSU) processome
+YLR409C	UTP21	Subunit of U3-containing 90S preribosome and SSU processome complexes
+YGR090W	UTP22	Component of the small-subunit processome
+YOR004W	UTP23	Component of the small subunit processome
+YIL091C	UTP25	Nucleolar protein
+YKR060W	UTP30	Putative subunit of U3-containing 90S preribosome complex
+YDR324C	UTP4	Subunit of U3-containing 90S preribosome and SSU processome complexes
+YDR398W	UTP5	Subunit of U3-containing Small Subunit (SSU) processome complex
+YDR449C	UTP6	Nucleolar protein
+YER082C	UTP7	Nucleolar protein
+YGR128C	UTP8	Nucleolar protein required for export of tRNAs from the nucleus
+YHR196W	UTP9	Nucleolar protein
+YOR272W	YTM1	Constituent of 66S pre-ribosomal particles

@@ -1,0 +1,162 @@
+---
+title: "label_genes"
+author: "Jared Bard"
+date: "5/8/2023"
+output: html_document
+---
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(readxl)
+`%!in%` = Negate(`%in%`)
+```
+
+## Import genes
+Used pull_sgd python script to pull ORFs from SGD
+```{r}
+genes_scer <- read_tsv("pull_sgd/SGD_gene_labels_230508.tsv",comment="#") %>%
+  select(ORF,gene,length.protein,classification)
+```
+
+## Choose nasty ORFs to remove
+courtesy of EW, select_ORFs.Rmd, filter out some "nasty orfs"
+
+```{r filter_orfs}
+
+# Filter orfs
+# orfs that overlap with rRNA
+rRNA_orfs <- c("YLR154C","YLR154C-G","YLR154C-H","YLR154W-A","YLR154W-B","YLR154W-C","YLR154W-E",
+               "YLR155C","YLR156C-A","YLR156W","YLR157C","YLR157C-A","YLR157C-B",
+               "YLR157C-B","YLR157C-C","YLR157W-D","YLR157W-E","YLR158C",
+               "YLR159C-A","YLR159W","YLR160C",
+               "YLR161W","YLR162W","YLR162W-A")
+# mitochondrial orfs
+mito_orfs <- stringr::str_subset(genes_scer$ORF,"Q0")
+mito_orfs
+# 2-micron plasmid orfs
+twomu_orfs <- c("R0010W","R0020C","R0030W","R0040C")
+# orfs in retrotransposons
+retrotrans_orfs <- c("YAR009C","YAR010C","YARCTy1-1","YBL005W-A","YBL005W-B","YBL100W-A","YBL100W-B",
+"YBLWTy1-1","YBLWTy2-1","YBR012W-A","YBR012W-B","YBRWTy1-2","YCL019W","YCL020W",
+"YCLWTy2-1","YCLWTy5-1","YDR034C-C","YDR034C-D","YDR098C-A","YDR098C-B","YDR170W-A",
+"YDR210C-C","YDR210C-D","YDR210W-A","YDR210W-B","YDR261C-C","YDR261C-D","YDR261W-A",
+"YDR261W-B","YDR316W-A","YDR316W-B","YDR365W-A","YDR365W-B","YDRCTy1-1","YDRCTy1-2",
+"YDRCTy1-3","YDRCTy2-1","YDRWTy1-4","YDRWTy1-5","YDRWTy2-2","YDRWTy2-3","YER137C-A",
+"YER138C","YER159C-A","YER160C","YERCTy1-1","YERCTy1-2","YFL002W-A","YFL002W-B",
+"YFLWTy2-1","YGR027W-A","YGR027W-B","YGR038C-A","YGR038C-B","YGR109W-A","YGR109W-B",
+"YGR161C-C","YGR161C-D","YGR161W-A","YGR161W-B","YGRCTy1-2","YGRCTy1-3","YGRCTy2-1",
+"YGRWTy1-1","YGRWTy2-2","YGRWTy3-1","YHL009W-A","YHL009W-B","YHLWTy4-1","YHR214C-B",
+"YHR214C-C","YHRCTy1-1","YIL082W","YIL082W-A","YILWTy3-1","YJL113W","YJL114W",
+"YJLWTy4-1","YJR026W","YJR027W","YJR028W","YJR029W","YJRWTy1-1","YJRWTy1-2",
+"YLR035C-A","YLR157C-A","YLR157C-B","YLR227W-A","YLR227W-B","YLR256W-A","YLR410W-A",
+"YLR410W-B","YLRCTy1-1","YLRCTy2-2","YLRWTy1-2","YLRWTy1-3","YLRWTy2-1","YML039W",
+"YML040W","YML045W","YML045W-A","YMLWTy1-1","YMLWTy1-2","YMR045C","YMR046C",
+"YMR050C","YMR051C","YMRCTy1-3","YMRCTy1-4","YNL054W-A","YNL284C-A","YNL284C-B",
+"YNLCTy1-1","YNLCTy2-1","YNLWTy1-2","YOL103W-A","YOL103W-B","YOLWTy1-1","YOR142W-A",
+"YOR142W-B","YOR192C-A","YOR192C-B","YOR343W-A","YOR343W-B","YORCTy2-1","YORWTy1-2",
+"YORWTy2-2","YPL257W-A","YPL257W-B","YPLCTy4-1","YPLWTy1-1","YPR137C-A","YPR137C-B",
+"YPR158C-C","YPR158C-D","YPR158W-A","YPR158W-B","YPRCTy1-2","YPRCTy1-4","YPRWTy1-3",
+"YPL060C-A","YNL054W-B")
+```
+## block reading frames
+```{r}
+# SGD has a couple ORFs that are annotated as "blocked reading frames" which means they have stop codons in them
+blocked_orfs <- c("YDR134C","YER109C","YIL167W","YIR043C","YOL153C","YOR031W")
+```
+
+##  Create a labeled list of genes
+
+Annotate genes based on a combination of David Pincus's list of hsf1 targets, Soli MSN2/4 Cat's transcription factor lists, Allan's lists, and a couple other databases.
+
+```{r}
+pincus_mbc_targets <- c("YGR142W", "YBR101C", "YOR027W", "YPL240C", "YMR186W", "YLL024C", "YNL064C", "YDR214W", "YLR216C", "YNL007C", "YAL005C", "YPR158W", "YDR258C", "YFL016C", "YNL281W", "YDR171W", "YLL026W", "YOR298C-A", "YER103W", "YGR211W", "YNL077W", "YPL250C", "YBR072W", "YPL106C", "YOL081W", "YNR069C", "YCR021C", "YLR327C", "YLR259C", "YBR169C", "YGR250C", "YPR154W", "YHR082C", "YOR020C", "YCL050C", "YDL020C", "YJR045C", "YJL034W", "YHR104W", "YGR161C", "YBR067C", "YDR151C", "YBR025C", "YBR082C", "YDR011W", "YER150W", "YLL039C", "YOR267C")
+
+solis_data <- read_excel("Solis_2016/mmc3.xlsx", skip = 3, col_types = c(rep("text", 2), rep("numeric", 9), "text"),
+                         na="NA")
+solis_msn <- filter(solis_data, Gene_Type == "Msn24")$locus
+
+rib <- read_tsv("scer-ribosomal-proteins.txt", comment='#',show_col_types = F)
+sgd_glyc <- read_tsv("SGD_superpathway_glycolysis_221025.txt",skip=2,show_col_types = F) %>%
+  rename("ORF"="Gene ID")
+ribi <- read_tsv("ribosome_biogenesis_annotations_sgd.txt", comment='#',show_col_types = F)
+translation_factors <- read_tsv("translation_factors_kegg.tsv",show_col_types = F)
+
+labeled_genes_scer <- genes_scer %>%
+  mutate(label = case_when(
+    ORF%in%pincus_mbc_targets~"HSF1",
+    ORF%in%rib$orf~"RP",
+    ORF%in%ribi$ORF~"RiBi",
+    ORF%in%translation_factors$ORF~"translation factors",
+    ORF%in%sgd_glyc$ORF~"glycolysis",
+    ORF%in%solis_msn~"MSN2/4",
+    TRUE~"other")) %>% 
+  mutate(classification=case_when(ORF%in%rRNA_orfs~"overlaps_rRNA",
+                                  ORF%in%mito_orfs~"mitochondrial ORF",
+                                  ORF%in%twomu_orfs~"2mu",
+                                  ORF%in%retrotrans_orfs~"retrotransposon",
+                                  ORF%in%blocked_orfs~"blocked reading frame",
+                                  TRUE~classification))
+```
+
+## pull unspliced lengths
+```{r}
+unspliced_lengths <- read_tsv("RNAseq_index_folders/Scerevisiae/saccharomyces_cerevisiae_R64-3-1_20210421_unspliced_lengths.tsv",
+                              comment="#") %>%
+  rename("ORF"="Gene_ID",
+         "unspliced.CDS.length"="unspliced.length")
+```
+
+## calculate Transcript Length Estimate
+
+```{r}
+# Similar to how EW calculated transcript lengths from Pelechano data: use Pelechano median UTRs then infer the rest using the median UTR lengths
+Pelechano_UTR_lengths <- read_tsv("Pelechano2013_SuppData3_medianTranscripts.txt",
+                                  comment="#") %>%
+    dplyr::rename(ORF=gene) %>%
+    mutate(Length5UTR=round(median5),Length3UTR=round(median3))  %>%
+    select(ORF,Length5UTR,Length3UTR)
+Pelechano_UTR_lengths_median <- Pelechano_UTR_lengths %>%
+  left_join(labeled_genes_scer,by="ORF") %>%
+  filter(classification=="Verified") %>%
+  summarise(Length5UTR.med = median(Length5UTR,na.rm=T),
+            Length3UTR.med=median(Length3UTR,na.rm=T))
+labeled_genes_scer_lengths <- labeled_genes_scer %>%
+  left_join(Pelechano_UTR_lengths,by="ORF") %>%
+  mutate(Length5UTR.est = if_else(is.na(Length5UTR),Pelechano_UTR_lengths_median$Length5UTR.med,Length5UTR),
+         Length3UTR.est = if_else(is.na(Length3UTR),Pelechano_UTR_lengths_median$Length3UTR.med,Length3UTR),
+         LengthTxEst = length.protein*3+3+Length5UTR.est+Length3UTR.est) %>% # add the stop codon
+  left_join(unspliced_lengths,by="ORF") %>%
+  mutate(LengthTxUnsplicedEst = unspliced.CDS.length+Length5UTR.est+Length3UTR.est)
+```
+
+
+
+
+## Add ncRNA info
+```{r}
+df_ncrna_anno <- read_tsv("Scerevisiae_ncRNA/SGD_ncRNA_xref.txt",
+                          col_names = c("ENA","SGD_ID","gene","ncrna_classification","RNAcentral_ID"))
+df_ncrna_lengths <- read_tsv("Scerevisiae_ncRNA/SGD_230511_rna_coding_lengths.tsv",
+                             col_names=c("ORF","length.ncRNA"),
+                             skip=1)
+df_ncrna <- 
+  bind_rows(labeled_genes_scer_lengths %>% inner_join(df_ncrna_anno,by=c("ORF"="gene")),
+            labeled_genes_scer_lengths %>% inner_join(df_ncrna_anno,by=c("gene"="gene"))) %>%
+  mutate(classification="ncRNA") %>%
+  left_join(df_ncrna_lengths,by="ORF")
+```
+
+## Add reporter info and output
+
+```{r}
+reporter_table <- tribble(~"ORF",~"gene",~"classification",~"length.protein",~"Length5UTR",~"Length3UTR",~"LengthTxEst",
+                          "strong_Clover","Clover","Verified",458,78,91,1546,
+                          "mCherry","mCherry","Verified",238,30,82,829)
+# Clover reporter has an extra 9 nt between the stop codon of the protein and the beginning of the TPI1 3' UTR, which adds 9nt to the 3' UTR length vs TPI1
+gene_labels_out <- labeled_genes_scer_lengths %>%
+  filter(!ORF%in%df_ncrna$ORF) %>%
+  bind_rows(df_ncrna) %>%
+  mutate(LengthTxEst=if_else(classification=="ncRNA",length.ncRNA,LengthTxEst)) %>%
+  bind_rows(reporter_table) %>%
+  write_tsv("labeled_genes_scer.tsv")
+```

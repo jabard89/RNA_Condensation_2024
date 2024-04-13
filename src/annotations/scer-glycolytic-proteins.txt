@@ -1,0 +1,28 @@
+# Glycolytic enzymes (core): 
+#  Hexokinase (HXK1,HXK2)
+#  Phosphoglucose isomerase (PGI1)
+#  Phosphofructokinase (PFK1,PFK2)
+#  Fructose bisphosphate aldolase (FBA1)
+#  Triosephosphate isomerase (TPI1)
+#  Glyceraldehyde phosphate dehydrogenase (TDH3,TDH2,TDH1)
+#  Phosphoglycerate kinase (PGK1)
+#  Phosphoglycerate mutase (GPM1 [GPM2,GPM3 cannot complement gpm1 and are believed non-functional])
+#  Enolase (ENO1,ENO2)
+#  Pyruvate kinase (CDC19,PYK2)
+orf	gene	desc
+YFR053C	HXK1	Hexokinase isoenzyme 1; a cytosolic protein that catalyzes phosphorylation of glucose during glucose metabolism; expression is highest during growth on non-glucose carbon sources; glucose-induced repression involves hexokinase Hxk2p; HXK1 has a paralog, HXK2, that arose from the whole genome duplication
+YGL253W	HXK2	Hexokinase isoenzyme 2; catalyzes phosphorylation of glucose in the cytosol; predominant hexokinase during growth on glucose; functions in the nucleus to repress expression of HXK1 and GLK1 and to induce expression of its own gene; phosphorylation/dephosphorylation at serine-14 by protein kinase Snf1p and protein phosphatase Glc7p-Reg1p regulates nucleocytoplasmic shuttling of Hxk2p; HXK2 has a paralog, HXK1, that arose from the whole genome duplication
+YBR196C	PGI1	Glycolytic enzyme phosphoglucose isomerase, catalyzes the interconversion of glucose-6-phosphate and fructose-6-phosphate; required for cell cycle progression and completion of the gluconeogenic events of sporulation
+YGR240C	PFK1	Alpha subunit of heterooctameric phosphofructokinase involved in glycolysis, indispensable for anaerobic growth, activated by fructose-2,6-bisphosphate and AMP, mutation inhibits glucose induction of cell cycle-related genes
+YMR205C	PFK2	Beta subunit of heterooctameric phosphofructokinase involved in glycolysis, indispensable for anaerobic growth, activated by fructose-2,6-bisphosphate and AMP, mutation inhibits glucose induction of cell cycle-related genes
+YKL060C	FBA1	Fructose 1,6-bisphosphate aldolase, required for glycolysis and gluconeogenesis; catalyzes conversion of fructose 1,6 bisphosphate to glyceraldehyde-3-P and dihydroxyacetone-P; locates to mitochondrial outer surface upon oxidative stress
+YDR050C	TPI1	Triose phosphate isomerase, abundant glycolytic enzyme; mRNA half-life is regulated by iron availability; transcription is controlled by activators Reb1p, Gcr1p, and Rap1p through binding sites in the 5' non-coding region; inhibition of Tpi1p activity by PEP (phosphoenolpyruvate) stimulates redox metabolism in respiring cells; E104D mutation in human TPI causes a rare autosomal disease
+YGR192C	TDH3	Glyceraldehyde-3-phosphate dehydrogenase, isozyme 3; involved in glycolysis and gluconeogenesis; tetramer that catalyzes the reaction of glyceraldehyde-3-phosphate to 1,3 bis-phosphoglycerate; detected in the cytoplasm and cell wall; TDH3 has a paralog, TDH2, that arose from the whole genome duplication
+YJR009C	TDH2	Glyceraldehyde-3-phosphate dehydrogenase, isozyme 2; involved in glycolysis and gluconeogenesis; tetramer that catalyzes the reaction of glyceraldehyde-3-phosphate to 1,3 bis-phosphoglycerate; detected in the cytoplasm and cell wall; protein abundance increases in response to DNA replication stress; TDH2 has a paralog, TDH3, that arose from the whole genome duplication
+YJL052W	TDH1	Glyceraldehyde-3-phosphate dehydrogenase, isozyme 1; involved in glycolysis and gluconeogenesis; tetramer that catalyzes the reaction of glyceraldehyde-3-phosphate to 1,3 bis-phosphoglycerate; detected in the cytoplasm and cell wall; protein abundance increases in response to DNA replication stress
+YCR012W	PGK1	3-phosphoglycerate kinase, catalyzes transfer of high-energy phosphoryl groups from the acyl phosphate of 1,3-bisphosphoglycerate to ADP to produce ATP; key enzyme in glycolysis and gluconeogenesis
+YKL152C	GPM1	Tetrameric phosphoglycerate mutase, mediates the conversion of 3-phosphoglycerate to 2-phosphoglycerate during glycolysis and the reverse reaction during gluconeogenesis
+YGR254W	ENO1	Enolase I, a phosphopyruvate hydratase; catalyzes the conversion of 2-phosphoglycerate to phosphoenolpyruvate during glycolysis and the reverse reaction during gluconeogenesis; expression is repressed in response to glucose; protein abundance increases in response to DNA replication stress
+YHR174W	ENO2	Enolase II, a phosphopyruvate hydratase that catalyzes the conversion of 2-phosphoglycerate to phosphoenolpyruvate during glycolysis and the reverse reaction during gluconeogenesis; expression is induced in response to glucose
+YAL038W	CDC19	Pyruvate kinase; functions as a homotetramer in glycolysis to convert phosphoenolpyruvate to pyruvate, the input for aerobic (TCA cycle) or anaerobic (glucose fermentation) respiration; regulated via allosteric activation by fructose bisphosphate; CDC19 has a paralog, PYK2, that arose from the whole genome duplication
+YOR347C	PYK2	Pyruvate kinase; appears to be modulated by phosphorylation; transcription repressed by glucose, and Pyk2p may be active under low glycolytic flux; PYK2 has a paralog, CDC19, that arose from the whole genome duplication
