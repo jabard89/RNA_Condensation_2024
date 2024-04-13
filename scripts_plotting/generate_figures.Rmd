@@ -1144,7 +1144,7 @@ p_zsup_boxes <- ggplot(df,
        aes(x=target,y=deltaZ))+
   geom_hline(yintercept=0,linetype="dotted")+
     geom_point(position=position_jitterdodge(jitter.width=1.5),
-               aes(y=deltaZ.trimmed,color=target),shape=16,alpha=0.3, size = 0.8)+
+               aes(y=deltaZ.trimmed,color=target),shape=16,alpha=0.5, size = 0.5)+
   scale_color_manual(values=target.cols)+
   geom_violin(fill=NA,draw_quantiles = c(0.5),size=0.25,color="black")+
     theme(legend.position="none")+
@@ -1162,7 +1162,7 @@ p_zsup_boxes <- ggplot(df,
   theme(axis.text.x = element_blank(),
         strip.text.x = element_blank())
 p_zsup_boxes
-ggsave("../figures/Supplemental/Zsup_hsf1_boxplot.png",
+ggsave("../figures/Supplemental/Zsup_hsf1_boxplot.pdf",
        egg::set_panel_size(p=p_zsup_boxes,width=unit(30,"mm"),height=unit(30,"mm")),
        bg="transparent",width=100,height=50,units="mm")
 
