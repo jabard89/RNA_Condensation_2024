@@ -659,9 +659,9 @@ df <- df_hairpins %>% full_join(df_30C_occ,by="ORF") %>%
               select(ORF,EnergyBin),by="ORF") %>%
   mutate(EnergyBin=if_else(EnergyBin=="uORF","other",EnergyBin)) %>%
   mutate(EnergyBin=factor(EnergyBin,levels=c("least structured 5'UTR","other","most structured 5'UTR"),
-                          labels=c("least","other","most"))) %>%
+                          labels=c("least","other","most"))) %>% 
   arrange(EnergyBin)
-df_corr <- df %>%
+df_corr <- df %>% 
   nest() %>%
   mutate(corr = map(data,function(df){
     df %>% column_to_rownames(var="ORF") %>% correlate(method="spearman")
@@ -1144,9 +1144,9 @@ p_zsup_boxes <- ggplot(df,
        aes(x=target,y=deltaZ))+
   geom_hline(yintercept=0,linetype="dotted")+
     geom_point(position=position_jitterdodge(jitter.width=1.5),
-               aes(y=deltaZ.trimmed,color=target),shape=16,alpha=0.3)+
+               aes(y=deltaZ.trimmed,color=target),shape=16,alpha=0.3, size = 0.8)+
   scale_color_manual(values=target.cols)+
-  geom_violin(fill=NA,draw_quantiles = c(0.25,0.5,0.75),,size=0.25,color="black")+
+  geom_violin(fill=NA,draw_quantiles = c(0.5),size=0.25,color="black")+
     theme(legend.position="none")+
   coord_cartesian(y=c(lower,upper))+
   ggsignif::geom_signif(na.rm=T,
