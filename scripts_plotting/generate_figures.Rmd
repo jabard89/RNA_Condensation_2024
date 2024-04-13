@@ -333,7 +333,7 @@ p_violin <- ggplot(df,
   geom_hline(yintercept=1,linetype="dotted")+
   geom_point(shape=16,alpha=0.2,color="grey50",position=position_jitter(width=0.2), size = 0.5)+
   geom_violin(aes(fill=Stress_label,alpha=Stress_label))+
-  geom_violin(fill=NA,alpha=1,draw_quantiles = c(0.25,0.5,0.75),size=0.5)+
+  geom_violin(fill=NA,alpha=1,draw_quantiles = c(0.5),size=0.5)+
   scale_y_log10nice()+
   scale_x_discrete(labels=stress_labels)+
   coord_cartesian(ylim=c(0.01,8))+
@@ -775,7 +775,7 @@ p_TPM_TE <- ggplot(df,
        aes(x=TPM.mean,y=TE))+
   scale_x_log10nice()+coord_cartesian(xlim=c(1,1e4))+
   scale_y_log10nice()+coord_cartesian(ylim=c(0.01,10))+
-  geom_point(alpha=0.2, size = 1.5, shape = 16, color = "black", )+
+  geom_point(alpha=0.3, size = 0.5, shape = 16, color = "black", )+
   geom_point(data=df %>% filter(gene%in%genes_to_label),size=2,color="red")+
   geom_text_repel(data=df,size=4.2,aes(label=gene_label),max.overlaps = 10000,min.segment.length = 0)+
   labs(x="mRNA Abundance",y="Translation\nEfficiency")
@@ -783,10 +783,9 @@ p_TPM_TE
 
 p_Z_box <- ggplot(df,
                   aes(x=1,y=Zsup.mean))+
-  geom_hline(yintercept=0,linetype="dotted")+
-  geom_point(data=df%>%filter(gene%!in%genes_to_label),position=position_jitter(width=0.43),alpha=0.01)+
+  geom_point(data=df%>%filter(gene%!in%genes_to_label),position=position_jitter(width=0.43),alpha=0.02, size = 0.3)+
   #geom_boxplot(fill=NA,outlier.shape=NA)+
-  geom_violin(fill=NA)+
+  geom_violin(fill="grey70", alpha = 0.6, draw_quantiles = c(0.5))+
   geom_point(data=df%>%filter(gene%in%genes_to_label),alpha=1,color="red",size=1)+
   #geom_text_repel(data=df%>%filter(gene=="GCN4"),size=4.2,aes(label=gene_label),max.overlaps = 10000,min.segment.length = 0,nudge_y=2.5,nudge_x=0.25)+
   #geom_text_repel(data=df%>%filter(gene=="HAC1"),size=4.2,aes(label=gene_label),max.overlaps = 10000,min.segment.length = 0,nudge_y=-2.5 ,nudge_x=0.25)+
@@ -1128,7 +1127,7 @@ ggsave("../figures/Supplemental/Zsup_30vs46.pdf",
        bg="transparent",width=50,height=50,units="mm")
 ```
 ```{r}
-upper<-7.5
+upper<-7.5 
 lower<-(-4.7)
 df <- df_Zsup_mean %>% filter(Treatment_group=="EW_TSPP") %>%
   select(ORF,Temperature,Zsup.mean) %>%
@@ -1200,14 +1199,38 @@ df <- df_long %>% ungroup %>%
   replace_na(list(stress_specific="none")) %>%
   mutate(stress_specific = factor(stress_specific,levels=c("none","42C","Azide 0.8%","Ethanol 7.5%"))) %>%
   arrange(stress_specific)
+df_wilcox <- df %>%
+  group_by(Stress_group,Stress_label) %>%
+  nest %>%
+  mutate(p_value = map(data,function(df){
+    pairwise_results <- pairwise.wilcox.test(df$deltaZ, df$stress_specific, p.adjust.method = "bonferroni")
+    broom::tidy(pairwise_results)
+  })) %>%
+  select(-data) %>%
+  unnest(p_value) %>%
+  group_by(Stress_group,Stress_label) %>%
+  mutate(p_label = map(p.value,function(x){
+    symnum(x, corr = FALSE, 
+                 cutpoints = c(0, .001, .01, .05, 1), 
+                 symbols = c("***", "**", "*", "N.S."))
+  })) %>%
+  unnest(p_label) %>%
+  filter(group2 == "none") %>%
+  rename("stress_specific" = "group1")
+xend_adjust = c(-0.1,0.1,0.25)
+annotation_df <- df_wilcox %>%
+  add_column(x_start = c(rep(1,3),rep(2,3),rep(3,3)) - 0.25,
+             x_end = c(1+xend_adjust,2 + xend_adjust, 3 + xend_adjust),
+             y_pos = rep(c(3.1,3.7,4.3),3)) %>%
+  mutate(id = row_number())
 
 p_spec <- ggplot(df,
        aes(x=Stress_label,y=deltaZ,fill=stress_specific))+
   geom_hline(yintercept=0,linetype="dotted")+
   geom_point(aes(group=interaction(Stress_label,stress_specific),alpha=stress_specific),
                  shape=16,color="black",position=position_jitterdodge(jitter.width = 0.2,
-                                                                                dodge.width = 0.75))+
-  scale_alpha_manual(values=c("none"=0.02,"42C"=0.3,"Azide 0.8%"=0.3,"Ethanol 7.5%"=0.3))+
+                                                                                dodge.width = 0.75), size = 0.5)+
+  scale_alpha_manual(values=c("none"=0.3,"42C"=0.3,"Azide 0.8%"=0.3,"Ethanol 7.5%"=0.3))+
   ggnewscale::new_scale_color() +
   # geom_violin(alpha=0.5)+
   # geom_violin(aes(group=interaction(Stress_label,stress_specific)),
@@ -1217,10 +1240,20 @@ p_spec <- ggplot(df,
   scale_x_discrete(labels=c("42C"="42°C","Azide 0.8%"="0.8%\nAzide","Ethanol 7.5%"="7.5%\nEthanol"))+
   labs(x="",y="")+
   scale_fill_manual(values=stress.cols)+
-  coord_cartesian(ylim=c(-3,4))+
-  theme(legend.position = "none")
+  coord_cartesian(ylim=c(-3,4.5))+
+  theme(legend.position = "none")+
+  ggsignif::geom_signif(
+    annotations = annotation_df$p_label,
+    xmin = annotation_df$x_start,
+    xmax = annotation_df$x_end,
+    y_position = annotation_df$y_pos,
+    textsize = 8*0.35,tip_length = 0,size=0.5
+  )
 p_spec
-ggsave("../figures/Supplemental/specific_boxplots.pdf",p_spec,width=100,height=50,units="mm",bg="transparent")
+ggsave(file.path(github_dir,"figures/Supplemental/specific_boxplots.pdf"),
+       egg::set_panel_size(p=p_spec,width=unit(70,"mm"),height=unit(50,"mm")),
+       width=100,height=100,units="mm",bg="transparent",dpi=600)
+
 ```
 
 ## Khong N3
@@ -1820,7 +1853,7 @@ p_TPM_Occ <- ggplot(df,
   scale_x_log10nice()+
   scale_y_log10nice()+
   coord_cartesian(xlim=c(1,1e4),ylim=c(0.1,50))+
-  geom_point(alpha=0.05)+
+  geom_point(alpha=0.2, size = 0.3)+
   geom_point(data=df %>% filter(gene%in%genes_to_label),size=2,color="red")+
   geom_text_repel(data=df,size=4.2,aes(label=gene_label),max.overlaps = 10000,min.segment.length = 0)+
   labs(x="mRNA Abundance",y="Rib. Occ.\n(odds)")
