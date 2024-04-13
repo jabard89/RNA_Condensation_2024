@@ -251,6 +251,33 @@ df_Occ_mean_minfilt <- read_tsv(file.path(github_dir,
   filter(length(ORF[Control==TRUE])==1) %>%
   mutate(Occ.odds.FC = Occ.odds.mean/Occ.odds.mean[Control==TRUE])
 
+
+df_Weinberg <- read_tsv(file.path(github_dir,"src/Weinberg_2016/weinberg_shah_synthesis_2016.txt"),
+                       comment="#") %>%
+  mutate(TE = TE/median(TE,na.rm=T)) %>%
+  select(ORF,TE,pE)
+
+muhl = read_tsv(file.path(github_dir,"src/Muhlhofer_2019/Muhlhofer_2019_rnaseq.tsv"), comment='#') |> pivot_wider(values_from = TPM, names_from=sample, names_prefix = 'tpm.')
+```
+
+```{r}
+cutoff <- 0.05
+df_vienna_utrs <- read_csv(file.path(github_dir,"RNAfold/Scerevisiae_UTR5plus20.csv"),
+                          comment="#") %>%
+  mutate(length_UTR5=str_length(UTR5),
+         length_UTR5plus20=str_length(UTR5_plus20))
+df_rnafold <- read_tsv(file.path(github_dir,"RNAfold/","ViennaFold_UTR5plus20.tsv")) %>% 
+  left_join(df_vienna_utrs,by="ORF") %>%
+  mutate(Energy_norm=Energy/length_UTR5plus20) %>%
+  filter(!is.na(Energy)) %>%
+  left_join(gene_labels %>% select(ORF,classification),by="ORF") %>%
+  filter(classification=="Verified") %>%
+  mutate(EnergyBin = case_when(Energy<=quantile(Energy,c(cutoff))~"most structured 5'UTR",
+                                Energy>=quantile(Energy,c(1-cutoff))~"least structured 5'UTR",
+                               TRUE~"other")) %>%
+  mutate(EnergyBin=factor(EnergyBin,levels=c("least structured 5'UTR",
+                                             "other",
+                                             "most structured 5'UTR")))
 ```
 
 # Figure 2
@@ -718,33 +745,10 @@ ggsave("../figures/Figure5/Zsup_Occ_right.pdf",
        egg::set_panel_size(p=p_zsup_box+theme(axis.title.y=element_blank()),width=unit(30,"mm"),height=unit(30,"mm")),
        width=75,height=75,units="mm",bg="transparent")
 ```
-```{r}
-cutoff <- 0.05
-df_vienna_utrs <- read_csv(file.path(github_dir,"RNAfold/Scerevisiae_UTR5plus20.csv"),
-                          comment="#") %>%
-  mutate(length_UTR5=str_length(UTR5),
-         length_UTR5plus20=str_length(UTR5_plus20))
-df_rnafold <- read_tsv(file.path(github_dir,"RNAfold/","ViennaFold_UTR5plus20.tsv")) %>% 
-  left_join(df_vienna_utrs,by="ORF") %>%
-  mutate(Energy_norm=Energy/length_UTR5plus20) %>%
-  filter(!is.na(Energy)) %>%
-  left_join(gene_labels %>% select(ORF,classification),by="ORF") %>%
-  filter(classification=="Verified") %>%
-  mutate(EnergyBin = case_when(Energy<=quantile(Energy,c(cutoff))~"most structured 5'UTR",
-                                Energy>=quantile(Energy,c(1-cutoff))~"least structured 5'UTR",
-                               TRUE~"other")) %>%
-  mutate(EnergyBin=factor(EnergyBin,levels=c("least structured 5'UTR",
-                                             "other",
-                                             "most structured 5'UTR")))
-```
+
 
 ```{r}
 genes_to_label <- c("HAC1","GCN4")
-
-df_Weinberg <- read_tsv(file.path(github_dir,"src/Weinberg_2016/weinberg_shah_synthesis_2016.txt"),
-                       comment="#") %>%
-  mutate(TE = TE/median(TE,na.rm=T)) %>%
-  select(ORF,TE,pE)
 
 df_hairpins <- df_Zsup_mean %>% filter(Treatment_group=="hairpinReporters") %>%
   group_by(ORF) %>%
@@ -1119,7 +1123,7 @@ p_zsup_46C <- ggplot(df,
   #      size=12*0.35)+
   labs(x="",y="")
 p_zsup_46C
-ggsave("../figures/Supplemental/Zsup_30vs46.png",
+ggsave("../figures/Supplemental/Zsup_30vs46.pdf",
        egg::set_panel_size(p=p_zsup_46C,width=unit(30,"mm"),height=unit(30,"mm")),
        bg="transparent",width=50,height=50,units="mm")
 ```
@@ -1162,7 +1166,7 @@ p_zsup_boxes <- ggplot(df,
   theme(axis.text.x = element_blank(),
         strip.text.x = element_blank())
 p_zsup_boxes
-ggsave("../figures/Supplemental/Zsup_hsf1_boxplot.png",
+ggsave("../figures/Supplemental/Zsup_hsf1_boxplot.pdf",
        egg::set_panel_size(p=p_zsup_boxes,width=unit(30,"mm"),height=unit(30,"mm")),
        bg="transparent",width=100,height=50,units="mm")
 
@@ -1396,7 +1400,7 @@ p_length_EtOH <- ggplot(df %>% filter(Stress_label %in% c("Ethanol 5%", "Ethanol
   labs(y="",x="")
 p_length_EtOH
 
-ggsave("../figures/Supplemental/length_dep_HS.png",
+ggsave("../figures/Supplemental/length_dep_HS.pdf",
         egg::set_panel_size(p=p_length_hs+theme(strip.text.x = element_blank(),
                                                 axis.ticks.x = element_blank(),
                                                 axis.text.x = element_blank()),
@@ -1404,7 +1408,7 @@ ggsave("../figures/Supplemental/length_dep_HS.png",
        width=50,height=50,units="mm",bg = "transparent")
 
 
-ggsave("../figures/Supplemental/length_dep_N3.png",
+ggsave("../figures/Supplemental/length_dep_N3.pdf",
         egg::set_panel_size(p=p_length_N3+theme(strip.text.x = element_blank(),
                                                 axis.ticks.x = element_blank(),
                                                 axis.text.x = element_blank()),
@@ -1412,7 +1416,7 @@ ggsave("../figures/Supplemental/length_dep_N3.png",
        width=50,height=50,units="mm",bg = "transparent")
 
 
-ggsave("../figures/Supplemental/length_dep_EtOH.png",
+ggsave("../figures/Supplemental/length_dep_EtOH.pdf",
         egg::set_panel_size(p=p_length_EtOH+theme(strip.text.x = element_blank()),
                             width=unit(15,"mm"),height=unit(15,"mm")),
        width=100,height=50,units="mm",bg = "transparent")
@@ -1424,7 +1428,6 @@ ggsave("../figures/Supplemental/length_dep_EtOH.png",
 upr_targets = read_tsv(file.path(github_dir,"src/Kimata_2006/uprHac1pTargets.txt"), comment='#')
 colnames(upr_targets) = c('gene','regulation','ORF')
 
-muhl = read_tsv(file.path(github_dir,"src/Muhlhofer_2019/Muhlhofer_2019_rnaseq.tsv"), comment='#') |> pivot_wider(values_from = TPM, names_from=sample, names_prefix = 'tpm.')
 df_muhl_fc <- muhl %>%
   pivot_longer(cols=c(-ORF),names_to="Treatment",values_to="TPM") %>%
   left_join(gene_labels,by="ORF") %>%
@@ -1520,7 +1523,7 @@ p_violin = ggplot(df %>% filter(Treatment!="25C.control"),
     textsize = 10*0.35)
 print(p_violin)
 
-ggsave("../figures/Supplemental/Muhlhofer_upr.png",
+ggsave("../figures/Supplemental/Muhlhofer_upr.pdf",
         egg::set_panel_size(p=p_violin+theme(legend.position="none")+
                               labs(x="",y="")+
                               theme(axis.text.x = element_blank()),
@@ -1796,11 +1799,6 @@ ggsave("../figures/Supplemental/Sucrose_native_Occ.pdf",
 
 ```{r}
 genes_to_label <- c("HAC1","GCN4")
-df_hairpins <- df_Zsup_mean %>% filter(Treatment_group=="hairpinReporters") %>%
-  group_by(ORF) %>%
-  summarise(SP.mean = exp(mean(log(SP))),
-            Zsup.mean = mean(Zsup),
-            TPM.mean = exp(mean(log(Total.TPM))))
 df_30C_occ <- df_Occ_mean_minfilt %>%
   filter(Treatment%in%c("none","mock"),Temperature=="30C") %>%
   group_by(ORF) %>%
@@ -1809,8 +1807,6 @@ df <- df_hairpins %>% full_join(df_30C_occ,by="ORF") %>%
   left_join(gene_labels,by="ORF") %>%
   left_join(df_Weinberg,by="ORF") %>%
   filter(Occ.odds.mean>0) %>%
-  left_join(df_rnafold %>% filter(Target=="first50UTR5") %>%
-              select(ORF,Target,Energy,EnergyBin),by="ORF") %>%
   mutate(gene_label = if_else(gene%in%genes_to_label,gene,""))
 df_corr <- df %>% ungroup %>%
   nest() %>%
@@ -1848,6 +1844,6 @@ p_Z_box <- ggplot(df,
 p_Z_box
 p_3B_occ <- plot_grid(p_TPM_Occ,p_Z_box,align="hv",rel_widths=c(1,0.7 ))
 p_3B_occ
-ggsave("../figures/Supplemental/HAC1_GCN4_Occupancy.png",egg::set_panel_size(p=p_TPM_Occ+labs(x="",y=""),width=unit(30,"mm"),height=unit(30,"mm")),
+ggsave("../figures/Supplemental/HAC1_GCN4_Occupancy.pdf",egg::set_panel_size(p=p_TPM_Occ+labs(x="",y=""),width=unit(30,"mm"),height=unit(30,"mm")),
        width=50,height=50,units="mm",bg="transparent",dpi=600)
 ```
