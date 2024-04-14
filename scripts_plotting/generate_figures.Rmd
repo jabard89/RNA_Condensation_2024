@@ -280,7 +280,105 @@ df_rnafold <- read_tsv(file.path(github_dir,"RNAfold/","ViennaFold_UTR5plus20.ts
 
 # Figure 2
 
-## violins
+deltasedScore vs. RNA abundance, 42/46
+```{r}
+genes_to_lab <- c("SSB1","SSA4","HSP104","HSP26","PMU1","ADD66")
+df <- df_Zsup_Poly_minfilt %>% filter(Stress_group=="Heat Shock",Temperature%in%c("42C","46C")) %>%
+  mutate(target = if_else(str_detect(label,"HSF1"),"HSF1 targets",
+                          if_else(str_detect(label,"MSN2"),"MSN2/4 targets","other"))) %>%
+  mutate(target=factor(target,levels=c("other","MSN2/4 targets","HSF1 targets"))) %>%
+  arrange(target) %>%
+  mutate(gene_lab=if_else(gene%in%genes_to_lab,gene,""))
+plot_hs <- function(df,xmin,xmax,ymin,ymax,xscale,xbreaks,yscale,ybreaks) {
+  df <-  df %>%
+    mutate(TPM.FC.SedSeq.plot = if_else(TPM.FC.SedSeq<xmin,xmin,
+                                        if_else(TPM.FC.SedSeq>xmax,xmax,TPM.FC.SedSeq)),
+           deltaZ.plot = if_else(deltaZ<ymin,ymin,
+                               if_else(deltaZ>ymax,ymax,deltaZ)))
+  p_scatter <- ggplot(df,aes(x=TPM.FC.SedSeq,y=deltaZ,color=target))+
+    geom_hline(yintercept=0,linetype="dotted")+geom_vline(xintercept=1,linetype="dotted")+
+    geom_point(data=df%>%filter(target=="other"),aes(x=TPM.FC.SedSeq.plot,y=deltaZ.plot),
+               alpha=0.8,color="gray80",shape=16,size=0.8)+
+    geom_point(data=df%>%filter(target!="other"),aes(x=TPM.FC.SedSeq.plot,y=deltaZ.plot),
+               alpha=0.8,shape=16,size=1)+
+    coord_cartesian(xlim=c(xmin,xmax),ylim=c(ymin,ymax),expand=F)+
+    scale_color_manual(values=c("HSF1 targets"=unname(target.cols["HSF1 targets"]),
+                                "MSN2/4 targets"=unname(target.cols["MSN2/4 targets"]),
+                                "other"="black"))+
+    geom_cross(data=df%>%filter(target%in%c("HSF1 targets")),grouping="target",x="TPM.FC.SedSeq",y="deltaZ")+
+    geom_point(data=df%>%filter(gene%in%genes_to_lab),aes(x=TPM.FC.SedSeq.plot,y=deltaZ.plot),
+               alpha=1,size=2,shape=16)
+   if (xscale=="log2"){
+    p_scatter <- p_scatter+scale_x_log2nice(omag=xbreaks)  
+  } else if (xscale=="log10"){
+    p_scatter <- p_scatter+scale_x_log10nice(omag=xbreaks)
+  } else {
+    p_scatter <- p_scatter+scale_x_continuous(breaks=xbreaks)
+  }
+  if (yscale=="log2"){
+    p_scatter <- p_scatter+scale_y_log2nice(omag=ybreaks)  
+  } else if (yscale=="log10"){
+    p_scatter <- p_scatter+scale_y_log10nice(omag=ybreaks)
+  } else {
+    p_scatter <- p_scatter+scale_y_continuous(breaks=ybreaks)
+  }
+  
+  # Overlay the density plots onto the main plot using annotation_custom
+  p_combined <- p_scatter +
+    geom_text_repel(aes(label=gene_lab),
+                    max.overlaps = 10000,min.segment.length = 0,
+                    size=8*0.35,color="black")+
+    labs(x="",y="")+
+    theme(plot.margin = margin(0, 0, 0, 0, "pt"))+
+    theme(legend.position="nonoe")
+}
+p_42C <- plot_hs(df%>%filter(Temperature=="42C"), 0.5,60,-2.5,3.5,"log2",c(-2,0,2,4),"linear",c(-2,0,2))
+p_42C
+ggsave(file.path(github_dir,"figures/Figure2/42C_zoom.pdf"),egg::set_panel_size(p_42C,width=unit(50,"mm"),height=unit(50,"mm")),
+       width=75,height=75,units="mm")
+p_46C <- plot_hs(df%>%filter(Temperature=="46C"),0.4,8,-2.5,3.5,"log2",c(0,1,2),"linear",c(-2,0,2))+
+  theme(axis.text.y=element_blank())
+p_46C
+ggsave(file.path(github_dir,"figures/Figure2/46C_zoom.pdf"),egg::set_panel_size(p_46C,width=unit(50,"mm"),height=unit(50,"mm")),
+       width=75,height=75,units="mm",bg="transparent")
+```
+
+# Figure 3
+
+## sg quantification
+
+HS/Azide/EtOH SG quant plot
+```{r}
+hs <- read_csv(file.path(github_dir,"data_processed/sg_quant/hs_sgs.csv"))
+azide <- read_csv(file.path(github_dir,"data_processed/sg_quant/azide_sgs.csv"))
+etoh <- read_csv(file.path(github_dir,"data_processed/sg_quant/etoh_sgs.csv"))
+
+common_columns <- Reduce(intersect, list(names(hs), names(azide), names(etoh)))
+
+# Subset each data frame to keep only the common columns
+hs_subset <- hs %>% select(all_of(common_columns))
+azide_subset <- azide %>% select(all_of(common_columns))
+etoh_subset <- etoh %>% select(all_of(common_columns))
+
+# Combine the subsetted data frames using rbind
+stress_sg_data <- bind_rows(hs_subset, azide_subset, etoh_subset) %>% mutate(Treatment = factor(Treatment, levels = c( "30C" , "42C" , "46C" ,"0_0", "0_5" ,  "0_8"  ,"1_0" , "0%"  , "7.5%" ,"15%")))
+
+
+sg_plot <- ggplot(data =stress_sg_data%>% filter(Treatment != "1_0"), aes(x = Treatment, y = Cell_Parent_Children_stress_granule_Count, color = Treatment))+
+  geom_point(aes(group = Stress), position=position_jitterdodge(dodge.width = 0.9, jitter.width = 4, jitter.height = 0.3), alpha = 0.2, shape = 16)+
+  geom_boxplot(aes(fill = Treatment), alpha = 1, color = "black", size = 0.7, outlier.colour = NA)+ 
+  ylab("SGs/cell")+
+  scale_color_manual(values = c("#7F7F7F", "#7F7F7F", "#7F7F7F", "#7F7F7F", "#7F7F7F", "#7F7F7F", "#7F7F7F", "#7F7F7F", "#7F7F7F"))+
+  scale_fill_manual(values = c("grey50", RColorBrewer::brewer.pal(n=7,"Oranges")[4], RColorBrewer::brewer.pal(n=7,"Oranges")[6],"grey50", RColorBrewer::brewer.pal(n=5,"Greens")[3], RColorBrewer::brewer.pal(n=5,"Greens")[5], "grey50", RColorBrewer::brewer.pal(n=7,"Purples")[5],RColorBrewer::brewer.pal(n=7,"Purples")[7]) )+
+  scale_x_discrete(labels = c("30°C", "42°C", "46°C", "0% \nNaN3", "0.5% \nNaN3", "0.8% \nNaN3",  "0% \nEtOH", "7.5% \nEtOH", "15% \nEtOH"))+
+  theme(legend.position = "none", axis.title.x = element_blank())
+
+sg_plot
+
+ggsave("../figures/Figure3/sg_comparison_plot.pdf", sg_plot, width = 7, height = 3)
+```
+
+## stress sedscore violins
 ```{r}
 df_30_control <- df_Zsup_mean %>% filter(Treatment_group == "milderEtOH2", Temperature == "30C" & Treated == FALSE) %>% group_by( Temperature, Treated) %>% filter(SP.mean>0,!is.infinite(SP.mean)) %>% summarise(mean_sp_30 = mean(SP.mean)) 
 
@@ -353,69 +451,7 @@ ggsave("../figures/Figure3/all_violins.pdf",
        width=70,height=65,units="mm",bg="transparent")
 ```
 
-```{r}
-genes_to_lab <- c("SSB1","SSA4","HSP104","HSP26","PMU1","ADD66")
-df <- df_Zsup_Poly_minfilt %>% filter(Stress_group=="Heat Shock",Temperature%in%c("42C","46C")) %>%
-  mutate(target = if_else(str_detect(label,"HSF1"),"HSF1 targets",
-                          if_else(str_detect(label,"MSN2"),"MSN2/4 targets","other"))) %>%
-  mutate(target=factor(target,levels=c("other","MSN2/4 targets","HSF1 targets"))) %>%
-  arrange(target) %>%
-  mutate(gene_lab=if_else(gene%in%genes_to_lab,gene,""))
-plot_hs <- function(df,xmin,xmax,ymin,ymax,xscale,xbreaks,yscale,ybreaks) {
-  df <-  df %>%
-    mutate(TPM.FC.SedSeq.plot = if_else(TPM.FC.SedSeq<xmin,xmin,
-                                        if_else(TPM.FC.SedSeq>xmax,xmax,TPM.FC.SedSeq)),
-           deltaZ.plot = if_else(deltaZ<ymin,ymin,
-                               if_else(deltaZ>ymax,ymax,deltaZ)))
-  p_scatter <- ggplot(df,aes(x=TPM.FC.SedSeq,y=deltaZ,color=target))+
-    geom_hline(yintercept=0,linetype="dotted")+geom_vline(xintercept=1,linetype="dotted")+
-    geom_point(data=df%>%filter(target=="other"),aes(x=TPM.FC.SedSeq.plot,y=deltaZ.plot),
-               alpha=0.8,color="gray80",shape=16,size=0.8)+
-    geom_point(data=df%>%filter(target!="other"),aes(x=TPM.FC.SedSeq.plot,y=deltaZ.plot),
-               alpha=0.8,shape=16,size=1)+
-    coord_cartesian(xlim=c(xmin,xmax),ylim=c(ymin,ymax),expand=F)+
-    scale_color_manual(values=c("HSF1 targets"=unname(target.cols["HSF1 targets"]),
-                                "MSN2/4 targets"=unname(target.cols["MSN2/4 targets"]),
-                                "other"="black"))+
-    geom_cross(data=df%>%filter(target%in%c("HSF1 targets")),grouping="target",x="TPM.FC.SedSeq",y="deltaZ")+
-    geom_point(data=df%>%filter(gene%in%genes_to_lab),aes(x=TPM.FC.SedSeq.plot,y=deltaZ.plot),
-               alpha=1,size=2,shape=16)
-   if (xscale=="log2"){
-    p_scatter <- p_scatter+scale_x_log2nice(omag=xbreaks)  
-  } else if (xscale=="log10"){
-    p_scatter <- p_scatter+scale_x_log10nice(omag=xbreaks)
-  } else {
-    p_scatter <- p_scatter+scale_x_continuous(breaks=xbreaks)
-  }
-  if (yscale=="log2"){
-    p_scatter <- p_scatter+scale_y_log2nice(omag=ybreaks)  
-  } else if (yscale=="log10"){
-    p_scatter <- p_scatter+scale_y_log10nice(omag=ybreaks)
-  } else {
-    p_scatter <- p_scatter+scale_y_continuous(breaks=ybreaks)
-  }
-  
-  # Overlay the density plots onto the main plot using annotation_custom
-  p_combined <- p_scatter +
-    geom_text_repel(aes(label=gene_lab),
-                    max.overlaps = 10000,min.segment.length = 0,
-                    size=8*0.35,color="black")+
-    labs(x="",y="")+
-    theme(plot.margin = margin(0, 0, 0, 0, "pt"))+
-    theme(legend.position="nonoe")
-}
-p_42C <- plot_hs(df%>%filter(Temperature=="42C"), 0.5,60,-2.5,3.5,"log2",c(-2,0,2,4),"linear",c(-2,0,2))
-p_42C
-ggsave(file.path(github_dir,"figures/Figure2/42C_zoom.pdf"),egg::set_panel_size(p_42C,width=unit(50,"mm"),height=unit(50,"mm")),
-       width=75,height=75,units="mm")
-p_46C <- plot_hs(df%>%filter(Temperature=="46C"),0.4,8,-2.5,3.5,"log2",c(0,1,2),"linear",c(-2,0,2))+
-  theme(axis.text.y=element_blank())
-p_46C
-ggsave(file.path(github_dir,"figures/Figure2/46C_zoom.pdf"),egg::set_panel_size(p_46C,width=unit(50,"mm"),height=unit(50,"mm")),
-       width=75,height=75,units="mm",bg="transparent")
-```
 
-# Figure 3
 
 ```{r}
 
@@ -799,7 +835,104 @@ ggsave("../figures/Figure5/TPM_TE_left.pdf",
        width=100,height=100,units="mm",bg="transparent")
 ggsave("../figures/Figure5/TPM_TE_right.pdf",egg::set_panel_size(p=p_Z_box+labs(x="",y=""),width=unit(15,"mm"),height=unit(30,"mm")),
        width=100,height=100,units="mm",bg="transparent")
+
 ```
+##Figure 6
+#Figure 6D Relative translation of different depletion strains
+```{r}
+depletion_translation_data <- read_csv(file.path(github_dir,"data_processed/Fig6/radiolabelled_translation_depletions.csv"))
+depletion_translation_data_summary <- read_csv(file.path(github_dir,"data_processed/Fig6/radiolabelled_translation_depletions_summary.csv"))
+
+depletion_translation_plot <- ggplot(data = depletion_translation_data_summary %>% filter(Strain != "yHG031"), aes(x = protein, y = mean_norm)) +
+  geom_col(position = "dodge", aes( x = protein, y = mean_norm, fill = protein, alpha = Treatment, color = protein)) +
+  geom_errorbar(aes(ymin = mean_norm - sd_norm, ymax = mean_norm + sd_norm, group = Treatment, color = protein), width =0, position = position_dodge(width = 0.9)) +
+  geom_point(data = depletion_translation_data %>% filter(Strain != "yHG031"), aes(group = Treatment, x = protein, y = normalized_counts), position = position_dodge(width = 0.9), size = 0.8) +
+  ylab("Relative Translation") +
+  xlab("Initiation factor") +
+  scale_fill_manual(values = c("#F5C710", "#E69F00", "#D55E00", "#999999" ,"#009E73","#0072B2","#56B4E9","#CC79A7"), name = "Depleted protein")+
+   scale_color_manual(values = c("#F5C710", "#E69F00", "#D55E00", "#999999" ,"#009E73","#0072B2","#56B4E9","#CC79A7"), name = "Depleted protein")+
+  scale_alpha_manual(values = c(0.1, 0.7))+
+  guides(color = "none", fill = "none", alpha = "none") 
+
+depletion_translation_plot
+
+ggsave( "../figures/Figure6/deplete_translation_plot.pdf",
+       egg::set_panel_size(p=depletion_translation_plot+theme(axis.title = element_blank()),
+                           width=unit(80,"mm"),height=unit(50,"mm")),
+       width=120,height=110,units="mm",bg = "transparent")
+
+```
+#Figure 6E Bem2/PGK1 qPCR-TSP vs radiolabelling translation plot in depletion strains
+```{r}
+tsp_translation_aid <- read_csv(file.path(github_dir,"data_processed/Fig6/tsp_qpcr_vs_translation.csv"))
+
+deplete_condensation_plot <- ggplot(data = tsp_translation_aid %>% filter(Strain != "BY4741"), aes(x = fc_count_per_od, y = compiled_ave_fc_sp_enrichment, color = protein))+
+  scale_loglog2()+
+  geom_errorbar(aes(xmin = fc_count_per_od - error_count_per_od, xmax = fc_count_per_od + error_count_per_od), width = 0)+
+  geom_errorbar(aes(ymin = compiled_ave_fc_sp_enrichment - compiled_se_fc_sp_enrichment,ymax = compiled_ave_fc_sp_enrichment + compiled_se_fc_sp_enrichment), width = 0)+
+    geom_point(size = 2)+
+  scale_color_manual(values = c("#E69F00", "#56B4E9", "#009E73", "#F5C710", "#0072B2", "#D55E00", "#CC79A7", "#999999"), name = "Depleted \nprotein", labels = c("eIF3b", "eIF5", "eIF4G", "eIF2α", "eIF4E", "eIF4A", "eIF5B", 'eIF4B'))+
+  xlab("Relative translation \n(depletion vs. mock)")+
+  ylab("Relative condensation \n(depletion vs. mock)")+
+  theme(axis.text = element_text(size = 10),
+  		  axis.title = element_text(size = 10), 
+  		  legend.title = element_text(size = 10),
+  		  legend.text = element_text(size = 10))+
+  coord_cartesian(xlim = c(0.05, 1))+
+  geom_vline(aes(xintercept = 1), linetype = "dashed")+
+    #this is ratio of CHX/30C mock
+  geom_vline(aes(xintercept = 0.04882988), linetype = "dashed")
+
+deplete_condensation_plot
+
+ggsave( "../figures/Figure6/deplete_condensation_plot.pdf",
+       egg::set_panel_size(p=deplete_condensation_plot+theme(axis.title = element_blank()),
+                           width=unit(40,"mm"),height=unit(40,"mm")),
+       width=80,height=100,units="mm",bg = "transparent")
+
+```
+
+#Figure 7
+CHX quantification plot
+```{r}
+chx_hs_master_merge <- read_csv(file.path(github_dir,"data_processed/sg_quant/chx_merged.csv")) %>% mutate(CHX = factor(CHX, levels = c("mock", "CHX")))
+
+
+chx_sg_per_cell_plot <- ggplot(data = chx_hs_master_merge, aes(x = Temperature, y = Cell_Parent_Children_stress_granule_Count, fill=Temperature,group=interaction(Temperature,CHX)))+
+geom_point(alpha=0.2,position=position_jitterdodge(jitter.width=0.2,dodge.width = 0.75),color="grey50", size = 0.2, shape = 16)+  
+  geom_boxplot(aes(alpha = CHX, fill  = Temperature, linetype = CHX), outlier.color = NA, size = 0.6, fatten = 1)+
+  ylab("SGs/cell") +
+  ylab("SGs/cell")+
+  scale_color_manual(values = c("grey50", RColorBrewer::brewer.pal(n=7,"Oranges")[4], RColorBrewer::brewer.pal(n=7,"Oranges")[6]))+
+  scale_fill_manual(values = c("grey50", RColorBrewer::brewer.pal(n=7,"Oranges")[4], RColorBrewer::brewer.pal(n=7,"Oranges")[6]))+
+  scale_x_discrete(labels = c("30°C", "42°C", "46°C"))+
+  scale_alpha_manual(values =c(0.9, 0.9))+
+    guides(color = "none", fill = "none", alpha = "none", linetype = "none")
+  
+chx_sg_per_cell_plot
+
+ggsave("../figures/Figure7/chx_sg_per_cell.pdf", chx_sg_per_cell_plot, height = 2, width = 2)
+```
+eIF3b depletion plots 
+```{r}
+aid_hs_sg <- read_csv(file.path(github_dir,"data_processed/sg_quant/aid_hs.csv"))
+
+aid_sg_per_cell_plot <-ggplot(data = aid_hs_sg , aes(x = Temperature, y = Cell_Parent_Children_stress_granule_Count, fill=Temperature,group=interaction(Temperature,Depletion)))+
+geom_point(aes(x = Temperature, y = SG_per_cell_compressed),alpha=0.2,position=position_jitterdodge(jitter.width=0.2,dodge.width = 0.75),color="grey50", size = 0.2, shape = 16)+  
+  geom_boxplot(aes(alpha = Depletion, fill  = Temperature, linetype = Depletion), outlier.color = NA, fatten = 0.6, size = 0.5)+
+  ylab("SGs/cell") +
+  scale_fill_manual(values = c("grey50", RColorBrewer::brewer.pal(n=7,"Oranges")[2], RColorBrewer::brewer.pal(n=7,"Oranges")[3], RColorBrewer::brewer.pal(n=7,"Oranges")[6]))+
+  scale_x_discrete(labels = c("30°C", "42°C", "44°C", "46°C"))+
+  scale_alpha_manual(values =c(0.9, 0.9))+
+  scale_color_manual(values = c("black", "grey"))+
+    guides(color = "none", fill = "none", alpha = "none", linetype = "none")+
+  ylim(0, 18)
+
+aid_sg_per_cell_plot
+
+ggsave("../figures/Figure7/aid_sgs_per_cell.pdf", aid_sg_per_cell_plot, width = 2.15, height = 2)
+```
+
 
 # Supplemental
 
@@ -1540,9 +1673,9 @@ p_violin = ggplot(df %>% filter(Treatment!="25C.control"),
                   aes(x=Treatment,y=TPM.FC,fill=Category,group=grouping_var)) +
   geom_hline(yintercept=1,linetype="dotted")+
   scale_y_log10nice()+
-  geom_point(position=position_jitterdodge(jitter.width=0.2,dodge.width = 0.9),shape=16,alpha=0.3,color="grey50")+
+  geom_point(position=position_jitterdodge(jitter.width=0.2,dodge.width = 0.9),shape=16,alpha=0.4,color="grey50", size = 0.3)+
   geom_violin(size=0.25,color="black",alpha=0.5,position=position_dodge(width=0.9))+
-  geom_violin(fill=NA,draw_quantiles = c(0.25,0.5,0.75),,size=0.25,color="black",position=position_dodge(width=0.9))+
+  geom_violin(fill=NA,draw_quantiles = c(0.25,0.5,0.75),size=0.25,color="black",position=position_dodge(width=0.9))+
   coord_cartesian(ylim=c(1e-2,1e3))+
   scale_fill_manual(values=c("other"="grey50","UPR"=stress.cols[["DTT"]]))+
   ggsignif::geom_signif(
@@ -1560,6 +1693,7 @@ ggsave("../figures/Supplemental/Muhlhofer_upr.pdf",
                             width=unit(50,"mm"),height=unit(40,"mm")),
        width=100,height=100,units="mm",bg = "transparent",dpi=600)
 ```
+
 
 ## FC plots boxes
 ```{r}
@@ -1876,4 +2010,224 @@ p_3B_occ <- plot_grid(p_TPM_Occ,p_Z_box,align="hv",rel_widths=c(1,0.7 ))
 p_3B_occ
 ggsave("../figures/Supplemental/HAC1_GCN4_Occupancy.pdf",egg::set_panel_size(p=p_TPM_Occ+labs(x="",y=""),width=unit(30,"mm"),height=unit(30,"mm")),
        width=50,height=50,units="mm",bg="transparent",dpi=600)
+```
+
+
+#Figure S6
+
+#Polysome profiles vs. Relative translation
+```{r}
+
+# Define a dataframe with the corrections
+corrections <- data.frame(
+  old_name = c("yHG55", "yHG38", "yJB42", "yHG72"),
+  new_name = c("yHG055", "yHG038", "yJB042", "yHG072")
+)
+
+polysome_ratio<- read_csv(file.path(github_dir,"data_processed/Fig6/polysome_monsome_master.csv")) %>% 
+  mutate(Strain = if_else(Strain %in% corrections$old_name, 
+                          corrections$new_name[match(Strain, corrections$old_name)], 
+                          Strain)) 
+
+polysome_ratio_mean <- polysome_ratio %>%
+  pivot_wider(names_from = Treatment, values_from = PM_ratio) %>%
+  group_by(Strain, Rep) %>% 
+  summarise(mock_PM_ratio = max(mock, na.rm = TRUE),
+            treat_PM_ratio = max(treat, na.rm = TRUE)) %>% 
+  #filter(!(Strain == "yJB147" & Rep == "rep2")) %>% 
+  mutate(PM_ratio_fc = treat_PM_ratio/mock_PM_ratio) %>% group_by(Strain) %>% summarise(mean_PM_ratio_fc = mean(PM_ratio_fc), sd_PM_ratio_fc = sd(PM_ratio_fc))
+
+rad_translation_ratio <- read_csv(file.path(github_dir,"data_processed/Fig6/radiolabelled_translation_ratio.csv"))
+
+polysome_radioactive_compare <- polysome_ratio_mean %>% left_join(rad_translation_ratio, by = "Strain") %>% filter(!is.na(fc_count_per_od)) %>% mutate(protein = 
+                      case_when(Strain == "yHG055"~ "eIF4B",
+                               Strain == "yJB147" ~"eIF5",
+                               Strain == "yJB148" ~"eIF5b", 
+                               Strain == "yJB042" ~'eIF3b',
+                               Strain == "yHG038" ~ 'eIF4E',
+                               Strain == "yHG031" ~"eIF4G1", 
+                               Strain == "yHG072" ~ "eIF4A1(A2ko)",
+                              Strain == "yJB143" ~ "eIF2alpha",
+                              Strain == "yJB262" ~ "eIF4G1(G2ko)")) %>% 
+  mutate(protein = factor(protein, levels = c('eIF3b',"eIF5","eIF4G1(G2ko)","eIF2alpha",'eIF4E', 'eIF4A1(A2ko)','eIF5b','eIF4B')))
+
+translation_compare<- ggplot(data = polysome_radioactive_compare, aes(x = mean_PM_ratio_fc, y = fc_count_per_od, color = protein))+
+  geom_point(size = 2.5)+
+  scale_color_manual(values = c("#E69F00", "#56B4E9", "#009E73", "#F5C710", "#0072B2", "#D55E00", "#CC79A7", "#999999"), name = "Depleted protein")+
+  geom_errorbar(aes(ymin = fc_count_per_od - error_count_per_od, ymax = fc_count_per_od + error_count_per_od))+
+  geom_errorbar(aes(xmin=mean_PM_ratio_fc -sd_PM_ratio_fc , 
+                     xmax=mean_PM_ratio_fc +sd_PM_ratio_fc ))+
+  xlab("Polysome/Monosome ratio \nfold difference (Treat vs Mock)")+
+  ylab("Radioactivity Counts \nfold difference (Treat vs Mock)")
+
+translation_compare
+
+translation_compare_plot <- translation_compare +theme(legend.position = "none", axis.text =element_text(size = 10), aspect.ratio = 1, axis.title = element_blank())
+
+translation_compare_plot 
+
+
+ggsave("../figures/Supplemental/S6/polysome_radioactive_compare.pdf", translation_compare_plot, width = 1.75, height = 1.75)
+```
+
+Relative translation vs. relative depletion
+```{r}
+WB_data <- read_csv(file.path(github_dir,"data_processed/Fig6/WB_data_0904023.csv"))
+translation_ratio <- read_csv(file.path(github_dir,"data_processed/Fig6/radiolabelled_translation_ratio.csv"))
+
+compare_WB <- left_join(translation_ratio,WB_data , by = "Strain") %>% 
+  mutate(Protein = factor(Protein, levels = c('eIF3b',"eIF5","eIF4G","eIF2a",'eIF4E', 'eIF4A','eIF5b','eIF4B'))) 
+
+compare_WB_translation <- ggplot(data = compare_WB %>% filter(Strain != "BY4741"), aes(x = mean_protein_remaining/100, y = fc_count_per_od, color = Protein))+
+  geom_point(size = 2)+
+  geom_errorbar(aes(xmin= mean_protein_remaining/100 - sd/100, xmax = mean_protein_remaining/100 + sd/100))+
+   geom_errorbar(aes(ymin = fc_count_per_od - error_count_per_od, ymax = fc_count_per_od + error_count_per_od), width  = 0.01)+
+  scale_color_manual(values = c("#E69F00", "#56B4E9", "#009E73", "#F5C710", "#0072B2", "#D55E00", "#CC79A7", "#999999"), name = "Depleted protein")+
+  ylab("Relative translation \n(Treat/Mock)")+
+  xlab("Fraction protein remaining \nafter depletion ")+
+ # ylim(0, 1)+
+  xlim(c(0, 0.2))+
+    scale_x_continuous(breaks = c(0, 0.1, 0.2))+
+  theme(axis.text = element_text(size = 10),
+  		  #axis.title = element_text(size = 10), 
+  		  #legend.title = element_text(size = 20),
+  		  #legend.text = element_text(size = 16), 
+  		  legend.position = "none", aspect.ratio = 1, axis.title = element_blank())
+
+compare_WB_translation
+
+ggsave( "../figures/Supplemental/S6/compare_WB_translation.pdf", compare_WB_translation, width = 1.75, height = 1.75)
+```
+Relative translation decreases during heat shock measured via radiolabelling
+```{r}
+
+temp_translation_data <- read_csv(file.path(github_dir,"data_processed/Fig6/temp_translation_data.csv"))
+
+temp_translation_plot <- ggplot(data = temp_translation_data, aes(x = Treatment, y = fc_count_per_od, color = Treatment))+
+  geom_point(size = 2)+
+  geom_errorbar(aes(x =Treatment, ymin = fc_count_per_od + error_count_per_od, ymax = fc_count_per_od - error_count_per_od), width = 0.1)+
+  ylab("Relative Translation \nto 30°C")+
+  xlab("Treatment (15 min)")+
+  scale_color_manual(values = c("30C"="#7F7F7F",
+                  "42C"=RColorBrewer::brewer.pal(n=7,"Oranges")[4],
+                  "46C"=RColorBrewer::brewer.pal(n=7,"Oranges")[6],"CHX" = "black"))+
+    theme(axis.text  = element_text(size = 10), aspect.ratio = 1, axis.title = element_blank(), legend.position = "none")
+
+temp_translation_plot 
+
+ggsave( "../figures/Supplemental/S6/temp_translation_plot.pdf", temp_translation_plot, width = 1.75, height = 1.75)
+```
+#Polysome traces 
+
+```{r}
+# Define the read_and_plot function
+plot_polysome <- function(file_path, offsets, scale_color_manual_values, protein_name) {
+  # Read data from the exported CSV file
+  data <- read.csv(file.path(github_dir, file_path), stringsAsFactors = FALSE)
+  
+
+  # Rename "Distance.mm." column to "Distance" if needed
+  if ("Distance.mm." %in% colnames(data)) {
+    data <- data %>% rename(Distance = `Distance.mm.`)
+  }
+  
+  # Calculate adjusted Distance and Absorbance
+  data <- data %>%
+    mutate(Distance.adj = Distance - offsets[1],  # Assuming only one offset for simplicity
+           Absorbance.adj = Absorbance - 0.003,
+           Absorbance.norm = Absorbance.adj / sum(Absorbance.adj, na.rm = TRUE))
+  
+  # Filter data
+  data <- data %>%
+    filter(Distance.adj > 12, Distance.adj < 95)
+  
+  # Create ggplot with facet_wrap
+  plot <- ggplot(data, aes(x = Distance.adj, y = Absorbance.norm, color = Treatment)) +
+    geom_line(size = 0.75) +
+    xlab("Distance (a.u)") +
+    ylab("A254nm (a.u)") +
+    theme(axis.text.x = element_blank(),
+          axis.text.y = element_blank()) +
+    scale_color_manual(values = scale_color_manual_values) +
+    facet_wrap(vars(Rep)) +
+    guides(color = FALSE)+
+    ggtitle(paste("Protein:", protein_name))
+  
+  return(list(plot = plot, data = data))
+}
+```
+
+```{r}
+
+file_path <- "data_processed/Fig6/polysomes/yJB143_eIF2alpha_polysome_profile.csv"
+offsets <- c(1, 0, 0, 0)  # Modify with your offsets
+scale_color_manual_values <- c("black", "#F5C710")  # Modify with your color values
+protein_name <- "eIF2α"  # Modify with your protein name
+result <- plot_polysome (file_path, offsets, scale_color_manual_values, protein_name)
+result$plot
+
+ggsave( "../figures/Supplemental/S6/eIF2alpha_profile.pdf", result$plot+theme(strip.text.x= element_blank(), plot.title = element_blank()), width =3, height = 2)
+
+file_path <- "data_processed/Fig6/polysomes/yJB42_eIF3b_polysome_profile.csv"
+offsets <- c(1, 50, 0, 0)  # Modify with your offsets
+scale_color_manual_values <- c("black", "#E69F00")  # Modify with your color values
+protein_name <- "eIF3b"  # Modify with your protein name
+result <- plot_polysome (file_path, offsets, scale_color_manual_values, protein_name)
+result$plot
+
+ggsave( "../figures/Supplemental/S6/eIF3b_profile.pdf", result$plot+theme(strip.text.x= element_blank(), plot.title = element_blank()), width =3, height = 2)
+
+file_path <- "data_processed/Fig6/polysomes/yHG72_eIF4A_polysome_profile.csv"
+offsets <- c(1, 0, 0, 0)  # Modify with your offsets
+scale_color_manual_values <- c("black", "#D55E00")  # Modify with your color values
+protein_name <- "eIF4A"  # Modify with your protein name
+result <- plot_polysome (file_path, offsets, scale_color_manual_values, protein_name)
+result$plot
+
+ggsave( "../figures/Supplemental/S6/eIF4A_profile.pdf", result$plot+theme(strip.text.x= element_blank(), plot.title = element_blank()), width =3, height = 2)
+
+file_path <- "data_processed/Fig6/polysomes/yHG55_eIF4B_polysome_profile.csv"
+offsets <- c(1, 0, 0, 0)  # Modify with your offsets
+scale_color_manual_values <- c("black", "#999999")  # Modify with your color values
+protein_name <- "eIF4B"  # Modify with your protein name
+result <- plot_polysome (file_path, offsets, scale_color_manual_values, protein_name)
+result$plot
+
+ggsave("../figures/Supplemental/S6/eIF4B_profile.pdf", result$plot+theme(strip.text.x= element_blank(), plot.title = element_blank()), width =3, height = 2)
+
+file_path <- "data_processed/Fig6/polysomes/yHG38_eIF4E_polysome_profile.csv"
+offsets <- c(1, 0, 0, 0)  # Modify with your offsets
+scale_color_manual_values <- c("black", "#0072B2")  # Modify with your color values
+protein_name <- "eIF4E"  # Modify with your protein name
+result <- plot_polysome (file_path, offsets, scale_color_manual_values, protein_name)
+result$plot
+
+ggsave( "../figures/Supplemental/S6/eIF4E_profile.pdf", result$plot+theme(strip.text.x= element_blank(), plot.title = element_blank()), width =3, height = 2)
+
+file_path <- "data_processed/Fig6/polysomes/yJB262_eIF4G_polysome_profile.csv"
+offsets <- c(1, 0, 0, 0)  # Modify with your offsets
+scale_color_manual_values <- c("black", "#009E73")  # Modify with your color values
+protein_name <- "eIF4G"  # Modify with your protein name
+result <- plot_polysome (file_path, offsets, scale_color_manual_values, protein_name)
+result$plot
+
+ggsave( "../figures/Supplemental/S6/eIF4G_profile.pdf", result$plot+theme(strip.text.x= element_blank(), plot.title = element_blank()), width =3, height = 2)
+
+file_path <- "data_processed/Fig6/polysomes/yJB147_eIF5_polysome_profile.csv"
+offsets <- c(-5, 0.25, -1, -3.5)  # Modify with your offsets
+scale_color_manual_values <- c("black", "#56B4E9")  # Modify with your color values
+protein_name <- "eIF5"  # Modify with your protein name
+result <- plot_polysome (file_path, offsets, scale_color_manual_values, protein_name)
+result$plot
+
+ggsave( "../figures/Supplemental/S6/eIF5_profile.pdf", result$plot+theme(strip.text.x= element_blank(), plot.title = element_blank()), width =3, height = 2)
+
+file_path <- "data_processed/Fig6/polysomes/yJB148_eIF5B_polysome_profile.csv"
+offsets <- c(1, 0, 0, 0)  # Modify with your offsets
+scale_color_manual_values <- c("black", "#CC79A7")  # Modify with your color values
+protein_name <- "eIF5B"  # Modify with your protein name
+result <- plot_polysome (file_path, offsets, scale_color_manual_values, protein_name)
+result$plot
+
+ggsave( "../figures/Supplemental/S6/eIF5B_profile.pdf", result$plot+theme(strip.text.x= element_blank(), plot.title = element_blank()), width =3, height = 2)
 ```
