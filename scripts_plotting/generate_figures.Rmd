@@ -331,7 +331,7 @@ p_violin <- ggplot(df,
   geom_hline(yintercept=1,linetype="dotted")+
   geom_point(shape=16,alpha=0.2,color="grey50",position=position_jitter(width=0.2), size = 0.5)+
   geom_violin(aes(fill=Stress_label,alpha=Stress_label))+
-  geom_violin(fill=NA,alpha=1,draw_quantiles = c(0.25,0.5,0.75),size=0.5)+
+  geom_violin(fill=NA,alpha=1,draw_quantiles = c(0.5),size=0.5)+
   scale_y_log10nice()+
   scale_x_discrete(labels=stress_labels)+
   coord_cartesian(ylim=c(0.01,8))+
@@ -773,7 +773,7 @@ p_TPM_TE <- ggplot(df,
        aes(x=TPM.mean,y=TE))+
   scale_x_log10nice()+coord_cartesian(xlim=c(1,1e4))+
   scale_y_log10nice()+coord_cartesian(ylim=c(0.01,10))+
-  geom_point(alpha=0.2, size = 1.5, shape = 16, color = "black", )+
+  geom_point(alpha=0.3, size = 0.5, shape = 16, color = "black", )+
   geom_point(data=df %>% filter(gene%in%genes_to_label),size=2,color="red")+
   geom_text_repel(data=df,size=4.2,aes(label=gene_label),max.overlaps = 10000,min.segment.length = 0)+
   labs(x="mRNA Abundance",y="Translation\nEfficiency")
@@ -781,10 +781,9 @@ p_TPM_TE
 
 p_Z_box <- ggplot(df,
                   aes(x=1,y=Zsup.mean))+
-  geom_hline(yintercept=0,linetype="dotted")+
-  geom_point(data=df%>%filter(gene%!in%genes_to_label),position=position_jitter(width=0.43),alpha=0.01)+
+  geom_point(data=df%>%filter(gene%!in%genes_to_label),position=position_jitter(width=0.43),alpha=0.02, size = 0.3)+
   #geom_boxplot(fill=NA,outlier.shape=NA)+
-  geom_violin(fill=NA)+
+  geom_violin(fill="grey70", alpha = 0.6, draw_quantiles = c(0.5))+
   geom_point(data=df%>%filter(gene%in%genes_to_label),alpha=1,color="red",size=1)+
   #geom_text_repel(data=df%>%filter(gene=="GCN4"),size=4.2,aes(label=gene_label),max.overlaps = 10000,min.segment.length = 0,nudge_y=2.5,nudge_x=0.25)+
   #geom_text_repel(data=df%>%filter(gene=="HAC1"),size=4.2,aes(label=gene_label),max.overlaps = 10000,min.segment.length = 0,nudge_y=-2.5 ,nudge_x=0.25)+
@@ -1126,7 +1125,7 @@ ggsave("../figures/Supplemental/Zsup_30vs46.pdf",
        bg="transparent",width=50,height=50,units="mm")
 ```
 ```{r}
-upper<-7.5
+upper<-7.5 
 lower<-(-4.7)
 df <- df_Zsup_mean %>% filter(Treatment_group=="EW_TSPP") %>%
   select(ORF,Temperature,Zsup.mean) %>%
@@ -1228,7 +1227,7 @@ p_spec <- ggplot(df,
   geom_hline(yintercept=0,linetype="dotted")+
   geom_point(aes(group=interaction(Stress_label,stress_specific),alpha=stress_specific),
                  shape=16,color="black",position=position_jitterdodge(jitter.width = 0.2,
-                                                                                dodge.width = 0.75))+
+                                                                                dodge.width = 0.75), size = 0.5)+
   scale_alpha_manual(values=c("none"=0.3,"42C"=0.3,"Azide 0.8%"=0.3,"Ethanol 7.5%"=0.3))+
   ggnewscale::new_scale_color() +
   # geom_violin(alpha=0.5)+
@@ -1851,7 +1850,7 @@ p_TPM_Occ <- ggplot(df,
   scale_x_log10nice()+
   scale_y_log10nice()+
   coord_cartesian(xlim=c(1,1e4),ylim=c(0.1,50))+
-  geom_point(alpha=0.05)+
+  geom_point(alpha=0.2, size = 0.3)+
   geom_point(data=df %>% filter(gene%in%genes_to_label),size=2,color="red")+
   geom_text_repel(data=df,size=4.2,aes(label=gene_label),max.overlaps = 10000,min.segment.length = 0)+
   labs(x="mRNA Abundance",y="Rib. Occ.\n(odds)")
