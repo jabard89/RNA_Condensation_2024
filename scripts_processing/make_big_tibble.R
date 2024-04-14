@@ -1,8 +1,9 @@
 library(tidyverse)
+library(here)
 
-github_dir <- "../../"
-source(paste0(github_dir,"figures/main_stylesheet_230605.R"))
-gene_labels <- readr::read_tsv(file.path(github_dir,"src/annotations/230508_labeled_genes_scer.tsv")) %>%
+github_dir <- here()
+source(file.path(github_dir,"scripts_plotting/main_stylesheet_230605.R"))
+gene_labels <- gene_labels <- read_tsv(file.path(github_dir,"src/annotations/labeled_genes_scer.tsv")) %>%
   dplyr::mutate(label=case_when(label=="RiBi"~"ribosome biogenesis",
                                 label=="translation factors"~"other",
                                 label=="RP"~"other",
@@ -14,56 +15,57 @@ gene_labels <- readr::read_tsv(file.path(github_dir,"src/annotations/230508_labe
   dplyr::mutate(length.trans = LengthTxEst) %>%
   select(ORF,gene,classification,label,LengthTxEst,length.protein)
 
-df_samples <- read_tsv("RNAseq_samplesheet_with_kallisto_230510.tsv")
-df_samples_byLysate <- read_tsv("RNAseq_samples_byLysate_230510.tsv")
-df_Occ_mean <- read_tsv("PolySeq_filt_mean_230510.tsv.gz")
+df_samples <- read_csv(file.path(github_dir,"scripts_processing/fastq_processing/fastq_table.csv")) %>%
+  mutate(Kallisto_file = file.path(github_dir,"data_raw/kallisto_quant/tsv",paste0(RNA_sample,"~abundance.tsv"))) %>%
+  mutate(Dataset = paste0("snake_",Sequencing_date))
+df_samples_byLysate <- read_tsv(file.path(github_dir,"data_raw","RNAseq_samples_byLysate.tsv"))
+df_Occ_mean <- read_tsv(file.path(github_dir,"data_processed","PolySeq_minfilt_mean.tsv.gz"))
 
-df_Zsup_mean <- read_tsv("sedseq_filt_mean_230510.tsv.gz") %>%
+df_Zsup_mean <- read_tsv(file.path(github_dir,"data_processed","sedseq_filt_mean.tsv.gz")) %>%
   left_join(df_samples_byLysate %>% select(Treatment_group,Treatment,Temperature,Time) %>% unique,by=c("Treatment","Treatment_group","Temperature"))
-df_stress_samples <- read_tsv("stress_samples_230919.tsv") %>%
-         mutate(Stress_label=factor(Stress_label,levels=c("none","30C","42C","42CR","46C",
+df_stress_samples <- read_csv(file.path(github_dir,"data_raw/stress_labels.csv")) %>%
+  mutate(Stress=factor(Stress,levels=c("none","Heat Shock","Azide","Ethanol","DTT")),
+         Stress_label=factor(Stress_label,levels=c("none","30C","42C","46C",
                                                    "mock","Azide 0.5%","Azide 0.8%",
                                                    "Ethanol 5%","Ethanol 7.5%","Ethanol 10%","Ethanol 15%",
-                                                   "DTT 10mM","KCl 1M","withdrawal","Azide 0.5% pH4")))
-df_counts <- read_tsv("all_mapped_counts_230901.tsv.gz",
+                                                   "DTT 10mM")))
+df_counts <- read_tsv((file.path(github_dir,"data_raw","all_kallisto_counts.tsv.gz")),
                       comment="#") %>%
+  left_join(df_samples,by=c("Kallisto_file","RNA_sample")) %>%
   left_join(df_stress_samples,by=c("Temperature","Treatment_group","Treatment"))
 
-df_Occ_mean_minfilt <- read_tsv("PolySeq_minfilt_mean_230510.tsv.gz") %>%
+df_Occ_mean_minfilt <- read_tsv(file.path(github_dir,"data_processed","PolySeq_minfilt_mean.tsv.gz")) %>%
   left_join(df_stress_samples,by=c("Temperature","Treatment_group","Treatment")) %>%
   filter(!is.na(Control)) %>%
   group_by(Treatment_group,ORF) %>%
   filter(length(ORF[Control==TRUE])==1) %>%
   mutate(Occ.odds.FC = Occ.odds.mean/Occ.odds.mean[Control==TRUE])
-df_poly_mean <- read_tsv("deseq_polysomes_mean_230609.tsv.gz") %>%
+df_poly_mean <- read_tsv(file.path(github_dir,"data_processed","deseq_polysomes_mean.tsv.gz")) %>%
   left_join(df_stress_samples,by=c("Temperature","Treatment_group","Treatment")) %>%
   filter(!is.na(Stress_group)) %>%
   left_join(df_samples_byLysate %>% ungroup %>% select(Treatment_group,Time) %>% unique,by="Treatment_group")
 
-polyseq_azide_deseq <- read_tsv("230508_PolySeq_0.8%Azide_deseq2.tsv") %>%
+polyseq_azide_deseq <- read_tsv(file.path(github_dir,"data_processed/deseq_results","230508_PolySeq_0.8%Azide_deseq2.tsv")) %>%
   rename("TPM.FC.Poly"="FC.vs.mock") %>%
   mutate(Temperature="30C")
-polyseq_etoh_deseq <- read_tsv("230508_PolySeq_7.5%EtOH_deseq2.tsv") %>%
+polyseq_etoh_deseq <- read_tsv(file.path(github_dir,"data_processed/deseq_results","230508_PolySeq_7.5%EtOH_deseq2.tsv")) %>%
   rename("TPM.FC.Poly"="FC.vs.mock") %>%
   mutate(Temperature="30C")
-poly10_deseq <- read_tsv("230508_PolySeq_10min_deseq2.tsv") %>%
+poly10_deseq <- read_tsv(file.path(github_dir,"data_processed/deseq_results","230508_PolySeq_10min_deseq2.tsv")) %>%
   rename("TPM.FC.Poly"="FC.vs.30C") %>%
   mutate(Treatment="none")
-poly20_deseq <- read_tsv("PolySeq_20min_deseq2_230510.tsv") %>%
-  rename("TPM.FC.Poly"="FC.vs.30C") %>%
-  mutate(Treatment="none")
-sedseq_azide3_deseq <- read_tsv("azide3_deseq2_230510.tsv") %>%
+sedseq_azide3_deseq <- read_tsv(file.path(github_dir,"data_processed/deseq_results","azide3_deseq2_230510.tsv")) %>%
   rename("TPM.FC.SedSeq"="FC.vs.mock") %>%
   mutate(Temperature="30C")
-sedseq_milderEtOH2_deseq <- read_tsv("milderEtOH2_deseq2_230510.tsv") %>%
+sedseq_milderEtOH2_deseq <- read_tsv(file.path(github_dir,"data_processed/deseq_results","milderEtOH2_deseq2_230510.tsv")) %>%
   rename("TPM.FC.SedSeq"="FC.vs.mock") %>%
   mutate(Temperature="30C")
-sedseq_compTemp_bygroup <- read_tsv("TSP_DESeq_compTemp_byGroup_deseq2_230510.tsv") %>%
+sedseq_compTemp_bygroup <- read_tsv(file.path(github_dir,"data_processed/deseq_results","TSP_DESeq_compTemp_byGroup_deseq2_230510.tsv")) %>%
   rename("TPM.FC.SedSeq"="FC.vs.30C")
-sedseq_azide0dot5_deseq <-  read_tsv("azide0dot5_deseq2_230525.tsv") %>%
+sedseq_azide0dot5_deseq <-  read_tsv(file.path(github_dir,"data_processed/deseq_results","azide0dot5_deseq2_230525.tsv")) %>%
   rename("TPM.FC.SedSeq"="FC.vs.mock") %>%
   mutate(Temperature="30C")
-deseq_polyseq <- bind_rows(polyseq_azide_deseq,polyseq_etoh_deseq,poly10_deseq,poly20_deseq) %>%
+deseq_polyseq <- bind_rows(polyseq_azide_deseq,polyseq_etoh_deseq,poly10_deseq) %>%
   select(-padj)
 deseq_sedseq <- bind_rows(sedseq_azide3_deseq,sedseq_milderEtOH2_deseq,sedseq_compTemp_bygroup,sedseq_azide0dot5_deseq) %>%
   select(-padj)
@@ -105,4 +107,4 @@ df_Zsup_Poly_minfilt <- df_Zsup_mean  %>%
   filter(SP.mean>0,
          SP.FC>0,
          !is.infinite(SP.FC))
-write_tsv(df_Zsup_Poly_minfilt,"df_Zsup_Poly_minfilt_231026_paper_figures.tsv.gz")
+write_tsv(df_Zsup_Poly_minfilt,file.path(github_dir,"data_processed","df_Zsup_Poly_minfilt.tsv.gz"))

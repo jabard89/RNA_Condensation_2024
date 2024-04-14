@@ -1,0 +1,177 @@
+---
+title: "Extract deseq"
+author: "Jared Bard"
+date: "2023-05-09"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+# Use DESeq2 to calculate TPM fold changes
+library(tidyverse)
+library(DESeq2)
+library(tximport)
+library(conflicted)
+conflicts_prefer(dplyr::filter)
+```
+
+## sample data
+
+```{r}
+github_dir <- c("../../")
+gene_labels <- read_tsv(paste0(github_dir,"/src/annotations/230508_labeled_genes_scer.tsv"))
+verified_orfs <- gene_labels %>% dplyr::filter(classification=="Verified") %>% pull(ORF)
+verified_orfs_nospike <- gene_labels %>% dplyr::filter(classification=="Verified") %>% 
+  dplyr::filter(!ORF%in%c("strong_Clover","mCherry")) %>% pull(ORF)
+df_samples_byLysate <- read_tsv("../final_processing/RNAseq_samples_byLysate_230510.tsv")
+df_samples_total <- read_tsv("RNAseq_samplesheet_with_kallisto_230510.tsv") %>%
+  filter(Fraction=="Total") %>%
+  # remove duplicate datasets
+  filter(Dataset!="snake_220328",
+         !(Dataset=="snake_220725"&Lysate_sample=="L16"),
+         !(Dataset=="snake_230428"&Lysate_sample=="L88"))
+
+df_counts <- vroom::vroom("RNA_condensation_all_kallisto_counts_230510.tsv.gz")%>%
+  # remove duplicate datasets
+  filter(Dataset!="snake_220328",
+         !(Dataset=="snake_220725"&Lysate_sample=="L16"),
+         !(Dataset=="snake_230428"&Lysate_sample=="L88")) %>%
+  filter(RNA_sample%in%df_samples_total$RNA_sample) %>%
+  select(Lysate_sample,ORF,est_counts) %>%
+  mutate(est_counts=round(est_counts))
+```
+
+## functions
+
+```{r}
+run_deseq <- function(df_counts,filt_orfs,df_samples,contrast_var,baseline) {
+  # takes a contrast variable (con_var), and calculates fold changes relative to the baseline condition
+  # make sure to pass con_var without quotes
+  coldata <- df_samples %>% column_to_rownames(var="Lysate_sample") %>%
+    mutate("Contrast_variable"=factor({{contrast_var}}))
+  all_con_vars <- coldata %>% pull(Contrast_variable) %>% unique %>% as.character
+  non_baseline_values <- all_con_vars[all_con_vars!=baseline]
+  cts <- df_counts %>%
+    dplyr::filter(Lysate_sample%in%rownames(coldata)) %>%
+    dplyr::filter(ORF%in%filt_orfs) %>%
+    pivot_wider(names_from=Lysate_sample,values_from=est_counts) %>%
+    column_to_rownames(var="ORF") %>% as.matrix(.)
+  
+  cts <- cts[,rownames(coldata)]
+  dds <- DESeqDataSetFromMatrix(countData=cts,
+                                  colData=coldata,
+                                  design = ~ Contrast_variable) %>%
+    DESeq(.) %>% estimateSizeFactors(.)
+  df_results <- non_baseline_values %>% map(function(numerator){
+    FC_col_name <- paste0("FC.vs.",{{baseline}})
+    df <- results(dds,tidy=T,alpha=0.05,contrast=c("Contrast_variable",numerator,baseline))
+    mutate(df,{{contrast_var}} := numerator) %>%
+      dplyr::rename("ORF"="row") %>%
+      mutate({{FC_col_name}} := 2^log2FoldChange) %>%
+      select(ORF,{{FC_col_name}},padj,{{contrast_var}})
+  }) %>% bind_rows
+}
+```
+
+## extractions
+
+```{r}
+# run_deseq function takes:
+# df_samples: a dataframe of samples to be compared with DESeq2
+# df_counts: a dataframe with all of the estimated counts
+# filt_orfs: which ORFs to include in the comparison
+# contrast_var: which variable in df_samples to use as the contrast (don't use quotes around this one)
+# baseline: which condition is the baseline condition
+
+# samples_etoh <- df_samples_total %>% dplyr::filter(Treatment_group=="PolySeq_7.5%EtOH")
+# ETOH_deseq <- run_deseq(df_counts=df_counts,filt_orfs=verified_orfs,
+#                         df_samples=samples_etoh,contrast_var=Treatment,baseline="mock") %>%
+#   mutate(Treatment_group="PolySeq_7.5%EtOH")
+# write_tsv(ETOH_deseq,"230508_PolySeq_7.5%EtOH_deseq2.tsv")
+
+# samples_etoh_sedseq <- df_samples_total %>% dplyr::filter(Treatment_group=="milderEtOH2")
+# sedseq_ETOH_deseq <- run_deseq(df_counts=df_counts,filt_orfs=verified_orfs,
+#                         df_samples=samples_etoh_sedseq,contrast_var=Treatment,baseline="mock") %>%
+#   mutate(Treatment_group="milderEtOH2")
+# write_tsv(sedseq_ETOH_deseq,"milderEtOH2_deseq2_230510.tsv")
+# 
+# sedseq_samples_azide3 <- df_samples_total %>% dplyr::filter(Treatment_group=="azide3")
+# sedseq_azide3_deseq <- run_deseq(df_counts=df_counts,filt_orfs=verified_orfs,
+#                         df_samples=sedseq_samples_azide3,contrast_var=Treatment,baseline="mock")
+# write_tsv(sedseq_azide3_deseq%>%mutate(Treatment_group="azide3"),
+#           "azide3_deseq2_230510.tsv")
+# 
+# sedseq_samples_azide0dot5 <- df_samples_total %>% dplyr::filter(Treatment_group=="Azide_0.5%_pH6.8")
+# sedseq_azide0dot5_deseq <- run_deseq(df_counts=df_counts,filt_orfs=verified_orfs,
+#                         df_samples=sedseq_samples_azide0dot5,contrast_var=Treatment,baseline="mock")
+# write_tsv(sedseq_azide0dot5_deseq%>%mutate(Treatment_group="Azide_0.5%_pH6.8"),
+#           "azide0dot5_deseq2_230525.tsv")
+
+# samples_azide <- df_samples_total %>% dplyr::filter(Treatment_group=="PolySeq_0.8%Azide")
+# azide_deseq <- run_deseq(df_counts=df_counts,filt_orfs=verified_orfs,
+#                         df_samples=samples_azide,contrast_var=Treatment,baseline="mock")
+# write_tsv(azide_deseq%>%mutate(Treatment_group="PolySeq_0.8%Azide"),
+#           "230508_PolySeq_0.8%Azide_deseq2.tsv")
+# 
+# samples_EW <- df_samples_total %>% dplyr::filter(Treatment_group=="EW_TSPP")
+# EW_deseq <- run_deseq(df_counts=df_counts,filt_orfs=verified_orfs,
+#                         df_samples=samples_EW,contrast_var=Temperature,baseline="30C")
+# write_tsv(EW_deseq%>%mutate(Treatment_group="EW_TSPP"),
+#           "230508_EW_TSPP_deseq2.tsv")
+# 
+# samples_Poly10min <- df_samples_total %>% dplyr::filter(Treatment_group=="PolySeq_10min")
+# poly10_deseq <- run_deseq(df_counts=df_counts,filt_orfs=verified_orfs,
+#                         df_samples=samples_Poly10min,contrast_var=Temperature,baseline="30C")
+# write_tsv(poly10_deseq%>%mutate(Treatment_group="PolySeq_10min"),
+#           "230508_PolySeq_10min_deseq2.tsv")
+# 
+# samples_Poly20min <- df_samples_total %>% dplyr::filter(Treatment_group=="PolySeq_20min")
+# poly20_deseq <- run_deseq(df_counts=df_counts,filt_orfs=verified_orfs,
+#                         df_samples=samples_Poly20min,contrast_var=Temperature,baseline="30C")
+# write_tsv(poly20_deseq%>%mutate(Treatment_group="PolySeq_20min"),
+#           "PolySeq_20min_deseq2_230510.tsv")
+# 
+
+ 
+# DESeq_compTemp_byGroup <- df_samples_total %>%
+#   filter(Treatment_group%in%c("4TU","EW_TSPP","eIF3b_deplete","eIF4E_deplete",
+#                               "proteinaseK","CHX","spombe_spikeIn","deltaDHH1")) %>%
+#   group_by(Treatment_group,Treatment) %>%
+#   nest %>%
+#   mutate(data=map(data,function(df){
+#     run_deseq("df_counts"=df_counts,"filt_orfs"=verified_orfs,"df_samples"=df,
+#               "contrast_var"=Temperature,"baseline"="30C")
+#   })) %>%
+#   unnest(data)
+# write_tsv(DESeq_bytemp,
+#           "TSP_DESeq_compTemp_byGroup_deseq2_230510.tsv")
+# 
+# DESeq_compStrain_byTemp_notreat <- df_samples_total %>%
+#   filter(Treatment_group%in%c("EW_TSPP","eIF3b_deplete","eIF4E_deplete","4TU",
+#                               "proteinaseK","CHX","spombe_spikeIn","deltaDHH1","hairpinReporters")) %>%
+#   filter(Treated==FALSE|Treatment_group=="deltaDHH1") %>%
+#   filter(Temperature!="42CR") %>%
+#   group_by(Temperature) %>%
+#   nest %>%
+#   mutate(data=map(data,function(df){
+#     run_deseq("df_counts"=df_counts,"filt_orfs"=verified_orfs_nospike,"df_samples"=df,
+#               "contrast_var"=Treatment_group,"baseline"="EW_TSPP")
+#   })) %>%
+#   unnest(data)
+# write_tsv(DESeq_bytemp,
+#           "compStrain_byTemp_deseq2_230510.tsv")
+
+DESeq_compTreatment_byTemp <- df_samples_total %>%
+  filter(Treatment_group%in%c("eIF3b_deplete","eIF4E_deplete",
+                              "proteinaseK","CHX"),
+         !(Treatment_group=="CHX"&Temperature=="42C")) %>%
+  group_by(Temperature,Treatment_group) %>%
+  nest %>%
+  mutate(data=map(data,function(df){
+    run_deseq("df_counts"=df_counts,"filt_orfs"=verified_orfs_nospike,"df_samples"=df,
+              "contrast_var"=Treated,"baseline"="FALSE")
+  })) %>%
+  unnest(data)
+write_tsv(DESeq_compTreatment_byTemp,
+          "compTreat_byTemp_deseq2_230510.tsv")
+```
+

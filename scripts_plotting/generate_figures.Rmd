@@ -220,24 +220,22 @@ plot_density_y <- function(df,var,scale,min,max,cols,alph=0.5,siz=0.25,fill="top
 
 # annotations are built by src/annotations/label_genes.Rmd
 
-gene_labels <- readr::read_tsv(file.path(github_dir,"src/annotations/labeled_genes_scer.tsv")) %>%
+gene_labels <- read_tsv(file.path(github_dir,"src/annotations/labeled_genes_scer.tsv")) %>%
   dplyr::mutate(length.trans = LengthTxEst) %>%
   select(ORF,gene,classification,label,LengthTxEst,length.protein)
 
 ## load data
 
-df_Zsup_Poly_minfilt <- read_tsv(file.path(github_dir,"data_processed/df_Zsup_Poly_minfilt_paper_figures.tsv.gz"))
+df_Zsup_Poly_minfilt <- read_tsv(file.path(github_dir,"data_processed/df_Zsup_Poly_minfilt.tsv.gz"))
 
-df_samples_byLysate <- read_tsv(file.path(github_dir,
-                                          "data_processed/RNAseq_samples_byLysate.tsv"))
+df_samples_byLysate <- read_tsv(file.path(github_dir,"data_raw","RNAseq_samples_byLysate.tsv"))
 
-df_stress_samples <- read_tsv(file.path(github_dir,
-                                        "data_processed/stress_samples.tsv")) %>%
-  mutate(Stress=factor(Stress,levels=c("none","Heat Shock","Azide","Azide pH4","Ethanol","Dextrose","DTT","KCl")),
-         Stress_label=factor(Stress_label,levels=c("none","30C","42C","42CR","46C",
+df_stress_samples <- read_csv(file.path(github_dir,"data_raw/stress_labels.csv")) %>%
+  mutate(Stress=factor(Stress,levels=c("none","Heat Shock","Azide","Ethanol","DTT")),
+         Stress_label=factor(Stress_label,levels=c("none","30C","42C","46C",
                                                    "mock","Azide 0.5%","Azide 0.8%",
                                                    "Ethanol 5%","Ethanol 7.5%","Ethanol 10%","Ethanol 15%",
-                                                   "DTT 10mM","KCl 1M","withdrawal","Azide 0.5% pH4")))
+                                                   "DTT 10mM")))
 
 df_Zsup_mean <- read_tsv(file.path(github_dir,
                                    "data_processed/sedseq_filt_mean.tsv.gz")) %>%
@@ -948,7 +946,7 @@ df_sedseq_withreps <- read_tsv(file.path(github_dir,
 df <- df_sedseq_withreps %>%
   left_join(gene_labels,by="ORF") %>%
   filter(classification=="Verified") %>%
-  select(ORF,Dataset,Strain,Treatment_group,Treatment_group_ID,Stress,Stress_group,Stress_label,Treatment,Temperature,Biorep,Zsup) %>%
+  select(ORF,Strain,Treatment_group,Treatment_group_ID,Stress,Stress_group,Stress_label,Treatment,Temperature,Biorep,Zsup) %>%
   pivot_wider(names_from=Biorep,values_from=Zsup) %>%
   filter(Stress_group %in% c("Heat Shock","Azide 0.5%","Azide 0.8%",
                              "Ethanol 5%","Ethanol 7.5%","Ethanol 10%","Ethanol 15%")) %>%
@@ -1386,7 +1384,6 @@ p_spec
 ggsave(file.path(github_dir,"figures/Supplemental/specific_boxplots.pdf"),
        egg::set_panel_size(p=p_spec,width=unit(70,"mm"),height=unit(50,"mm")),
        width=100,height=100,units="mm",bg="transparent",dpi=600)
-
 ```
 
 ## Khong N3
