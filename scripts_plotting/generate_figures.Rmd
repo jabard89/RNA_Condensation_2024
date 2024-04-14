@@ -220,24 +220,22 @@ plot_density_y <- function(df,var,scale,min,max,cols,alph=0.5,siz=0.25,fill="top
 
 # annotations are built by src/annotations/label_genes.Rmd
 
-gene_labels <- readr::read_tsv(file.path(github_dir,"src/annotations/labeled_genes_scer.tsv")) %>%
+gene_labels <- read_tsv(file.path(github_dir,"src/annotations/labeled_genes_scer.tsv")) %>%
   dplyr::mutate(length.trans = LengthTxEst) %>%
   select(ORF,gene,classification,label,LengthTxEst,length.protein)
 
 ## load data
 
-df_Zsup_Poly_minfilt <- read_tsv(file.path(github_dir,"data_processed/df_Zsup_Poly_minfilt_paper_figures.tsv.gz"))
+df_Zsup_Poly_minfilt <- read_tsv(file.path(github_dir,"data_processed/df_Zsup_Poly_minfilt.tsv.gz"))
 
-df_samples_byLysate <- read_tsv(file.path(github_dir,
-                                          "data_processed/RNAseq_samples_byLysate.tsv"))
+df_samples_byLysate <- read_tsv(file.path(github_dir,"data_raw","RNAseq_samples_byLysate.tsv"))
 
-df_stress_samples <- read_tsv(file.path(github_dir,
-                                        "data_processed/stress_samples.tsv")) %>%
-  mutate(Stress=factor(Stress,levels=c("none","Heat Shock","Azide","Azide pH4","Ethanol","Dextrose","DTT","KCl")),
-         Stress_label=factor(Stress_label,levels=c("none","30C","42C","42CR","46C",
+df_stress_samples <- read_csv(file.path(github_dir,"data_raw/stress_labels.csv")) %>%
+  mutate(Stress=factor(Stress,levels=c("none","Heat Shock","Azide","Ethanol","DTT")),
+         Stress_label=factor(Stress_label,levels=c("none","30C","42C","46C",
                                                    "mock","Azide 0.5%","Azide 0.8%",
                                                    "Ethanol 5%","Ethanol 7.5%","Ethanol 10%","Ethanol 15%",
-                                                   "DTT 10mM","KCl 1M","withdrawal","Azide 0.5% pH4")))
+                                                   "DTT 10mM")))
 
 df_Zsup_mean <- read_tsv(file.path(github_dir,
                                    "data_processed/sedseq_filt_mean.tsv.gz")) %>%
@@ -816,7 +814,7 @@ df_sedseq_withreps <- read_tsv(file.path(github_dir,
 df <- df_sedseq_withreps %>%
   left_join(gene_labels,by="ORF") %>%
   filter(classification=="Verified") %>%
-  select(ORF,Dataset,Strain,Treatment_group,Treatment_group_ID,Stress,Stress_group,Stress_label,Treatment,Temperature,Biorep,Zsup) %>%
+  select(ORF,Strain,Treatment_group,Treatment_group_ID,Stress,Stress_group,Stress_label,Treatment,Temperature,Biorep,Zsup) %>%
   pivot_wider(names_from=Biorep,values_from=Zsup) %>%
   filter(Stress_group %in% c("Heat Shock","Azide 0.5%","Azide 0.8%",
                              "Ethanol 5%","Ethanol 7.5%","Ethanol 10%","Ethanol 15%")) %>%
@@ -1200,6 +1198,30 @@ df <- df_long %>% ungroup %>%
   replace_na(list(stress_specific="none")) %>%
   mutate(stress_specific = factor(stress_specific,levels=c("none","42C","Azide 0.8%","Ethanol 7.5%"))) %>%
   arrange(stress_specific)
+df_wilcox <- df %>%
+  group_by(Stress_group,Stress_label) %>%
+  nest %>%
+  mutate(p_value = map(data,function(df){
+    pairwise_results <- pairwise.wilcox.test(df$deltaZ, df$stress_specific, p.adjust.method = "bonferroni")
+    broom::tidy(pairwise_results)
+  })) %>%
+  select(-data) %>%
+  unnest(p_value) %>%
+  group_by(Stress_group,Stress_label) %>%
+  mutate(p_label = map(p.value,function(x){
+    symnum(x, corr = FALSE, 
+                 cutpoints = c(0, .001, .01, .05, 1), 
+                 symbols = c("***", "**", "*", "N.S."))
+  })) %>%
+  unnest(p_label) %>%
+  filter(group2 == "none") %>%
+  rename("stress_specific" = "group1")
+xend_adjust = c(-0.1,0.1,0.25)
+annotation_df <- df_wilcox %>%
+  add_column(x_start = c(rep(1,3),rep(2,3),rep(3,3)) - 0.25,
+             x_end = c(1+xend_adjust,2 + xend_adjust, 3 + xend_adjust),
+             y_pos = rep(c(3.1,3.7,4.3),3)) %>%
+  mutate(id = row_number())
 
 p_spec <- ggplot(df,
        aes(x=Stress_label,y=deltaZ,fill=stress_specific))+
@@ -1207,7 +1229,7 @@ p_spec <- ggplot(df,
   geom_point(aes(group=interaction(Stress_label,stress_specific),alpha=stress_specific),
                  shape=16,color="black",position=position_jitterdodge(jitter.width = 0.2,
                                                                                 dodge.width = 0.75))+
-  scale_alpha_manual(values=c("none"=0.02,"42C"=0.3,"Azide 0.8%"=0.3,"Ethanol 7.5%"=0.3))+
+  scale_alpha_manual(values=c("none"=0.3,"42C"=0.3,"Azide 0.8%"=0.3,"Ethanol 7.5%"=0.3))+
   ggnewscale::new_scale_color() +
   # geom_violin(alpha=0.5)+
   # geom_violin(aes(group=interaction(Stress_label,stress_specific)),
@@ -1217,10 +1239,19 @@ p_spec <- ggplot(df,
   scale_x_discrete(labels=c("42C"="42°C","Azide 0.8%"="0.8%\nAzide","Ethanol 7.5%"="7.5%\nEthanol"))+
   labs(x="",y="")+
   scale_fill_manual(values=stress.cols)+
-  coord_cartesian(ylim=c(-3,4))+
-  theme(legend.position = "none")
+  coord_cartesian(ylim=c(-3,4.5))+
+  theme(legend.position = "none")+
+  ggsignif::geom_signif(
+    annotations = annotation_df$p_label,
+    xmin = annotation_df$x_start,
+    xmax = annotation_df$x_end,
+    y_position = annotation_df$y_pos,
+    textsize = 8*0.35,tip_length = 0,size=0.5
+  )
 p_spec
-ggsave("../figures/Supplemental/specific_boxplots.pdf",p_spec,width=100,height=50,units="mm",bg="transparent")
+ggsave(file.path(github_dir,"figures/Supplemental/specific_boxplots.pdf"),
+       egg::set_panel_size(p=p_spec,width=unit(70,"mm"),height=unit(50,"mm")),
+       width=100,height=100,units="mm",bg="transparent",dpi=600)
 ```
 
 ## Khong N3

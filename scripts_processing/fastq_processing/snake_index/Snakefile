@@ -1,0 +1,46 @@
+# Jared Bard 230503
+# make kallist and STAR indices
+import os
+GENOME=config["genome"]
+GENOME_DIR, GENOME_FILE = os.path.split(GENOME)
+GENOME_NAME, _ = os.path.splitext(GENOME_FILE)
+GTF=config["gtf"]
+TRANSCRIPTOME=config["transcriptome"]
+
+rule all:
+    input:
+        "kallisto_index/"+TRANSCRIPTOME+".idx",
+        GENOME_DIR+"/STAR_"+GENOME_NAME+"/Genome",
+        
+rule STAR_index:
+    input:
+        gtf=GTF,
+        fasta=GENOME
+    output:
+        GENOME_DIR+"/STAR_"+GENOME_NAME+"/Genome"
+    log:
+        "logs/STAR_index/"+GENOME+"_star_index.log"
+    params:
+        genome_out_dir=GENOME_DIR+"/STAR_"+GENOME_NAME,
+        sjdb_params="--sjdbGTFtagExonParentTranscript Parent --sjdbGTFfeatureExon CDS --sjdbGTFtagExonParentGene gene_id"
+    conda:
+        "envs/star_kallisto_index.yaml"
+    shell:
+        r"""
+        (STAR --runMode genomeGenerate --sjdbOverhang 99 {params.sjdb_params} --genomeSAindexNbases 10 \
+        --runThreadN {threads} --genomeFastaFiles {input.fasta} --sjdbGTFfile {input.gtf} \
+        --genomeDir {params.genome_out_dir}) >& {log}
+        """
+     
+rule kallisto_index:
+    input:
+        fasta=TRANSCRIPTOME,
+    output:
+        "kallisto_index/"+TRANSCRIPTOME+".idx"
+    log:
+        "logs/kallisto_index/{input.fasta}_index.log"
+    conda:
+        "envs/star_kallisto_index.yaml"
+    shell:
+        "kallisto index -i {output} {input.fasta} &> {log}"
+        

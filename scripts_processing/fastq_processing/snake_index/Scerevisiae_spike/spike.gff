@@ -1,0 +1,22 @@
+###
+ego2_Nanoluc	spike	chromosome	1	552	.	.	.	ID=chromosome:ego2_Nanoluc
+###
+ego2_Nanoluc	spike	gene	1	552	.	+	.	ID=gene:ego2_Nanoluc; biotype=protein_coding;gene_id=ego2_Nanoluc
+ego2_Nanoluc	spike	mRNA	1	552	.	+	.	ID=transcript:ego2_Nanoluc; Parent=gene:ego2_Nanoluc; biotype=protein_coding; transcript_id=ego2_Nanoluc;gene_id=ego2_Nanoluc
+ego2_Nanoluc	spike	five_prime_UTR	1	30	.	+	.	ID=five_prime_UTR:ego2_Nanoluc; Parent=transcript:ego2_Nanoluc; gene_id=ego2_Nanoluc
+ego2_Nanoluc	spike	CDS	31	552	.	+	.	ID=CDS:ego2_Nanoluc; Parent=transcript:ego2_Nanoluc; gene_id=ego2_Nanoluc
+###
+strong_Clover	spike	chromosome	1	1455	.	.	.	ID=chromosome:strong_Clover
+###
+strong_Clover	spike	gene	1	1455	.	+	.	ID=gene:strong_Clover; biotype=protein_coding;gene_id=strong_Clover
+strong_Clover	spike	mRNA	1	1455	.	+	.	ID=transcript:strong_Clover; Parent=gene:strong_Clover; biotype=protein_coding; transcript_id=strong_Clover; gene_id=strong_Clover
+strong_Clover	spike	five_prime_UTR	1	78	.	+	.	ID=five_prime_UTR:strong_Clover; Parent=transcript:strong_Clover; gene_id=strong_Clover
+strong_Clover	spike	CDS	79	1455	.	+	.	ID=CDS:strong_Clover; Parent=transcript:strong_Clover; gene_id=strong_Clover
+###
+mCherry	spike	chromosome	1	747	.	.	.	ID=chromosome:mCherry
+###
+mCherry	spike	gene	1	747	.	+	.	ID=gene:mCherry; biotype=protein_coding;gene_id=mCherry;
+mCherry	spike	mRNA	1	747	.	+	.	ID=transcript:mCherry; Parent=gene:mCherry; biotype=protein_coding; transcript_id=mCherry;gene_id=mCherry
+mCherry	spike	five_prime_UTR	1	30	.	+	.	ID=five_prime_UTR:mCherry; Parent=transcript:mCherry; gene_id=mCherry
+mCherry	spike	CDS	31	747	.	+	.	ID=CDS:mCherry; Parent=transcript:mCherry; gene_id=mCherry
+###
