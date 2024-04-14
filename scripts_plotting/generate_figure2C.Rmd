@@ -1,0 +1,131 @@
+```{r}
+library(tidyverse)
+library(cowplot)
+library(cat.extras)
+library(ggsignif)
+library(here)
+theme_sedseq <- function(base_size=10) {
+  theme_grey(base_size=base_size, base_family = "") %+replace%
+    theme(panel.grid=element_blank(),
+          axis.text = element_text(size = base_size),
+          strip.text.x = element_text(size = base_size, margin = margin(t = 10)),
+          strip.text.y = element_text(size = base_size, margin = margin(r = 10)),
+          panel.background=element_blank(),
+          axis.ticks=element_line(colour="grey20"),
+          panel.border=element_rect(fill=NA),
+          legend.background = element_blank(),
+          legend.key.height = unit(3, "mm"),
+          legend.key = element_blank(),
+          strip.background = element_blank(),
+          legend.box.spacing = unit(1, "mm"))
+}
+theme_set(theme_sedseq(base_size=10))
+
+stress.cols <-  c("30C"="#7F7F7F",
+                  "42C"=RColorBrewer::brewer.pal(n=7,"Oranges")[4],
+                  "46C"=RColorBrewer::brewer.pal(n=7,"Oranges")[6],
+                  "mock"="#7F7F7F",
+                  "Azide 0.5%"=RColorBrewer::brewer.pal(n=5,"Greens")[3],
+                  "Azide 0.8%"=RColorBrewer::brewer.pal(n=5,"Greens")[5],
+                  "Ethanol 5%"=RColorBrewer::brewer.pal(n=7,"Purples")[3],
+                  "Ethanol 7.5%"=RColorBrewer::brewer.pal(n=7,"Purples")[5],
+                  "Ethanol 10%"=RColorBrewer::brewer.pal(n=7,"Purples")[6],
+                  "Ethanol 15%"=RColorBrewer::brewer.pal(n=7,"Purples")[7])
+```
+
+```{r}
+github_dir <- here()
+df_rna <- read_tsv(file.path(github_dir,"data_processed/231023_thresh400_analyze_smFISH_RNA.tsv.gz")) %>%
+  mutate(Date=as.character(Date)) %>%
+  mutate(Condition=str_replace(Condition,"yJB01_",""),
+         Condition=factor(Condition,levels=c("30C","42C","46C")),
+         Date=if_else(Date%in%c("20230823","20230825"),"230823/5",
+                      if_else(Date=="20230810","230810",
+                              if_else(Date=="20230816","230816",Date))),
+         Date=factor(Date,levels=c("230810","230816","230823/5")))
+df_random <- read_tsv(file.path(github_dir,"data_processed/231023_thresh400_analyze_smFISH_random.tsv.gz")) %>%
+  mutate(Date=as.character(Date)) %>%
+  mutate(Condition=str_replace(Condition,"yJB01_",""),
+         Condition=factor(Condition,levels=c("30C","42C","46C")),
+         Date=if_else(Date%in%c("20230823","20230825"),"230823/5",
+                      if_else(Date=="20230810","230810",
+                              if_else(Date=="20230816","230816",Date))),
+         Date=factor(Date,levels=c("230810","230816","230823/5")))
+
+df_random_stats <- df_random %>%
+  group_by(Date,Transcript,Condition,Image_id,Cell_id,Zidx,Key,Channel) %>%
+  summarise(signal.mean = mean(ROI_mean),
+            signal.sd = sd(ROI_mean,na.rm=T))
+
+df_Z <- df_rna %>%
+  filter(!is.na(Cell_id)) %>%
+  group_by(Date,Transcript,Condition,Image_id,Cell_id,Zidx,Channel) %>%
+  summarise(mean_intensity = mean(ROI_mean)) %>%
+  left_join(df_random_stats, by=c("Date","Transcript","Condition","Image_id","Cell_id","Zidx","Channel")) %>%
+  mutate(Zscore = (mean_intensity-signal.mean)/signal.sd)%>%
+  unite(Sample,Transcript,Date,Condition,remove=F,sep="~") %>%
+  group_by(Sample,Date,Transcript,Condition,Image_id,Cell_id,Channel) %>%
+  summarise(Zscore = mean(Zscore))
+
+ymin <- (-2.25)
+ymax <- 2.5
+df <- df_Z %>%
+  filter(Date=="230823/5",
+         Channel=="PAB1") %>%
+  mutate(Transcript=factor(Transcript,levels=c("SSB1","ADD66","SSA4","HSP104")),
+         Condition=factor(Condition,levels=c("30C","46C"))) %>%
+  mutate(Zscore_filt = if_else(Zscore<ymin,ymin,
+                             if_else(Zscore>ymax,ymax,Zscore))) %>%
+  arrange(Transcript,Condition)
+df_sum <- df %>%
+  group_by(Condition,Transcript) %>%
+  summarise(mean = mean(Zscore),
+    sd = sd(Zscore, na.rm = TRUE),
+    n = n(),
+    sem = sd / sqrt(n)) %>%
+  arrange(Transcript,Condition)
+dodge_width <- 0.5
+p_points_mean <- ggplot(df,
+       aes(x=Transcript,y=Zscore_filt,group=interaction(Transcript,Condition)))+
+  geom_point(aes(color=Condition),
+             shape=16,alpha=0.3,position=position_jitterdodge(jitter.width=0.2,dodge.width = dodge_width))+
+  geom_errorbar(data=df_sum,color="black",size=0.5,
+                aes(ymin=mean,y=mean,ymax=mean),
+                width=0.3, position=position_dodge(dodge_width))+
+  geom_errorbar(data=df_sum,
+    aes(ymin = mean - sem, y=mean, ymax = mean + sem),
+    width = 0,size=0.5, position=position_dodge(dodge_width)
+  ) +
+  scale_fill_manual(values=stress.cols)+
+  scale_color_manual(values=stress.cols)+
+  #facet_grid(.~Transcript)+
+  coord_cartesian(ylim=c(ymin,ymax),xlim=c(0.5,4.5),expand=F)+
+  labs(x="",y="")+
+  theme(legend.position = 'none',
+        axis.text.x = element_blank(),
+        axis.ticks.x = element_blank())
+p_points_mean
+
+p_mean <- ggplot(df_sum,
+                 aes(x=Transcript,y=mean))+
+  geom_errorbar(aes(color=Condition,ymin=mean-sem,y=mean,ymax=mean+sem),
+                width=0)+
+  geom_point(aes(color=Condition))+
+  scale_color_manual(values=stress.cols)+
+  labs(x="",y="")+
+  coord_cartesian(ylim=c(-0.1,0.8))+
+  scale_y_continuous(breaks=c(0,0.6))+
+  theme(legend.position='none',
+        axis.text.x = element_blank(),
+        axis.ticks.x = element_blank())
+p_mean
+ggsave(file.path(github_dir,"figures","Figure2","smFISH_Zscore_points.pdf"),
+        egg::set_panel_size(p=p_points_mean,
+                            width=unit(50,"mm"),height=unit(20,"mm")),
+       width=150,height=100,units="mm",bg = "transparent")
+ggsave(file.path(github_dir,"figures","Figure2","smFISH_Zscore_diff.pdf"),
+        egg::set_panel_size(p=p_mean,
+                            width=unit(50,"mm"),height=unit(10,"mm")),
+       width=150,height=100,units="mm",bg = "transparent")
+```
+
