@@ -346,7 +346,41 @@ ggsave(file.path(github_dir,"figures/Figure2/46C_zoom.pdf"),egg::set_panel_size(
 ```
 
 # Figure 3
-## violins
+
+## sg quantification
+
+HS/Azide/EtOH SG quant plot
+```{r}
+hs <- read_csv(file.path(github_dir,"data_processed/sg_quant/hs_sgs.csv"))
+azide <- read_csv(file.path(github_dir,"data_processed/sg_quant/azide_sgs.csv"))
+etoh <- read_csv(file.path(github_dir,"data_processed/sg_quant/etoh_sgs.csv"))
+
+common_columns <- Reduce(intersect, list(names(hs), names(azide), names(etoh)))
+
+# Subset each data frame to keep only the common columns
+hs_subset <- hs %>% select(all_of(common_columns))
+azide_subset <- azide %>% select(all_of(common_columns))
+etoh_subset <- etoh %>% select(all_of(common_columns))
+
+# Combine the subsetted data frames using rbind
+stress_sg_data <- bind_rows(hs_subset, azide_subset, etoh_subset) %>% mutate(Treatment = factor(Treatment, levels = c( "30C" , "42C" , "46C" ,"0_0", "0_5" ,  "0_8"  ,"1_0" , "0%"  , "7.5%" ,"15%")))
+
+
+sg_plot <- ggplot(data =stress_sg_data%>% filter(Treatment != "1_0"), aes(x = Treatment, y = Cell_Parent_Children_stress_granule_Count, color = Treatment))+
+  geom_point(aes(group = Stress), position=position_jitterdodge(dodge.width = 0.9, jitter.width = 4, jitter.height = 0.3), alpha = 0.2, shape = 16)+
+  geom_boxplot(aes(fill = Treatment), alpha = 1, color = "black", size = 0.7, outlier.colour = NA)+ 
+  ylab("SGs/cell")+
+  scale_color_manual(values = c("#7F7F7F", "#7F7F7F", "#7F7F7F", "#7F7F7F", "#7F7F7F", "#7F7F7F", "#7F7F7F", "#7F7F7F", "#7F7F7F"))+
+  scale_fill_manual(values = c("grey50", RColorBrewer::brewer.pal(n=7,"Oranges")[4], RColorBrewer::brewer.pal(n=7,"Oranges")[6],"grey50", RColorBrewer::brewer.pal(n=5,"Greens")[3], RColorBrewer::brewer.pal(n=5,"Greens")[5], "grey50", RColorBrewer::brewer.pal(n=7,"Purples")[5],RColorBrewer::brewer.pal(n=7,"Purples")[7]) )+
+  scale_x_discrete(labels = c("30°C", "42°C", "46°C", "0% \nNaN3", "0.5% \nNaN3", "0.8% \nNaN3",  "0% \nEtOH", "7.5% \nEtOH", "15% \nEtOH"))+
+  theme(legend.position = "none", axis.title.x = element_blank())
+
+sg_plot
+
+ggsave("../figures/Figure3/sg_comparison_plot.pdf", sg_plot, width = 7, height = 3)
+```
+
+## stress sedscore violins
 ```{r}
 df_30_control <- df_Zsup_mean %>% filter(Treatment_group == "milderEtOH2", Temperature == "30C" & Treated == FALSE) %>% group_by( Temperature, Treated) %>% filter(SP.mean>0,!is.infinite(SP.mean)) %>% summarise(mean_sp_30 = mean(SP.mean)) 
 
@@ -418,6 +452,8 @@ ggsave("../figures/Figure3/all_violins.pdf",
        p_violin+theme(legend.position="none"),
        width=70,height=65,units="mm",bg="transparent")
 ```
+
+
 
 ```{r}
 
@@ -801,7 +837,104 @@ ggsave("../figures/Figure5/TPM_TE_left.pdf",
        width=100,height=100,units="mm",bg="transparent")
 ggsave("../figures/Figure5/TPM_TE_right.pdf",egg::set_panel_size(p=p_Z_box+labs(x="",y=""),width=unit(15,"mm"),height=unit(30,"mm")),
        width=100,height=100,units="mm",bg="transparent")
+
 ```
+##Figure 6
+#Figure 6D Relative translation of different depletion strains
+```{r}
+depletion_translation_data <- read_csv(file.path(github_dir,"data_processed/Fig6/radiolabelled_translation_depletions.csv"))
+depletion_translation_data_summary <- read_csv(file.path(github_dir,"data_processed/Fig6/radiolabelled_translation_depletions_summary.csv"))
+
+depletion_translation_plot <- ggplot(data = depletion_translation_data_summary %>% filter(Strain != "yHG031"), aes(x = protein, y = mean_norm)) +
+  geom_col(position = "dodge", aes( x = protein, y = mean_norm, fill = protein, alpha = Treatment, color = protein)) +
+  geom_errorbar(aes(ymin = mean_norm - sd_norm, ymax = mean_norm + sd_norm, group = Treatment, color = protein), width =0, position = position_dodge(width = 0.9)) +
+  geom_point(data = depletion_translation_data %>% filter(Strain != "yHG031"), aes(group = Treatment, x = protein, y = normalized_counts), position = position_dodge(width = 0.9), size = 0.8) +
+  ylab("Relative Translation") +
+  xlab("Initiation factor") +
+  scale_fill_manual(values = c("#F5C710", "#E69F00", "#D55E00", "#999999" ,"#009E73","#0072B2","#56B4E9","#CC79A7"), name = "Depleted protein")+
+   scale_color_manual(values = c("#F5C710", "#E69F00", "#D55E00", "#999999" ,"#009E73","#0072B2","#56B4E9","#CC79A7"), name = "Depleted protein")+
+  scale_alpha_manual(values = c(0.1, 0.7))+
+  guides(color = "none", fill = "none", alpha = "none") 
+
+depletion_translation_plot
+
+ggsave( "../figures/Figure6/deplete_translation_plot.pdf",
+       egg::set_panel_size(p=depletion_translation_plot+theme(axis.title = element_blank()),
+                           width=unit(80,"mm"),height=unit(50,"mm")),
+       width=120,height=110,units="mm",bg = "transparent")
+
+```
+#Figure 6E Bem2/PGK1 qPCR-TSP vs radiolabelling translation plot in depletion strains
+```{r}
+tsp_translation_aid <- read_csv(file.path(github_dir,"data_processed/Fig6/tsp_qpcr_vs_translation.csv"))
+
+deplete_condensation_plot <- ggplot(data = tsp_translation_aid %>% filter(Strain != "BY4741"), aes(x = fc_count_per_od, y = compiled_ave_fc_sp_enrichment, color = protein))+
+  scale_loglog2()+
+  geom_errorbar(aes(xmin = fc_count_per_od - error_count_per_od, xmax = fc_count_per_od + error_count_per_od), width = 0)+
+  geom_errorbar(aes(ymin = compiled_ave_fc_sp_enrichment - compiled_se_fc_sp_enrichment,ymax = compiled_ave_fc_sp_enrichment + compiled_se_fc_sp_enrichment), width = 0)+
+    geom_point(size = 2)+
+  scale_color_manual(values = c("#E69F00", "#56B4E9", "#009E73", "#F5C710", "#0072B2", "#D55E00", "#CC79A7", "#999999"), name = "Depleted \nprotein", labels = c("eIF3b", "eIF5", "eIF4G", "eIF2α", "eIF4E", "eIF4A", "eIF5B", 'eIF4B'))+
+  xlab("Relative translation \n(depletion vs. mock)")+
+  ylab("Relative condensation \n(depletion vs. mock)")+
+  theme(axis.text = element_text(size = 10),
+  		  axis.title = element_text(size = 10), 
+  		  legend.title = element_text(size = 10),
+  		  legend.text = element_text(size = 10))+
+  coord_cartesian(xlim = c(0.05, 1))+
+  geom_vline(aes(xintercept = 1), linetype = "dashed")+
+    #this is ratio of CHX/30C mock
+  geom_vline(aes(xintercept = 0.04882988), linetype = "dashed")
+
+deplete_condensation_plot
+
+ggsave( "../figures/Figure6/deplete_condensation_plot.pdf",
+       egg::set_panel_size(p=deplete_condensation_plot+theme(axis.title = element_blank()),
+                           width=unit(40,"mm"),height=unit(40,"mm")),
+       width=80,height=100,units="mm",bg = "transparent")
+
+```
+
+#Figure 7
+CHX quantification plot
+```{r}
+chx_hs_master_merge <- read_csv(file.path(github_dir,"data_processed/sg_quant/chx_merged.csv")) %>% mutate(CHX = factor(CHX, levels = c("mock", "CHX")))
+
+
+chx_sg_per_cell_plot <- ggplot(data = chx_hs_master_merge, aes(x = Temperature, y = Cell_Parent_Children_stress_granule_Count, fill=Temperature,group=interaction(Temperature,CHX)))+
+geom_point(alpha=0.2,position=position_jitterdodge(jitter.width=0.2,dodge.width = 0.75),color="grey50", size = 0.2, shape = 16)+  
+  geom_boxplot(aes(alpha = CHX, fill  = Temperature, linetype = CHX), outlier.color = NA, size = 0.6, fatten = 1)+
+  ylab("SGs/cell") +
+  ylab("SGs/cell")+
+  scale_color_manual(values = c("grey50", RColorBrewer::brewer.pal(n=7,"Oranges")[4], RColorBrewer::brewer.pal(n=7,"Oranges")[6]))+
+  scale_fill_manual(values = c("grey50", RColorBrewer::brewer.pal(n=7,"Oranges")[4], RColorBrewer::brewer.pal(n=7,"Oranges")[6]))+
+  scale_x_discrete(labels = c("30°C", "42°C", "46°C"))+
+  scale_alpha_manual(values =c(0.9, 0.9))+
+    guides(color = "none", fill = "none", alpha = "none", linetype = "none")
+  
+chx_sg_per_cell_plot
+
+ggsave("../figures/Figure7/chx_sg_per_cell.pdf", chx_sg_per_cell_plot, height = 2, width = 2)
+```
+eIF3b depletion plots 
+```{r}
+aid_hs_sg <- read_csv(file.path(github_dir,"data_processed/sg_quant/aid_hs.csv"))
+
+aid_sg_per_cell_plot <-ggplot(data = aid_hs_sg , aes(x = Temperature, y = Cell_Parent_Children_stress_granule_Count, fill=Temperature,group=interaction(Temperature,Depletion)))+
+geom_point(aes(x = Temperature, y = SG_per_cell_compressed),alpha=0.2,position=position_jitterdodge(jitter.width=0.2,dodge.width = 0.75),color="grey50", size = 0.2, shape = 16)+  
+  geom_boxplot(aes(alpha = Depletion, fill  = Temperature, linetype = Depletion), outlier.color = NA, fatten = 0.6, size = 0.5)+
+  ylab("SGs/cell") +
+  scale_fill_manual(values = c("grey50", RColorBrewer::brewer.pal(n=7,"Oranges")[2], RColorBrewer::brewer.pal(n=7,"Oranges")[3], RColorBrewer::brewer.pal(n=7,"Oranges")[6]))+
+  scale_x_discrete(labels = c("30°C", "42°C", "44°C", "46°C"))+
+  scale_alpha_manual(values =c(0.9, 0.9))+
+  scale_color_manual(values = c("black", "grey"))+
+    guides(color = "none", fill = "none", alpha = "none", linetype = "none")+
+  ylim(0, 18)
+
+aid_sg_per_cell_plot
+
+ggsave("../figures/Figure7/aid_sgs_per_cell.pdf", aid_sg_per_cell_plot, width = 2.15, height = 2)
+```
+
 
 # Supplemental
 
@@ -1543,9 +1676,9 @@ p_violin = ggplot(df %>% filter(Treatment!="25C.control"),
                   aes(x=Treatment,y=TPM.FC,fill=Category,group=grouping_var)) +
   geom_hline(yintercept=1,linetype="dotted")+
   scale_y_log10nice()+
-  geom_point(position=position_jitterdodge(jitter.width=0.2,dodge.width = 0.9),shape=16,alpha=0.3,color="grey50")+
+  geom_point(position=position_jitterdodge(jitter.width=0.2,dodge.width = 0.9),shape=16,alpha=0.4,color="grey50", size = 0.3)+
   geom_violin(size=0.25,color="black",alpha=0.5,position=position_dodge(width=0.9))+
-  geom_violin(fill=NA,draw_quantiles = c(0.25,0.5,0.75),,size=0.25,color="black",position=position_dodge(width=0.9))+
+  geom_violin(fill=NA,draw_quantiles = c(0.25,0.5,0.75),size=0.25,color="black",position=position_dodge(width=0.9))+
   coord_cartesian(ylim=c(1e-2,1e3))+
   scale_fill_manual(values=c("other"="grey50","UPR"=stress.cols[["DTT"]]))+
   ggsignif::geom_signif(
@@ -1563,6 +1696,7 @@ ggsave("../figures/Supplemental/Muhlhofer_upr.pdf",
                             width=unit(50,"mm"),height=unit(40,"mm")),
        width=100,height=100,units="mm",bg = "transparent",dpi=600)
 ```
+
 
 ## FC plots boxes
 ```{r}
@@ -1881,60 +2015,7 @@ ggsave("../figures/Supplemental/HAC1_GCN4_Occupancy.pdf",egg::set_panel_size(p=p
        width=50,height=50,units="mm",bg="transparent",dpi=600)
 ```
 
-#Figure 6D Relative translation of different depletion strains
 
-```{r}
-depletion_translation_data <- read_csv(file.path(github_dir,"data_processed/Fig6/radiolabelled_translation_depletions.csv"))
-depletion_translation_data_summary <- read_csv(file.path(github_dir,"data_processed/Fig6/radiolabelled_translation_depletions_summary.csv"))
-
-depletion_translation_plot <- ggplot(data = depletion_translation_data_summary %>% filter(Strain != "yHG031"), aes(x = protein, y = mean_norm)) +
-  geom_col(position = "dodge", aes( x = protein, y = mean_norm, fill = protein, alpha = Treatment, color = protein)) +
-  geom_errorbar(aes(ymin = mean_norm - sd_norm, ymax = mean_norm + sd_norm, group = Treatment, color = protein), width =0, position = position_dodge(width = 0.9)) +
-  geom_point(data = depletion_translation_data %>% filter(Strain != "yHG031"), aes(group = Treatment, x = protein, y = normalized_counts), position = position_dodge(width = 0.9), size = 0.8) +
-  ylab("Relative Translation") +
-  xlab("Initiation factor") +
-  scale_fill_manual(values = c("#F5C710", "#E69F00", "#D55E00", "#999999" ,"#009E73","#0072B2","#56B4E9","#CC79A7"), name = "Depleted protein")+
-   scale_color_manual(values = c("#F5C710", "#E69F00", "#D55E00", "#999999" ,"#009E73","#0072B2","#56B4E9","#CC79A7"), name = "Depleted protein")+
-  scale_alpha_manual(values = c(0.1, 0.7))+
-  guides(color = "none", fill = "none", alpha = "none") 
-
-depletion_translation_plot
-
-ggsave( "../figures/Figure6/deplete_translation_plot.pdf",
-       egg::set_panel_size(p=depletion_translation_plot+theme(axis.title = element_blank()),
-                           width=unit(80,"mm"),height=unit(50,"mm")),
-       width=120,height=110,units="mm",bg = "transparent")
-
-```
-#Figure 6E Bem2/PGK1 qPCR-TSP vs radiolabelling translation plot in depletion strains
-```{r}
-tsp_translation_aid <- read_csv(file.path(github_dir,"data_processed/Fig6/tsp_qpcr_vs_translation.csv"))
-
-deplete_condensation_plot <- ggplot(data = tsp_translation_aid %>% filter(Strain != "BY4741"), aes(x = fc_count_per_od, y = compiled_ave_fc_sp_enrichment, color = protein))+
-  scale_loglog2()+
-  geom_errorbar(aes(xmin = fc_count_per_od - error_count_per_od, xmax = fc_count_per_od + error_count_per_od), width = 0)+
-  geom_errorbar(aes(ymin = compiled_ave_fc_sp_enrichment - compiled_se_fc_sp_enrichment,ymax = compiled_ave_fc_sp_enrichment + compiled_se_fc_sp_enrichment), width = 0)+
-    geom_point(size = 2)+
-  scale_color_manual(values = c("#E69F00", "#56B4E9", "#009E73", "#F5C710", "#0072B2", "#D55E00", "#CC79A7", "#999999"), name = "Depleted \nprotein", labels = c("eIF3b", "eIF5", "eIF4G", "eIF2α", "eIF4E", "eIF4A", "eIF5B", 'eIF4B'))+
-  xlab("Relative translation \n(depletion vs. mock)")+
-  ylab("Relative condensation \n(depletion vs. mock)")+
-  theme(axis.text = element_text(size = 10),
-  		  axis.title = element_text(size = 10), 
-  		  legend.title = element_text(size = 10),
-  		  legend.text = element_text(size = 10))+
-  coord_cartesian(xlim = c(0.05, 1))+
-  geom_vline(aes(xintercept = 1), linetype = "dashed")+
-    #this is ratio of CHX/30C mock
-  geom_vline(aes(xintercept = 0.04882988), linetype = "dashed")
-
-deplete_condensation_plot
-
-ggsave( "../figures/Figure6/deplete_condensation_plot.pdf",
-       egg::set_panel_size(p=deplete_condensation_plot+theme(axis.title = element_blank()),
-                           width=unit(40,"mm"),height=unit(40,"mm")),
-       width=80,height=100,units="mm",bg = "transparent")
-
-```
 #Figure S6
 
 #Polysome profiles vs. Relative translation
