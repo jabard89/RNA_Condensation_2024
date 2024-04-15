@@ -1,0 +1,48 @@
+Stress,Stress_group,Temperature,Stress_label,Treatment_group,Treatment,Control,Treatment_group_ID
+none,hairpinReporters,30C,none,hairpinReporters,none,FALSE,tg_2
+Heat Shock,Heat Shock,30C,30C,EW_TSPP,none,TRUE,tg_1
+Heat Shock,Heat Shock,42C,42C,EW_TSPP,none,FALSE,tg_1
+Heat Shock,Heat Shock,42CR,42CR,EW_TSPP,none,FALSE,tg_1
+Heat Shock,Heat Shock,46C,46C,EW_TSPP,none,FALSE,tg_1
+Heat Shock,Heat Shock,30C,30C,PolySeq_10min,none,TRUE,tg_15
+Heat Shock,Heat Shock,42C,42C,PolySeq_10min,none,FALSE,tg_15
+Heat Shock,Heat Shock,46C,46C,PolySeq_10min,none,FALSE,tg_15
+Heat Shock,Heat Shock,30C,30C,PolySeq_20min,none,TRUE,tg_16
+Heat Shock,Heat Shock,42C,42C,PolySeq_20min,none,FALSE,tg_16
+Azide,Azide 0.5%,30C,mock,Azide_0.5%_pH6.8,mock,TRUE,tg_20
+Azide,Azide 0.5%,30C,Azide 0.5%,Azide_0.5%_pH6.8,Azide_0.5%_pH6.8,FALSE,tg_20
+Azide,Azide 0.8%,30C,mock,azide3,mock,TRUE,tg_9
+Azide,Azide 0.8%,30C,Azide 0.8%,azide3,Azide_0.8%_pH6.8,FALSE,tg_9
+Azide,Azide 0.8%,30C,mock,PolySeq_0.8%Azide,mock,TRUE,tg_17
+Azide,Azide 0.8%,30C,Azide 0.8%,PolySeq_0.8%Azide,Azide_0.8%_pH6.8,FALSE,tg_17
+Ethanol,Ethanol 15%,30C,mock,HyperOsmotic_EtOH,mock,TRUE,tg_12
+Ethanol,Ethanol 15%,30C,Ethanol 15%,HyperOsmotic_EtOH,EtOH_15%,FALSE,tg_12
+Ethanol,Ethanol 10%,30C,mock,milderEtOH1,mock,TRUE,tg_10
+Ethanol,Ethanol 10%,30C,Ethanol 5%,milderEtOH1,EtOH_5%,FALSE,tg_10
+Ethanol,Ethanol 10%,30C,Ethanol 10%,milderEtOH1,EtOH_10%,FALSE,tg_10
+Ethanol,Ethanol 7.5%,30C,mock,milderEtOH2,mock,TRUE,tg_11
+Ethanol,Ethanol 7.5%,30C,Ethanol 7.5%,milderEtOH2,EtOH_7.5%,FALSE,tg_11
+Ethanol,Ethanol 7.5%,30C,mock,PolySeq_7.5%EtOH,mock,TRUE,tg_18
+Ethanol,Ethanol 7.5%,30C,Ethanol 7.5%,PolySeq_7.5%EtOH,EtOH_7.5%,FALSE,tg_18
+DTT,DTT 10mM,30C,mock,uprInduction,mock,TRUE,tg_13
+DTT,DTT 10mM,30C,DTT 10mM,uprInduction,DTT_10mM,FALSE,tg_13
+Heat Shock,eIF4E deplete,30C,30C,eIF4E_deplete,mock,TRUE,tg_4
+Heat Shock,eIF4E deplete,42C,42C,eIF4E_deplete,mock,FALSE,tg_4
+Heat Shock,eIF4E deplete,46C,46C,eIF4E_deplete,mock,FALSE,tg_4
+Heat Shock,eIF4E deplete,30C,30C,eIF4E_deplete,eIF4E_deplete,FALSE,tg_4
+Heat Shock,eIF4E deplete,42C,42C,eIF4E_deplete,eIF4E_deplete,FALSE,tg_4
+Heat Shock,eIF4E deplete,46C,46C,eIF4E_deplete,eIF4E_deplete,FALSE,tg_4
+Heat Shock,eIF3b deplete,30C,30C,eIF3b_deplete,mock,TRUE,tg_3
+Heat Shock,eIF3b deplete,42C,42C,eIF3b_deplete,mock,FALSE,tg_3
+Heat Shock,eIF3b deplete,46C,46C,eIF3b_deplete,mock,FALSE,tg_3
+Heat Shock,eIF3b deplete,30C,30C,eIF3b_deplete,eIF3b_deplete,FALSE,tg_3
+Heat Shock,eIF3b deplete,42C,42C,eIF3b_deplete,eIF3b_deplete,FALSE,tg_3
+Heat Shock,eIF3b deplete,46C,46C,eIF3b_deplete,eIF3b_deplete,FALSE,tg_3
+Heat Shock,CHX,30C,30C,CHX,mock,TRUE,tg_19
+Heat Shock,CHX,42C,42C,CHX,mock,FALSE,tg_19
+Heat Shock,CHX,46C,46C,CHX,mock,FALSE,tg_19
+Heat Shock,CHX,30C,30C,CHX,CHX,FALSE,tg_19
+Heat Shock,CHX,42C,42C,CHX,CHX,FALSE,tg_19
+Heat Shock,CHX,46C,46C,CHX,CHX,FALSE,tg_19
+Heat Shock,spombe_spikeIn,30C,30C,spombe_spikeIn,none,TRUE,tg_5
+Heat Shock,spombe_spikeIn,46C,46C,spombe_spikeIn,none,FALSE,tg_5
