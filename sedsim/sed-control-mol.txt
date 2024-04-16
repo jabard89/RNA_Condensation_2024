@@ -1,0 +1,19 @@
+# Guide file for full experiment
+#experiment.id	crosslink.method	crosslink.mol.prob	crosslink.nt.prob
+#30C	DualCrosslinker	0	0
+#42C	DualCrosslinker	0.5	0
+#46C	DualCrosslinker	1	0
+# Template file																			
+#       experiment.id [string] = experiment identifier
+#       crosslink.method [string] = method for crosslinking, choices are DualCrosslinker (both per-nucleotide and per-molecule crosslinking), DualVariableCrosslinker (DualCrosslinker plus per-molecule-type translation differences)
+#       crosslink.mol.prob [float] = probability of crosslink per molecules
+#       crosslink.nt.prob [float] = probability of crosslink per nucleotide
+#       translation.prob [float] = fraction of maximal translation rate
+#       mol.translation.prob [float] = probability this molecule is translated at maximal translation rate
+#       protection.prob [float] = probability this molecule is protected from crosslinking
+#       spin.rcf.g [float] = rotor centrifugal force in g
+#       spin.time.sec [float] = time of centrifuge spin in seconds
+experiment.id	crosslink.method	template.filename	template.id.field	template.length.field	template.abundance.field	template.translation.field	template.protection.filename	template.protection.field	crosslink.mol.prob	crosslink.nt.prob	translation.prob	num.molecules	rcf.g	spin.time.sec	rotor.radius.cm	sample.height.mm	viscosity.mpa.sec	replicates	random.seed
+30C	DualCrosslinker	./scer-orf-tpm-occ-length.txt	ORF	LengthTxEst	Total.TPM.mean	NA	NA	NA	0	1e-3	1	30000	2.00E+04	900	10	10	1.002	100	113
+42C	DualCrosslinker	./scer-orf-tpm-occ-length.txt	ORF	LengthTxEst	Total.TPM.mean	NA	NA	NA	0.45	1e-3	1	30000	2.00E+04	900	10	10	1.002	100	113
+46C	DualCrosslinker	./scer-orf-tpm-occ-length.txt	ORF	LengthTxEst	Total.TPM.mean	NA	NA	NA	0.7	1e-3	1	30000	2.00E+04	900	10	10	1.002	100	113
