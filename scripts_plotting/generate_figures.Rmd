@@ -871,7 +871,7 @@ deplete_condensation_plot <- ggplot(data = tsp_translation_aid %>% filter(Strain
   geom_errorbar(aes(xmin = fc_count_per_od - error_count_per_od, xmax = fc_count_per_od + error_count_per_od), width = 0)+
   geom_errorbar(aes(ymin = compiled_ave_fc_sp_enrichment - compiled_se_fc_sp_enrichment,ymax = compiled_ave_fc_sp_enrichment + compiled_se_fc_sp_enrichment), width = 0)+
     geom_point(size = 2)+
-  scale_color_manual(values = c("#E69F00", "#56B4E9", "#009E73", "#F5C710", "#0072B2", "#D55E00", "#CC79A7", "#999999"), name = "Depleted \nprotein", labels = c("eIF3b", "eIF5", "eIF4G", "eIF2α", "eIF4E", "eIF4A", "eIF5B", 'eIF4B'))+
+  scale_color_manual(values = c("#F5C710", "#E69F00", "#D55E00", "#999999" ,"#009E73","#0072B2","#56B4E9","#CC79A7"), name = "Depleted \nprotein", labels = c("eIF2α", "eIF3b", "eIF4A", 'eIF4B', "eIF4E", "eIF4G", "eIF5", "eIF5B"))+
   xlab("Relative translation \n(depletion vs. mock)")+
   ylab("Relative condensation \n(depletion vs. mock)")+
   theme(axis.text = element_text(size = 10),
