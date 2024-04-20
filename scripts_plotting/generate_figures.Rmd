@@ -1302,8 +1302,9 @@ ggsave("../figures/Figure5/TPM_TE_right.pdf",egg::set_panel_size(p=p_Z_box+labs(
        width=100,height=100,units="mm",bg="transparent")
 
 ```
-##Figure 6
-#Figure 6D Relative translation of different depletion strains
+#Figure 6
+
+##Figure 6D Relative translation of different depletion strains
 ```{r}
 depletion_translation_data <- read_csv(file.path(github_dir,"data_processed/Fig6/radiolabelled_translation_depletions.csv"))
 depletion_translation_data_summary <- read_csv(file.path(github_dir,"data_processed/Fig6/radiolabelled_translation_depletions_summary.csv"))
@@ -1608,10 +1609,10 @@ p <- ggplot(df,
   labs(x="mRNA length (nucleotides)", y="Odds in supernatant")
 p
 
-ggsave("../figures/Supplemental/hairpin_30C_error.pdf",
+ggsave("../figures/Supplemental/hairpin_30C_error.png",
         egg::set_panel_size(p=p,
-                            width=unit(50,"mm"),height=unit(50,"mm")),
-       width=75,height=75,units="mm",bg = "transparent",dpi=600)
+                            width=unit(62,"mm"),height=unit(62,"mm")),
+       width=75,height=75,units="mm",bg = "transparent",dpi=1200)
 ```
 
 ## hac1 equiv
@@ -2425,7 +2426,7 @@ ggsave("../figures/Supplemental/Sucrose_native_Occ.pdf",
        width=100,height=100,units="mm",bg = "transparent",dpi=600)
 ```
 
-
+## TPM vs Occ
 ```{r}
 genes_to_label <- c("HAC1","GCN4")
 df_30C_occ <- df_Occ_mean_minfilt %>%
@@ -2449,8 +2450,8 @@ p_TPM_Occ <- ggplot(df,
   scale_x_log10nice()+
   scale_y_log10nice()+
   coord_cartesian(xlim=c(1,1e4),ylim=c(0.1,50))+
-  geom_point(alpha=0.2, size = 0.3)+
-  geom_point(data=df %>% filter(gene%in%genes_to_label),size=2,color="red")+
+  geom_point(alpha=0.2, size = 1,shape=16)+
+  geom_point(data=df %>% filter(gene%in%genes_to_label),size=2,color="red",shape=16)+
   geom_text_repel(data=df,size=4.2,aes(label=gene_label),max.overlaps = 10000,min.segment.length = 0)+
   labs(x="mRNA Abundance",y="Rib. Occ.\n(odds)")
 p_TPM_Occ
@@ -2473,8 +2474,9 @@ p_Z_box <- ggplot(df,
 p_Z_box
 p_3B_occ <- plot_grid(p_TPM_Occ,p_Z_box,align="hv",rel_widths=c(1,0.7 ))
 p_3B_occ
-ggsave("../figures/Supplemental/HAC1_GCN4_Occupancy.pdf",egg::set_panel_size(p=p_TPM_Occ+labs(x="",y=""),width=unit(30,"mm"),height=unit(30,"mm")),
-       width=50,height=50,units="mm",bg="transparent",dpi=600)
+ggsave("../figures/Supplemental/HAC1_GCN4_Occupancy.pdf",egg::set_panel_size(p=p_TPM_Occ+labs(x="",y=""),width=unit(62,"mm"),height=unit(62,"mm")),
+       width=100,height=100,units="mm",bg="transparent",dpi=600)
+cor.test(df$TPM.mean,df$Occ.odds.mean,method="spearman")
 ```
 
 
