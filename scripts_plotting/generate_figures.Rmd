@@ -57,7 +57,7 @@ redcol <- "#dc322fcc"
 violetcol <- "#6c71c4cc"
 blackcol <- "#000000cc"
 
-okabe_ito_colors <- palette.colors(n = NULL, palette = "Okabe-Ito", recycle = FALSE)
+okabe_ito_colors <- palette.colors(n = NULL, palette = "Okabe-Ito", recycle = FALSE) |> substr(1, 7)
 
 stress.cols <-  c("30C"="#7F7F7F",
                   "42C"=RColorBrewer::brewer.pal(n=7,"Oranges")[4],
@@ -69,7 +69,7 @@ stress.cols <-  c("30C"="#7F7F7F",
                   "Ethanol 7.5%"=RColorBrewer::brewer.pal(n=7,"Purples")[5],
                   "Ethanol 10%"=RColorBrewer::brewer.pal(n=7,"Purples")[6],
                   "Ethanol 15%"=RColorBrewer::brewer.pal(n=7,"Purples")[7],
-                  "DTT" = okabe_ito_colors[["reddishpurple"]])
+                  "DTT" = okabe_ito_colors["reddishpurple"])
 stress.cols.darker <- c("30C"="#7F7F7F",
                   "42C"=RColorBrewer::brewer.pal(n=7,"Oranges")[4],
                   "46C"="red")
