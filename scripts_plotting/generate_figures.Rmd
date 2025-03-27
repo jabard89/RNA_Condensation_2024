@@ -57,7 +57,8 @@ redcol <- "#dc322fcc"
 violetcol <- "#6c71c4cc"
 blackcol <- "#000000cc"
 
-okabe_ito_colors <- palette.colors(n = NULL, palette = "Okabe-Ito", recycle = FALSE)
+okabe_ito_colors <- palette.colors(n = NULL, palette = "Okabe-Ito", recycle = FALSE) |> substr(1, 7)
+okabe_ito_colors <- palette.colors(n = NULL, palette = "Okabe-Ito", recycle = FALSE) |> substr(1, 7)
 
 stress.cols <-  c("30C"="#7F7F7F",
                   "42C"=RColorBrewer::brewer.pal(n=7,"Oranges")[4],
@@ -69,7 +70,9 @@ stress.cols <-  c("30C"="#7F7F7F",
                   "Ethanol 7.5%"=RColorBrewer::brewer.pal(n=7,"Purples")[5],
                   "Ethanol 10%"=RColorBrewer::brewer.pal(n=7,"Purples")[6],
                   "Ethanol 15%"=RColorBrewer::brewer.pal(n=7,"Purples")[7],
-                  "DTT" = okabe_ito_colors[["reddishpurple"]])
+                  "DTT" = okabe_ito_colors["reddishpurple"])
+
+                  "DTT" = okabe_ito_colors["reddishpurple"])
 stress.cols.darker <- c("30C"="#7F7F7F",
                   "42C"=RColorBrewer::brewer.pal(n=7,"Oranges")[4],
                   "46C"="red")
@@ -451,6 +454,97 @@ ggsave("../figures/Figure3/all_violins.pdf",
        width=70,height=65,units="mm",bg="transparent")
 ```
 
+
+#Figure 2A
+```{r}
+genes_to_lab_2A <- c("SSB1","SSA4","HSP104","HSP26","PMU1","ADD66")
+# Redefine the function to return only the plots
+plot_fc_top100_2A <- function(df, xvar, yvar,
+                               xmin, xmax, ymin, ymax,
+                               xscale, xbreaks, yscale, ybreaks,
+                               top100cat, col, genes_to_lab) {
+  X <- sym(xvar)
+  Y <- sym(yvar)
+  top100cat <- sym(top100cat)
+  
+  df <- df %>% 
+    ungroup() %>% 
+    mutate(top100 = if_else(!!top100cat > sort(!!top100cat, decreasing=TRUE)[101], TRUE, FALSE)) %>%
+    mutate(top100 = factor(top100, levels = c(FALSE, TRUE))) %>%
+    mutate(gene_lab = if_else(gene %in% genes_to_lab, gene, NA_character_))
+
+  xint <- ifelse(xscale %in% c("log2", "log10"), 1, 0)
+  yint <- ifelse(yscale %in% c("log2", "log10"), 1, 0)
+
+  p_scatter <- ggplot(df,aes(x=!!X,y=!!Y,color=top100))+
+    geom_hline(yintercept = yint, linetype = 'dashed') +
+    geom_vline(xintercept = xint, linetype = 'dashed') +
+    geom_point(data=df %>% filter(gene %!in% genes_to_lab_2A, top100 == FALSE), alpha = 0.55, shape = 16, size = 0.8) +
+    geom_point(data=df %>% filter(gene %!in% genes_to_lab_2A, top100 == TRUE), alpha = 0.8, shape = 16, size = 0.9) +
+    geom_point(data=df %>% filter(gene %in% genes_to_lab_2A, top100 == FALSE), alpha = 1, shape = 16, size = 2, color = "black") +
+    geom_point(data=df %>% filter(gene %in% genes_to_lab_2A, top100 == TRUE), alpha = 1, shape = 16, size = 2) +
+    guides(color = "none") +
+    scale_color_manual(values = c("TRUE" = col, "FALSE" = "grey80")) +
+    coord_cartesian(xlim = c(xmin, xmax), ylim = c(ymin, ymax), expand = F) +
+    labs(x = "", y = "") +
+    geom_text_repel(aes(label = gene_lab), size = 8 * 0.35, min.segment.length = 0, color = "black")
+
+  if (xscale == "log2") {
+    p_scatter <- p_scatter + scale_x_log2nice(omag = xbreaks)
+  } else if (xscale == "log10") {
+    p_scatter <- p_scatter + scale_x_log10nice(omag = xbreaks)
+  } else {
+    p_scatter <- p_scatter + scale_x_continuous(breaks = xbreaks)
+  }
+
+  if (yscale == "log2") {
+    p_scatter <- p_scatter + scale_y_log2nice(omag = ybreaks)
+  } else if (yscale == "log10") {
+    p_scatter <- p_scatter + scale_y_log10nice(omag = ybreaks)
+  } else {
+    p_scatter <- p_scatter + scale_y_continuous(breaks = ybreaks)
+  }
+
+  return(p_scatter)
+}
+
+# For 42°C plot
+p_42C_deltaZ_TPMFC_plot <- plot_fc_top100_2A(
+  df = df_Zsup_Poly_minfilt %>% filter(Stress_label == "42C", Stress_group == "Heat Shock"),
+  xvar = "TPM.FC.SedSeq", 
+  yvar = "deltaZ",
+  xmin = 0.5, xmax = 60, ymin = -2.5, ymax = 3.5,
+  xscale = "log2", xbreaks = c(0, 2, 4),
+  yscale = "linear", ybreaks = c(-2, 0, 2),
+  top100cat = "TPM.FC.SedSeq", col = unname(stress.cols["42C"]),
+  genes_to_lab = genes_to_lab_2A
+)
+
+# For 46°C plot
+p_46C_deltaZ_TPMFC_plot <- plot_fc_top100_2A(
+  df = df_Zsup_Poly_minfilt %>% filter(Stress_label == "46C", Stress_group == "Heat Shock"),
+  xvar = "TPM.FC.SedSeq", 
+  yvar = "deltaZ",
+  xmin = 0.5, xmax = 10, ymin = -2.5, ymax = 3.5,
+  xscale = "log2", xbreaks = c(0, 1, 2),
+  yscale = "linear", ybreaks = c(-2, 0, 2),
+  top100cat = "TPM.FC.SedSeq", col = unname(stress.cols["46C"]),
+  genes_to_lab = genes_to_lab_2A
+)
+
+# Now, to view and save the plot for 42C
+p_42C_deltaZ_TPMFC_plot
+ggsave(file.path(github_dir, "figures/Figure2/42C_zoom.pdf"), egg::set_panel_size(p_42C_deltaZ_TPMFC_plot, width = unit(50, "mm"), height = unit(50, "mm")),
+       width = 75, height = 75, units = "mm", bg = "transparent")
+
+# And to view and save the plot for 46C
+plot(p_46C_deltaZ_TPMFC_plot)
+ggsave(file.path(github_dir, "figures/Figure2/46C_zoom.pdf"), egg::set_panel_size(p_46C_deltaZ_TPMFC_plot, width = unit(50, "mm"), height = unit(50, "mm")),
+       width = 75, height = 75, units = "mm", bg = "transparent")
+
+```
+
+# Figure 3
 
 
 ```{r}
@@ -1337,7 +1431,7 @@ deplete_condensation_plot <- ggplot(data = tsp_translation_aid %>% filter(Strain
   geom_errorbar(aes(xmin = fc_count_per_od - error_count_per_od, xmax = fc_count_per_od + error_count_per_od), width = 0)+
   geom_errorbar(aes(ymin = compiled_ave_fc_sp_enrichment - compiled_se_fc_sp_enrichment,ymax = compiled_ave_fc_sp_enrichment + compiled_se_fc_sp_enrichment), width = 0)+
     geom_point(size = 2)+
-  scale_color_manual(values = c("#E69F00", "#56B4E9", "#009E73", "#F5C710", "#0072B2", "#D55E00", "#CC79A7", "#999999"), name = "Depleted \nprotein", labels = c("eIF3b", "eIF5", "eIF4G", "eIF2α", "eIF4E", "eIF4A", "eIF5B", 'eIF4B'))+
+  scale_color_manual(values = c("#F5C710", "#E69F00", "#D55E00", "#999999" ,"#009E73","#0072B2","#56B4E9","#CC79A7"), name = "Depleted \nprotein", labels = c("eIF2α", "eIF3b", "eIF4A", 'eIF4B', "eIF4E", "eIF4G", "eIF5", "eIF5B"))+
   xlab("Relative translation \n(depletion vs. mock)")+
   ylab("Relative condensation \n(depletion vs. mock)")+
   theme(axis.text = element_text(size = 10),
@@ -2477,6 +2571,69 @@ p_3B_occ
 ggsave("../figures/Supplemental/HAC1_GCN4_Occupancy.pdf",egg::set_panel_size(p=p_TPM_Occ+labs(x="",y=""),width=unit(62,"mm"),height=unit(62,"mm")),
        width=100,height=100,units="mm",bg="transparent",dpi=600)
 cor.test(df$TPM.mean,df$Occ.odds.mean,method="spearman")
+```
+
+#Figure S2A
+```{r}
+genes_to_lab <- c("SSB1","SSA4","HSP104","HSP26","PMU1","ADD66")
+df <- df_Zsup_Poly_minfilt %>% filter(Stress_group=="Heat Shock",Temperature%in%c("42C","46C")) %>%
+  mutate(target = if_else(str_detect(label,"HSF1"),"HSF1 targets",
+                          if_else(str_detect(label,"MSN2"),"MSN2/4 targets","other"))) %>%
+  mutate(target=factor(target,levels=c("other","MSN2/4 targets","HSF1 targets"))) %>%
+  arrange(target) %>%
+  mutate(gene_lab=if_else(gene%in%genes_to_lab,gene,""))
+plot_hs <- function(df,xmin,xmax,ymin,ymax,xscale,xbreaks,yscale,ybreaks) {
+  df <-  df %>%
+    mutate(TPM.FC.SedSeq.plot = if_else(TPM.FC.SedSeq<xmin,xmin,
+                                        if_else(TPM.FC.SedSeq>xmax,xmax,TPM.FC.SedSeq)),
+           deltaZ.plot = if_else(deltaZ<ymin,ymin,
+                               if_else(deltaZ>ymax,ymax,deltaZ)))
+  p_scatter <- ggplot(df,aes(x=TPM.FC.SedSeq,y=deltaZ,color=target))+
+    geom_hline(yintercept=0,linetype="dotted")+geom_vline(xintercept=1,linetype="dotted")+
+    geom_point(data=df%>%filter(target=="other"),aes(x=TPM.FC.SedSeq.plot,y=deltaZ.plot),
+               alpha=0.8,color="gray80",shape=16,size=0.8)+
+    geom_point(data=df%>%filter(target!="other"),aes(x=TPM.FC.SedSeq.plot,y=deltaZ.plot),
+               alpha=0.8,shape=16,size=1)+
+    coord_cartesian(xlim=c(xmin,xmax),ylim=c(ymin,ymax),expand=F)+
+    scale_color_manual(values=c("HSF1 targets"=unname(target.cols["HSF1 targets"]),
+                                "MSN2/4 targets"=unname(target.cols["MSN2/4 targets"]),
+                                "other"="black"))+
+    geom_cross(data=df%>%filter(target%in%c("HSF1 targets")),grouping="target",x="TPM.FC.SedSeq",y="deltaZ")+
+    geom_point(data=df%>%filter(gene%in%genes_to_lab),aes(x=TPM.FC.SedSeq.plot,y=deltaZ.plot),
+               alpha=1,size=2,shape=16)
+   if (xscale=="log2"){
+    p_scatter <- p_scatter+scale_x_log2nice(omag=xbreaks)  
+  } else if (xscale=="log10"){
+    p_scatter <- p_scatter+scale_x_log10nice(omag=xbreaks)
+  } else {
+    p_scatter <- p_scatter+scale_x_continuous(breaks=xbreaks)
+  }
+  if (yscale=="log2"){
+    p_scatter <- p_scatter+scale_y_log2nice(omag=ybreaks)  
+  } else if (yscale=="log10"){
+    p_scatter <- p_scatter+scale_y_log10nice(omag=ybreaks)
+  } else {
+    p_scatter <- p_scatter+scale_y_continuous(breaks=ybreaks)
+  }
+  
+  # Overlay the density plots onto the main plot using annotation_custom
+  p_combined <- p_scatter +
+    geom_text_repel(aes(label=gene_lab),
+                    max.overlaps = 10000,min.segment.length = 0,
+                    size=8*0.35,color="black")+
+    labs(x="",y="")+
+    theme(plot.margin = margin(0, 0, 0, 0, "pt"))+
+    theme(legend.position="nonoe")
+}
+p_42C <- plot_hs(df%>%filter(Temperature=="42C"), 0.5,60,-2.5,3.5,"log2",c(-2,0,2,4),"linear",c(-2,0,2))
+p_42C
+ggsave(file.path(github_dir,"figures/FigureS2/42C_zoom.pdf"),egg::set_panel_size(p_42C,width=unit(50,"mm"),height=unit(50,"mm")),
+       width=75,height=75,units="mm")
+p_46C <- plot_hs(df%>%filter(Temperature=="46C"),0.4,8,-2.5,3.5,"log2",c(0,1,2),"linear",c(-2,0,2))+
+  theme(axis.text.y=element_blank())
+p_46C
+ggsave(file.path(github_dir,"figures/FigureS2/46C_zoom.pdf"),egg::set_panel_size(p_46C,width=unit(50,"mm"),height=unit(50,"mm")),
+       width=75,height=75,units="mm",bg="transparent")
 ```
 
 
