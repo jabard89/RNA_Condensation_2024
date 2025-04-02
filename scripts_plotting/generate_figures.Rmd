@@ -72,7 +72,6 @@ stress.cols <-  c("30C"="#7F7F7F",
                   "Ethanol 15%"=RColorBrewer::brewer.pal(n=7,"Purples")[7],
                   "DTT" = okabe_ito_colors["reddishpurple"])
 
-                  "DTT" = okabe_ito_colors["reddishpurple"])
 stress.cols.darker <- c("30C"="#7F7F7F",
                   "42C"=RColorBrewer::brewer.pal(n=7,"Oranges")[4],
                   "46C"="red")
@@ -281,69 +280,92 @@ df_rnafold <- read_tsv(file.path(github_dir,"RNAfold/","ViennaFold_UTR5plus20.ts
                                              "most structured 5'UTR")))
 ```
 
-# Figure 2
+#Figure 2
 
-deltasedScore vs. RNA abundance, 42/46
+##Figure 2A (deltasedScore vs. FC TPM, 42/46)
 ```{r}
-genes_to_lab <- c("SSB1","SSA4","HSP104","HSP26","PMU1","ADD66")
-df <- df_Zsup_Poly_minfilt %>% filter(Stress_group=="Heat Shock",Temperature%in%c("42C","46C")) %>%
-  mutate(target = if_else(str_detect(label,"HSF1"),"HSF1 targets",
-                          if_else(str_detect(label,"MSN2"),"MSN2/4 targets","other"))) %>%
-  mutate(target=factor(target,levels=c("other","MSN2/4 targets","HSF1 targets"))) %>%
-  arrange(target) %>%
-  mutate(gene_lab=if_else(gene%in%genes_to_lab,gene,""))
-plot_hs <- function(df,xmin,xmax,ymin,ymax,xscale,xbreaks,yscale,ybreaks) {
-  df <-  df %>%
-    mutate(TPM.FC.SedSeq.plot = if_else(TPM.FC.SedSeq<xmin,xmin,
-                                        if_else(TPM.FC.SedSeq>xmax,xmax,TPM.FC.SedSeq)),
-           deltaZ.plot = if_else(deltaZ<ymin,ymin,
-                               if_else(deltaZ>ymax,ymax,deltaZ)))
-  p_scatter <- ggplot(df,aes(x=TPM.FC.SedSeq,y=deltaZ,color=target))+
-    geom_hline(yintercept=0,linetype="dotted")+geom_vline(xintercept=1,linetype="dotted")+
-    geom_point(data=df%>%filter(target=="other"),aes(x=TPM.FC.SedSeq.plot,y=deltaZ.plot),
-               alpha=0.8,color="gray80",shape=16,size=0.8)+
-    geom_point(data=df%>%filter(target!="other"),aes(x=TPM.FC.SedSeq.plot,y=deltaZ.plot),
-               alpha=0.8,shape=16,size=1)+
-    coord_cartesian(xlim=c(xmin,xmax),ylim=c(ymin,ymax),expand=F)+
-    scale_color_manual(values=c("HSF1 targets"=unname(target.cols["HSF1 targets"]),
-                                "MSN2/4 targets"=unname(target.cols["MSN2/4 targets"]),
-                                "other"="black"))+
-    geom_cross(data=df%>%filter(target%in%c("HSF1 targets")),grouping="target",x="TPM.FC.SedSeq",y="deltaZ")+
-    geom_point(data=df%>%filter(gene%in%genes_to_lab),aes(x=TPM.FC.SedSeq.plot,y=deltaZ.plot),
-               alpha=1,size=2,shape=16)
-   if (xscale=="log2"){
-    p_scatter <- p_scatter+scale_x_log2nice(omag=xbreaks)  
-  } else if (xscale=="log10"){
-    p_scatter <- p_scatter+scale_x_log10nice(omag=xbreaks)
-  } else {
-    p_scatter <- p_scatter+scale_x_continuous(breaks=xbreaks)
-  }
-  if (yscale=="log2"){
-    p_scatter <- p_scatter+scale_y_log2nice(omag=ybreaks)  
-  } else if (yscale=="log10"){
-    p_scatter <- p_scatter+scale_y_log10nice(omag=ybreaks)
-  } else {
-    p_scatter <- p_scatter+scale_y_continuous(breaks=ybreaks)
-  }
+genes_to_lab_2A <- c("SSB1","SSA4","HSP104","HSP26","PMU1","ADD66")
+plot_fc_top100_2A <- function(df, xvar, yvar,
+                               xmin, xmax, ymin, ymax,
+                               xscale, xbreaks, yscale, ybreaks,
+                               top100cat, col, genes_to_lab) {
+  X <- sym(xvar)
+  Y <- sym(yvar)
+  top100cat <- sym(top100cat)
   
-  # Overlay the density plots onto the main plot using annotation_custom
-  p_combined <- p_scatter +
-    geom_text_repel(aes(label=gene_lab),
-                    max.overlaps = 10000,min.segment.length = 0,
-                    size=8*0.35,color="black")+
-    labs(x="",y="")+
-    theme(plot.margin = margin(0, 0, 0, 0, "pt"))+
-    theme(legend.position="nonoe")
+  df <- df %>% 
+    ungroup() %>% 
+    mutate(top100 = if_else(!!top100cat > sort(!!top100cat, decreasing=TRUE)[101], TRUE, FALSE)) %>%
+    mutate(top100 = factor(top100, levels = c(FALSE, TRUE))) %>%
+    mutate(gene_lab = if_else(gene %in% genes_to_lab, gene, NA_character_))
+
+  xint <- ifelse(xscale %in% c("log2", "log10"), 1, 0)
+  yint <- ifelse(yscale %in% c("log2", "log10"), 1, 0)
+
+  p_scatter <- ggplot(df,aes(x=!!X,y=!!Y,color=top100))+
+    geom_hline(yintercept = yint, linetype = 'dashed') +
+    geom_vline(xintercept = xint, linetype = 'dashed') +
+    geom_point(data=df %>% filter(gene %!in% genes_to_lab_2A, top100 == FALSE), alpha = 0.55, shape = 16, size = 0.8) +
+    geom_point(data=df %>% filter(gene %!in% genes_to_lab_2A, top100 == TRUE), alpha = 0.8, shape = 16, size = 0.9) +
+    geom_point(data=df %>% filter(gene %in% genes_to_lab_2A, top100 == FALSE), alpha = 1, shape = 16, size = 2, color = "black") +
+    geom_point(data=df %>% filter(gene %in% genes_to_lab_2A, top100 == TRUE), alpha = 1, shape = 16, size = 2) +
+    guides(color = "none") +
+    scale_color_manual(values = c("TRUE" = col, "FALSE" = "grey80")) +
+    coord_cartesian(xlim = c(xmin, xmax), ylim = c(ymin, ymax), expand = F) +
+    labs(x = "", y = "") +
+    geom_text_repel(aes(label = gene_lab), size = 8 * 0.35, min.segment.length = 0, color = "black")
+
+  if (xscale == "log2") {
+    p_scatter <- p_scatter + scale_x_log2nice(omag = xbreaks)
+  } else if (xscale == "log10") {
+    p_scatter <- p_scatter + scale_x_log10nice(omag = xbreaks)
+  } else {
+    p_scatter <- p_scatter + scale_x_continuous(breaks = xbreaks)
+  }
+
+  if (yscale == "log2") {
+    p_scatter <- p_scatter + scale_y_log2nice(omag = ybreaks)
+  } else if (yscale == "log10") {
+    p_scatter <- p_scatter + scale_y_log10nice(omag = ybreaks)
+  } else {
+    p_scatter <- p_scatter + scale_y_continuous(breaks = ybreaks)
+  }
+
+  return(p_scatter)
 }
-p_42C <- plot_hs(df%>%filter(Temperature=="42C"), 0.5,60,-2.5,3.5,"log2",c(-2,0,2,4),"linear",c(-2,0,2))
-p_42C
-ggsave(file.path(github_dir,"figures/Figure2/42C_zoom.pdf"),egg::set_panel_size(p_42C,width=unit(50,"mm"),height=unit(50,"mm")),
-       width=75,height=75,units="mm")
-p_46C <- plot_hs(df%>%filter(Temperature=="46C"),0.4,8,-2.5,3.5,"log2",c(0,1,2),"linear",c(-2,0,2))+
-  theme(axis.text.y=element_blank())
-p_46C
-ggsave(file.path(github_dir,"figures/Figure2/46C_zoom.pdf"),egg::set_panel_size(p_46C,width=unit(50,"mm"),height=unit(50,"mm")),
-       width=75,height=75,units="mm",bg="transparent")
+
+# For 42°C plot
+p_42C_deltaZ_TPMFC_plot <- plot_fc_top100_2A(
+  df = df_Zsup_Poly_minfilt %>% filter(Stress_label == "42C", Stress_group == "Heat Shock"),
+  xvar = "TPM.FC.SedSeq", 
+  yvar = "deltaZ",
+  xmin = 0.5, xmax = 60, ymin = -2.5, ymax = 3.5,
+  xscale = "log2", xbreaks = c(0, 2, 4),
+  yscale = "linear", ybreaks = c(-2, 0, 2),
+  top100cat = "TPM.FC.SedSeq", col = unname(stress.cols["42C"]),
+  genes_to_lab = genes_to_lab_2A
+)
+
+# For 46°C plot
+p_46C_deltaZ_TPMFC_plot <- plot_fc_top100_2A(
+  df = df_Zsup_Poly_minfilt %>% filter(Stress_label == "46C", Stress_group == "Heat Shock"),
+  xvar = "TPM.FC.SedSeq", 
+  yvar = "deltaZ",
+  xmin = 0.5, xmax = 10, ymin = -2.5, ymax = 3.5,
+  xscale = "log2", xbreaks = c(0, 1, 2),
+  yscale = "linear", ybreaks = c(-2, 0, 2),
+  top100cat = "TPM.FC.SedSeq", col = unname(stress.cols["46C"]),
+  genes_to_lab = genes_to_lab_2A
+)
+
+p_42C_deltaZ_TPMFC_plot
+ggsave(file.path(github_dir, "figures/Figure2/42C_zoom.pdf"), egg::set_panel_size(p_42C_deltaZ_TPMFC_plot, width = unit(50, "mm"), height = unit(50, "mm")),
+       width = 75, height = 75, units = "mm", bg = "transparent")
+
+plot(p_46C_deltaZ_TPMFC_plot)
+ggsave(file.path(github_dir, "figures/Figure2/46C_zoom.pdf"), egg::set_panel_size(p_46C_deltaZ_TPMFC_plot, width = unit(50, "mm"), height = unit(50, "mm")),
+       width = 75, height = 75, units = "mm", bg = "transparent")
+
 ```
 
 # Figure 3
@@ -453,99 +475,7 @@ ggsave("../figures/Figure3/all_violins.pdf",
        p_violin+theme(legend.position="none"),
        width=70,height=65,units="mm",bg="transparent")
 ```
-
-
-#Figure 2A
-```{r}
-genes_to_lab_2A <- c("SSB1","SSA4","HSP104","HSP26","PMU1","ADD66")
-# Redefine the function to return only the plots
-plot_fc_top100_2A <- function(df, xvar, yvar,
-                               xmin, xmax, ymin, ymax,
-                               xscale, xbreaks, yscale, ybreaks,
-                               top100cat, col, genes_to_lab) {
-  X <- sym(xvar)
-  Y <- sym(yvar)
-  top100cat <- sym(top100cat)
-  
-  df <- df %>% 
-    ungroup() %>% 
-    mutate(top100 = if_else(!!top100cat > sort(!!top100cat, decreasing=TRUE)[101], TRUE, FALSE)) %>%
-    mutate(top100 = factor(top100, levels = c(FALSE, TRUE))) %>%
-    mutate(gene_lab = if_else(gene %in% genes_to_lab, gene, NA_character_))
-
-  xint <- ifelse(xscale %in% c("log2", "log10"), 1, 0)
-  yint <- ifelse(yscale %in% c("log2", "log10"), 1, 0)
-
-  p_scatter <- ggplot(df,aes(x=!!X,y=!!Y,color=top100))+
-    geom_hline(yintercept = yint, linetype = 'dashed') +
-    geom_vline(xintercept = xint, linetype = 'dashed') +
-    geom_point(data=df %>% filter(gene %!in% genes_to_lab_2A, top100 == FALSE), alpha = 0.55, shape = 16, size = 0.8) +
-    geom_point(data=df %>% filter(gene %!in% genes_to_lab_2A, top100 == TRUE), alpha = 0.8, shape = 16, size = 0.9) +
-    geom_point(data=df %>% filter(gene %in% genes_to_lab_2A, top100 == FALSE), alpha = 1, shape = 16, size = 2, color = "black") +
-    geom_point(data=df %>% filter(gene %in% genes_to_lab_2A, top100 == TRUE), alpha = 1, shape = 16, size = 2) +
-    guides(color = "none") +
-    scale_color_manual(values = c("TRUE" = col, "FALSE" = "grey80")) +
-    coord_cartesian(xlim = c(xmin, xmax), ylim = c(ymin, ymax), expand = F) +
-    labs(x = "", y = "") +
-    geom_text_repel(aes(label = gene_lab), size = 8 * 0.35, min.segment.length = 0, color = "black")
-
-  if (xscale == "log2") {
-    p_scatter <- p_scatter + scale_x_log2nice(omag = xbreaks)
-  } else if (xscale == "log10") {
-    p_scatter <- p_scatter + scale_x_log10nice(omag = xbreaks)
-  } else {
-    p_scatter <- p_scatter + scale_x_continuous(breaks = xbreaks)
-  }
-
-  if (yscale == "log2") {
-    p_scatter <- p_scatter + scale_y_log2nice(omag = ybreaks)
-  } else if (yscale == "log10") {
-    p_scatter <- p_scatter + scale_y_log10nice(omag = ybreaks)
-  } else {
-    p_scatter <- p_scatter + scale_y_continuous(breaks = ybreaks)
-  }
-
-  return(p_scatter)
-}
-
-# For 42°C plot
-p_42C_deltaZ_TPMFC_plot <- plot_fc_top100_2A(
-  df = df_Zsup_Poly_minfilt %>% filter(Stress_label == "42C", Stress_group == "Heat Shock"),
-  xvar = "TPM.FC.SedSeq", 
-  yvar = "deltaZ",
-  xmin = 0.5, xmax = 60, ymin = -2.5, ymax = 3.5,
-  xscale = "log2", xbreaks = c(0, 2, 4),
-  yscale = "linear", ybreaks = c(-2, 0, 2),
-  top100cat = "TPM.FC.SedSeq", col = unname(stress.cols["42C"]),
-  genes_to_lab = genes_to_lab_2A
-)
-
-# For 46°C plot
-p_46C_deltaZ_TPMFC_plot <- plot_fc_top100_2A(
-  df = df_Zsup_Poly_minfilt %>% filter(Stress_label == "46C", Stress_group == "Heat Shock"),
-  xvar = "TPM.FC.SedSeq", 
-  yvar = "deltaZ",
-  xmin = 0.5, xmax = 10, ymin = -2.5, ymax = 3.5,
-  xscale = "log2", xbreaks = c(0, 1, 2),
-  yscale = "linear", ybreaks = c(-2, 0, 2),
-  top100cat = "TPM.FC.SedSeq", col = unname(stress.cols["46C"]),
-  genes_to_lab = genes_to_lab_2A
-)
-
-# Now, to view and save the plot for 42C
-p_42C_deltaZ_TPMFC_plot
-ggsave(file.path(github_dir, "figures/Figure2/42C_zoom.pdf"), egg::set_panel_size(p_42C_deltaZ_TPMFC_plot, width = unit(50, "mm"), height = unit(50, "mm")),
-       width = 75, height = 75, units = "mm", bg = "transparent")
-
-# And to view and save the plot for 46C
-plot(p_46C_deltaZ_TPMFC_plot)
-ggsave(file.path(github_dir, "figures/Figure2/46C_zoom.pdf"), egg::set_panel_size(p_46C_deltaZ_TPMFC_plot, width = unit(50, "mm"), height = unit(50, "mm")),
-       width = 75, height = 75, units = "mm", bg = "transparent")
-
-```
-
-# Figure 3
-
+## comparison plots sedscore, fc abundance, ribosome association
 
 ```{r}
 
@@ -824,7 +754,7 @@ df <- df_reporter_pSup %>%
   mutate(SP.FC = SP/exp(mean(log(SP[Temperature=="30C"]),na.rm=T)),
          Occ_odds = Occupancy_corr/(1-Occupancy_corr),
          Occ_odds.FC = Occ_odds/exp(mean(log(Occ_odds[Temperature=="30C"]),na.rm=T)))  %>% 
-  mutate(Reporter_age = factor(Reporter_age, levels = c("Old", "New")))
+  mutate(Reporter_age = factor(Reporter_age, levels = c("Old", "New"))) %>% mutate(Probe =factor(Probe, levels = c("PMU1", "HSP26", "YONL", "BEM2", "PGK1")))
 df_sum <- df %>%
   group_by(Group,Probe,Temperature) %>%
   summarise(log10SPFC.mean = mean(log10(SP.FC)),
@@ -835,7 +765,7 @@ df_sum <- df %>%
          Reporter_age = if_else(str_detect(Group,"New"),"New",
                                 if_else(str_detect(Group,"Old"),"Old",
                                         "native"))) %>% 
-  mutate(Reporter_age = factor(Reporter_age, levels = c("Old", "New")))
+  mutate(Reporter_age = factor(Reporter_age, levels = c("Old", "New"))) %>% mutate(Probe =factor(Probe, levels = c("PMU1", "HSP26", "YONL", "BEM2", "PGK1")))
 
 dodge_wid <- 0.9
 SP.FC.breaks <- c(-2,0)
@@ -843,43 +773,87 @@ SP.FC.labels <- c(expression(10^{-2}),
                   expression(10^{0}))
 SP.FC.ylims <- c(-2.75,0.4)
 p_native_SPFC <- ggplot(df %>% filter(Probe!="YONL",Probe%in%c("HSP26","PMU1")),
-                   aes(x=Temperature,y=log10(SP.FC), color = Temperature))+
-  # geom_errorbar(data=df_sum %>% filter(Probe!="YONL",Probe%in%c("HSP26","PMU1")),
-  #               aes(y=log10SPFC.mean,ymin=log10SPFC.mean-log10SPFC.sem,ymax=log10SPFC.mean+log10SPFC.sem),
-  #               width=0)+
- #geom_errorbar(data=df_sum %>% filter(Probe!="YONL",Probe%in%c("HSP26","PMU1")),
-               # aes(y=log10SPFC.mean,ymin=log10SPFC.mean,ymax=log10SPFC.mean, color = Temperature))+
-  geom_col(data=df_sum %>% filter(Probe!="YONL",Probe%in%c("HSP26","PMU1")), aes(x = Temperature, y = log10SPFC.mean, fill = Temperature), alpha = 0.5)+
+                   aes(x=Temperature,y=log10(SP.FC), color = Probe))+
+  geom_col(data=df_sum %>%  filter(Probe!="YONL",Probe%in%c("HSP26","PMU1")), 
+           aes(x = Temperature, y = log10SPFC.mean, fill = Probe), alpha = 0.5, position= position_dodge(width = 0.95))+
   geom_point(shape=16,alpha=0.8,
-             #aes(color=Temperature),
-             #position=position_jitter(width = 0.1), 
+             aes(fill=Probe),
+             position=position_dodge(width = 0.9), 
              size = 1, color = "black")+
-  facet_grid(Probe~.)+
-  theme(legend.position = "none",
+  geom_hline(yintercept = 0, linetype = "dashed")+
+  theme(
         strip.text.x = element_blank(),
         strip.text.y = element_blank(),
         panel.spacing.x = grid::unit(0,"mm"),
         panel.spacing.y = grid::unit(0,"mm"))+
-  scale_fill_manual(values=c("30C"="grey60",
-                              "42C"=stress.cols[["42C"]],
-                              "46C"=stress.cols[["46C"]]))+
-  scale_color_manual(values=c("30C"="grey60",
-                              "42C"=stress.cols[["42C"]],
-                              "46C"=stress.cols[["46C"]]))+
+  scale_fill_manual(values = c("green4", "orange2"))+
+  scale_color_manual(values = c("green4", "orange2"))+
   labs(x="",y="")+
   coord_cartesian(ylim=SP.FC.ylims)+
   scale_x_discrete(labels=c("30C"="30°C",
                             "42C"="42°C",
                             "46C"="46°C"))+
   scale_y_continuous(breaks=SP.FC.breaks,labels=SP.FC.labels)
+
 p_native_SPFC
 
 
+df_combined_plot <- df %>% 
+  filter(Probe == "YONL" | Probe == "HSP26" | Probe == "PMU1") %>%
+  mutate(Probe = case_when(
+           Probe == "YONL" & grepl("HSP26_", Group) ~ "HSP26",
+           Probe == "YONL" & grepl("PMU1_", Group) ~ "PMU1",
+           TRUE ~ Probe),
+         Reporter_age = case_when(
+           Group == "native" ~ "native",
+           TRUE ~ Reporter_age))%>%
+  mutate(Reporter_age = factor(Reporter_age, levels = c("native", "Old", "New"))) %>% mutate(UTR5 = factor(UTR5, levels = c("PMU1", "HSP26", "YONL")))
+         
+         
+native_rep_comb_plot <- ggplot(df_combined_plot,  # Set the order of Reporter_age),
+       aes(x = Temperature, y = log10(SP.FC)), color = Reporter_age) +
+  geom_col(data = df_sum %>% filter(Probe == "YONL") %>% 
+             mutate(UTR5 = factor(UTR5, levels = c("PMU1", "HSP26", "YONL"))) %>% 
+  mutate(Reporter_age = factor(Reporter_age, levels = c("Old", "New"))),
+           aes(x = Temperature, y = log10SPFC.mean, fill = Reporter_age, color = Reporter_age), 
+           alpha = 0.5, position = "dodge") +
+  geom_point(data = df_combined_plot %>% filter(Group != "native"), shape = 16, alpha = 0.8, 
+             aes(fill = Reporter_age),  # Color mapped to Reporter_age
+             position = position_dodge(width = 0.9), 
+             size = 1, color = "black") +
+  geom_hline(yintercept = 0, linetype = "dashed")+
+  facet_grid(. ~ UTR5) +
+  theme(
+    axis.title.x = element_blank(),
+    strip.text.y = element_blank(),
+    panel.spacing.x = grid::unit(0, "mm"),
+    panel.spacing.y = grid::unit(0, "mm"))+
+  scale_fill_manual (values = c("darkblue","magenta3"))+
+  scale_color_manual (values = c("darkblue","magenta3"))+
+  scale_x_discrete(labels=c("30C"="30°C",
+                            "42C"="42°C",
+                            "46C"="46°C"))+
+  ylab("deltapSup (odds)")+
+  labs(x="",y="")+
+  coord_cartesian(ylim=SP.FC.ylims)+
+  scale_y_continuous(breaks=SP.FC.breaks,labels=SP.FC.labels)
+
+native_rep_comb_plot 
+
+  
+ggsave(file.path(github_dir,"figures","Figure4/reporters_SPFC.pdf"),
+       egg::set_panel_size(p=native_rep_comb_plot,width=unit(30,"mm"),height=unit(30,"mm")),
+       width=100,height=100,units="mm",bg="transparent")
+
+ggsave(file.path(github_dir,"figures","Figure4/native_SPFC.pdf"),
+       egg::set_panel_size(p=p_native_SPFC,width=unit(30,"mm"),height=unit(30,"mm")),
+       width=100,height=100,units="mm",bg="transparent")
+```
+Figure 4 reporter translation figures
+```{r}
 
 p_rep_SPFC <- ggplot(df %>% filter(Probe=="YONL"),
                    aes(x=Temperature,y=log10(SP.FC),color=Reporter_age))+
-  # geom_errorbar(data=df_sum %>% filter(Probe=="YONL"),
-  #               aes(y=log10SPFC.mean,ymin=log10SPFC.mean,ymax=log10SPFC.mean))+
   geom_col(data=df_sum %>% filter(Probe=="YONL"),
                  aes(x = Temperature,y=log10SPFC.mean, fill = Reporter_age), position = "dodge", alpha = 0.5)+
   geom_point(shape=16,size=1, aes(group = Reporter_age), position = position_dodge(width = 0.9), color = "black")+
@@ -920,7 +894,8 @@ df <- df_reporter_pSup %>%
   group_by(Group,Probe,Experiment_group) %>%
   mutate(SP.FC = SP/exp(mean(log(SP[Temperature=="30C"]),na.rm=T)),
          Occ_odds = Occupancy_corr/(1-Occupancy_corr),
-         Occ_odds.FC = Occ_odds/exp(mean(log(Occ_odds[Temperature=="30C"]),na.rm=T)))
+         Occ_odds.FC = Occ_odds/exp(mean(log(Occ_odds[Temperature=="30C"]),na.rm=T))) %>% 
+             mutate(UTR5 = factor(UTR5, levels = c("PMU1", "HSP26", "YONL")), Reporter_age = factor(Reporter_age, levels = c("Old", "New")))
 df_sum <- df %>%
   group_by(Temperature,Experiment_group,Group,Probe,UTR5,Reporter_age) %>%
   summarise(Occ_odds.min = min(Occ_odds),
@@ -929,59 +904,53 @@ df_sum <- df %>%
             SP.min = min(SP),
             SP.max = max(SP),
             SP.mean = exp(mean(log(SP))))
-p_rep_SP_occ <- ggplot(df %>% filter(Group!="native",Probe=="YONL",Temperature %in% c("42C"),
+
+df_sum_native <- df %>%
+  group_by(Temperature,Experiment_group,Group,Probe) %>%
+  summarise(Occ_odds.min = min(Occ_odds),
+            Occ_odds.max= max(Occ_odds),
+            Occ_odds.mean = exp(mean(log(Occ_odds))),
+            SP.min = min(SP),
+            SP.max = max(SP),
+            SP.mean = exp(mean(log(SP))))
+p_rep_occ <- ggplot(df %>% filter(Group!="native",Probe=="YONL", Temperature %in% c("42C"),
                                          Experiment_group=="42C"),
-       aes(x=Occ_odds,y=SP,color=Reporter_age,shape=UTR5))+
-  geom_point(size=2)+
-  # geom_errorbar(data=df_sum%>% filter(Group!="native",Probe=="YONL",Temperature %in% c("42C"),
-  #                                        Experiment_group=="42C"),
-  #               aes(xmin=Occ_odds.min,x=Occ_odds.mean,xmax=Occ_odds.max,y=SP.mean),
-  #               width=0)+
-  # geom_errorbar(data=df_sum%>% filter(Group!="native",Probe=="YONL",Temperature %in% c("42C"),
-  #                                        Experiment_group=="42C"),
-  #               aes(ymin=SP.min,y=SP.mean,ymax=SP.max,x=Occ_odds.mean),
-  #               width=0)+
-  #scale_shape_manual(values=c("New"=16,"Old"=1))+
-  scale_shape_manual(values=c("PMU1"=16,"HSP26"=2))+
-  #scale_color_manual(values=c("PMU1"=cat.cols[["down"]],"HSP26"=cat.cols[["up"]]))+
-  scale_color_manual(values=induction.cols)+
-  scale_x_log10nice()+
-  scale_y_log2nice(omag=c(2,4))+
-  coord_cartesian(xlim=c(0.05,7),ylim=c(2,25))+
+       aes(x=Reporter_age,y=Occ_odds, color=Reporter_age))+
+  
+  geom_col(data = df_sum  %>% filter(Group!="native",Probe=="YONL", Temperature %in% c("42C"),
+                                         Experiment_group=="42C"),aes(x = Reporter_age, y = Occ_odds.mean, fill = Reporter_age), position = "dodge", alpha = 0.5)+
+  geom_point(size=1, alpha = 0.8, shape = 16, color= "black")+
+  geom_hline(yintercept = 1, linetype = "dashed")+
+  scale_color_manual (values = c("darkblue", "magenta3"))+
+  scale_fill_manual (values = c("darkblue", "magenta3"))+
+  scale_y_log2nice(omag=c(-2,0,2))+
+  coord_cartesian(ylim=c(0.1,6))+
   labs(x="",y="")+
-  #facet_grid(Temperature~.)+
-  guides(color="none",shape="none")
-p_rep_SP_occ
-p_native_SP_occ <- ggplot(df %>% filter(Group=="native",Temperature %in%c("42C"),
-                                         Experiment_group=="42C"),
-       aes(x=Occ_odds,y=SP,shape=Probe))+
-  geom_point(size=2, color =RColorBrewer::brewer.pal(n=7,"Oranges")[4])+
-  # geom_errorbar(data=df_sum%>% filter(Group!="native",Probe=="YONL",Temperature %in% c("42C"),
-  #                                        Experiment_group=="42C"),
-  #               aes(xmin=Occ_odds.min,x=Occ_odds.mean,xmax=Occ_odds.max,y=SP.mean),
-  #               width=0)+
-  # geom_errorbar(data=df_sum%>% filter(Group!="native",Probe=="YONL",Temperature %in% c("42C"),
-  #                                        Experiment_group=="42C"),
-  #               aes(ymin=SP.min,y=SP.mean,ymax=SP.max,x=Occ_odds.mean),
-  #               width=0)+
-  #scale_shape_manual(values=c("New"=16,"Old"=1))+
-  scale_shape_manual(values=c("PMU1"=16,"HSP26"=2))+
-  #scale_color_manual(values=c("PMU1"=cat.cols[["down"]],"HSP26"=cat.cols[["up"]]))+
-  #scale_color_manual(values=induction.cols)+
-  scale_x_log10nice()+
-  scale_y_log2nice(omag=c(3,5))+
-  coord_cartesian(xlim=c(0.05,7),ylim=c(3,60))+
-  labs(x="",y="")+
-  #facet_grid(Temperature~.)+
-  guides(color="none",shape="none")
-p_native_SP_occ
-ggsave(file.path(github_dir,"figures","Figure4/reporters_SP_Occ.pdf"),
-       egg::set_panel_size(p=p_rep_SP_occ,width=unit(20,"mm"),height=unit(20,"mm")),
+  facet_grid(.~UTR5)
+
+p_rep_occ
+
+  
+p_native_occ <-ggplot(df %>% filter(Group=="native",Temperature %in%c("42C"), Experiment_group=="42C") %>% filter(Probe == "PMU1" | Probe == "HSP26") %>% mutate(Probe = factor(Probe, levels = c("PMU1", "HSP26"))),
+       aes(x = Probe, y = Occ_odds, color = Probe))+
+  geom_col(data = df_sum_native %>% filter(Group=="native",Temperature %in%c("42C"),
+                                         Experiment_group=="42C") %>% filter(Probe == "PMU1" | Probe == "HSP26") %>% mutate(Probe = factor(Probe, levels = c("PMU1", "HSP26"))),aes(x = Probe, y = Occ_odds.mean, fill = Probe), position = "dodge", alpha = 0.5)+
+    geom_point(size=1, shape = 16, color = "black")+
+  geom_hline(yintercept = 1, linetype = "dashed")+
+  scale_fill_manual(values=c("PMU1"="green4","HSP26"="orange2"))+
+  scale_color_manual(values=c("PMU1"="green4","HSP26"="orange2"))+
+  scale_y_log2nice(omag=c(-2,0,2))+
+  coord_cartesian(ylim=c(0.1,6))+
+  labs(x="",y="")
+
+  p_native_occ
+
+ggsave(file.path(github_dir,"figures","Figure4/reporters_Occ.pdf"),
+       egg::set_panel_size(p=p_rep_occ+theme( axis.text.y = element_blank(), axis.ticks.y = element_blank()),width=unit(30,"mm"),height=unit(30,"mm")),
        width=100,height=100,units="mm",bg="transparent")
-ggsave(file.path(github_dir,"figures","Figure4/native_SP_Occ.pdf"),
-       egg::set_panel_size(p=p_native_SP_occ+theme(axis.ticks.x=element_blank(),
-                                                   axis.text.x = element_blank()),
-                           width=unit(20,"mm"),height=unit(20,"mm")),
+ggsave(file.path(github_dir,"figures","Figure4/native_Occ.pdf"),
+       egg::set_panel_size(p=p_native_occ+theme(),
+                           width=unit(30,"mm"),height=unit(30,"mm")),
        width=100,height=100,units="mm",bg="transparent")
 
 ```
