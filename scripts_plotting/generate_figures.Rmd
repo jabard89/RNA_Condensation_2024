@@ -57,8 +57,7 @@ redcol <- "#dc322fcc"
 violetcol <- "#6c71c4cc"
 blackcol <- "#000000cc"
 
-okabe_ito_colors <- palette.colors(n = NULL, palette = "Okabe-Ito", recycle = FALSE) |> substr(1, 7)
-okabe_ito_colors <- palette.colors(n = NULL, palette = "Okabe-Ito", recycle = FALSE) |> substr(1, 7)
+okabe_ito_colors <- palette.colors(n = NULL, palette = "Okabe-Ito", recycle = FALSE)
 
 stress.cols <-  c("30C"="#7F7F7F",
                   "42C"=RColorBrewer::brewer.pal(n=7,"Oranges")[4],
@@ -70,8 +69,7 @@ stress.cols <-  c("30C"="#7F7F7F",
                   "Ethanol 7.5%"=RColorBrewer::brewer.pal(n=7,"Purples")[5],
                   "Ethanol 10%"=RColorBrewer::brewer.pal(n=7,"Purples")[6],
                   "Ethanol 15%"=RColorBrewer::brewer.pal(n=7,"Purples")[7],
-                  "DTT" = okabe_ito_colors["reddishpurple"])
-
+                  "DTT" = okabe_ito_colors[8])
 stress.cols.darker <- c("30C"="#7F7F7F",
                   "42C"=RColorBrewer::brewer.pal(n=7,"Oranges")[4],
                   "46C"="red")
@@ -1626,8 +1624,8 @@ p <- ggplot(df,
             aes(x=LengthTxEst,y=SP.mean.all))+
   geom_point(alpha=0.3,shape=16,size=0.5,color="grey60")+
   geom_line(aes(y=mean.SP.mean.all),color="black",size=0.5,alpha=0.5,linetype=1,linewidth=0.5)+
-  geom_line(aes(y=exp(mean.lo.psup-sd.lo.psup)),color=okabe_ito_colors[["bluishgreen"]],size=1,linewidth=0.5, linetype=1)+
-  geom_line(aes(y=exp(mean.lo.psup+sd.lo.psup)),color=okabe_ito_colors[["bluishgreen"]],size=1, linewidth=0.5, linetype=1)+
+  geom_line(aes(y=exp(mean.lo.psup-sd.lo.psup)),color=okabe_ito_colors[4],size=1,linewidth=0.5, linetype=1)+
+  geom_line(aes(y=exp(mean.lo.psup+sd.lo.psup)),color=okabe_ito_colors[4],size=1, linewidth=0.5, linetype=1)+
   scale_x_log10nice()+ scale_y_log10nice()+
   coord_cartesian(ylim=c(0.5,40))+
   geom_point(data=df %>% filter(gene %in% c(genes_to_highlight)),
@@ -1639,13 +1637,13 @@ p <- ggplot(df,
              width=0,linewidth=1)+
   geom_point(data=df %>% filter(gene=="GCN4"),
              size=1.5,shape=16,
-                  color=okabe_ito_colors[["vermillion"]])+
+                  color=okabe_ito_colors[7])+
   geom_errorbar(data=df %>% filter(gene=="GCN4"),
              aes(y=SP.mean.all,
                  ymin=SP.mean.all-SP.sem.all,
                  ymax=SP.mean.all+SP.sem.all),
              width=0,linewidth=1,
-                  color=okabe_ito_colors[["vermillion"]])+
+                  color=okabe_ito_colors[7])+
   geom_point(data=df %>% filter(gene=="HAC1"),
              size=1.5,shape=16,
                   color=stress.cols[["DTT"]])+
@@ -1666,7 +1664,7 @@ p <- ggplot(df,
                   size=0.35*8,
                   nudge_x = 0.4, nudge_y = 0.4,
                   linewidth=0.25,
-                  color=okabe_ito_colors[["vermillion"]])+
+                  color=okabe_ito_colors[7])+
   set_label_size+
   labs(x="mRNA length (nucleotides)", y="Odds in supernatant")
 p
