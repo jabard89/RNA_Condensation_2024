@@ -256,6 +256,23 @@ df_Weinberg <- read_tsv(file.path(github_dir,"src/Weinberg_2016/weinberg_shah_sy
   select(ORF,TE,pE)
 
 muhl = read_tsv(file.path(github_dir,"src/Muhlhofer_2019/Muhlhofer_2019_rnaseq.tsv"), comment='#') |> pivot_wider(values_from = TPM, names_from=sample, names_prefix = 'tpm.')
+
+df_hairpin_reporters <- read_csv(file.path(github_dir,"data_processed/df_hairpin_DAD.csv")) %>%
+  mutate(Strain = paste0("y", Strain)) %>%
+  group_by(Strain,mfe) %>%
+  summarise("TE"=exp(mean(log(correctedGreenRedRatio)))) %>%
+  select(Strain,mfe,TE)
+
+df_uorfs <- read_delim(file.path(github_dir,"data_processed/20201206_dataAnalyzedExport.txt"),delim=" ") %>% 
+  separate(Sample,into=c("Strain","Biorep","Tech"),sep="_") %>%
+  mutate(
+    Biorep = ifelse(Strain == "BY4742", "A", 
+                    ifelse(Strain == "yHG010", "A", Biorep)),
+    Tech = ifelse(Strain == "BY4742", 1, 
+                  ifelse(Strain == "yHG010", 1, Tech))) %>% 
+  group_by(Strain,Biorep) %>%
+  summarise(Clover=mean(Clover_corrected),
+            mCherry=mean(mCherry_corrected))
 ```
 
 ```{r}
@@ -1363,8 +1380,93 @@ ggsave("../figures/Figure5/TPM_TE_right.pdf",egg::set_panel_size(p=p_Z_box+labs(
        width=100,height=100,units="mm",bg="transparent")
 
 ```
-##Figure 6
-#Figure 6D Relative translation of different depletion strains
+
+## hairpins
+```{r}
+
+df_uorf_rna <- df_Zsup_mean %>% filter(Strain%in%c("yHG026","yHG027","yHG010")) %>%
+  filter(ORF%in%c("strong_Clover","mCherry")) %>%
+  mutate(Reporter=case_when(ORF=="strong_Clover"~"Clover",
+                            ORF=="mCherry"~"mCherry")) %>%
+  select(Strain,Reporter,Total.TPM.mean)
+df_uorf_TE <- df_uorfs %>%  filter(Strain%in%c("yHG026","yHG027","yHG010")) %>%
+  pivot_longer(cols=c("mCherry","Clover"),names_to="Reporter",values_to="Protein") %>%
+  group_by(Strain,Reporter) %>%
+  summarise(Protein.mean = mean(Protein),
+            Protein.se = sd(Protein)/sqrt(length(Protein))) %>%
+  left_join(df_uorf_rna,by=c("Strain","Reporter")) %>%
+  mutate(TE=Protein.mean) %>%
+  ungroup %>%
+  mutate(TE_norm = TE/TE[Strain=="yHG010"])
+df_reporter_TE <- df_hairpin_reporters %>%
+  ungroup %>%
+  mutate(TE_norm = TE/TE[Strain=="yHG010"]) %>%
+  mutate(Experiment="hairpins") %>%
+  select(Strain,TE_norm,Experiment,mfe) %>%
+  bind_rows(df_uorf_TE %>% filter(Reporter=="Clover") %>% select(Strain,TE_norm) %>%
+              mutate(Experiment="uORFs"))
+df_dist <- df_Zsup_mean %>%
+  left_join(df_samples_byLysate %>% select(Treatment_group,Treatment,Temperature,Time) %>% unique,by=c("Treatment","Treatment_group","Temperature")) %>%
+  filter(Strain%in%df_reporter_TE$Strain,Treated==FALSE,Temperature=="30C") %>%
+  group_by(ORF) %>%
+  summarise(SP.mean = exp(mean(log(SP.mean)))) %>%
+  mutate(pSup.mean = SP.mean/(1+SP.mean)) %>%
+  left_join(gene_labels,by="ORF") %>% filter(classification=="Verified")
+df <- df_Zsup_mean %>%
+  left_join(df_samples_byLysate %>% select(Treatment_group,Treatment,Temperature,Time) %>% unique,by=c("Treatment","Treatment_group","Temperature")) %>%
+  filter(Strain%in%df_reporter_TE$Strain,Treated==FALSE,Temperature=="30C") %>%
+  filter(ORF=="strong_Clover") %>%
+  select(ORF,Strain,Treatment_group,Treatment,Treated,Temperature,Total.TPM.mean,pSup.mean,SP.mean,Zsup.mean) %>%
+  group_by(ORF,Strain) %>%
+  summarise(Total.TPM.mean=exp(mean(log(Total.TPM.mean))),
+            pSup.mean = mean(pSup.mean),
+            pSup.se = sd(pSup.mean)/sqrt(length(pSup.mean))) %>%
+  left_join(df_reporter_TE,by="Strain") %>%
+  mutate(Strain=factor(Strain,levels=c("yHG010","yHG005","yHG006","yHG007","yHG008","yHG027","yHG026"))) %>%
+  arrange(Strain)
+
+strain_tibble <- tribble(~"Strain",~"Desc",~"color",~"shape",
+                         "yHG010","unstructured","black",1,
+                         "yHG005","weakest",RColorBrewer::brewer.pal(10,"Purples")[4],16,
+                         "yHG006","weak",RColorBrewer::brewer.pal(10,"Purples")[5],16,
+                         "yHG007","medium",RColorBrewer::brewer.pal(10,"Purples")[7],16,
+                         "yHG008","strong",RColorBrewer::brewer.pal(12,"Purples")[9],16,
+                         "yHG026","uORF",RColorBrewer::brewer.pal(8,"Dark2")[4],15,
+                        #"yHG027","uORF_control",RColorBrewer::brewer.pal(8,"Dark2")[4],0)
+                        "yHG027","uORF_control","black",0)
+strain_colors <- setNames(strain_tibble$color,strain_tibble$Strain)
+strain_shapes <- setNames(strain_tibble$shape,strain_tibble$Strain)
+p_reps <- ggplot(df %>%arrange(desc(TE_norm)),
+       aes(x=TE_norm,y=pSup.mean))+
+  geom_errorbar(aes(x=TE_norm,ymin=pSup.mean-pSup.se,ymax=pSup.mean+pSup.se),width=0.5,size=0.5)+
+  geom_point(aes(color=Strain,shape=Strain),size=3.1)+
+  scale_y_continuous(breaks=c(0.5,0.75,1.0))+
+  scale_color_manual(values=strain_colors)+
+  scale_shape_manual(values=strain_shapes)+
+  scale_x_log10nice()+
+  coord_cartesian(ylim=c(0.5,1),xlim=c(0.001,1.6))+
+  theme(legend.position="none")+
+  labs(x="TE (norm. to unstructured)",y="pSup")
+
+ylims <- ggplot_build(p_reps)$layout$panel_params[[1]]$y.range
+
+p_dens <- ggplot(df_dist,aes(x=pSup.mean))+
+  geom_density(fill = "grey80")+
+  theme_void()+
+  scale_x_continuous(limits = c(ylims[1]-1, ylims[2]+1))+
+  coord_flip(xlim=c(ylims[1],ylims[2]))
+p_reps + p_dens+ plot_layout(widths = c(2, 1))
+ggsave(file.path(github_dir,"figures/Figure5/TE_hairpins.pdf"),
+       egg::set_panel_size(p=p_reps+labs(x="",y=""),width=unit(35,"mm"),height=unit(35,"mm")),
+       width=75,height=75,units="mm",bg="transparent")
+ggsave(file.path(github_dir,"figures/Figure5/TE_dens_hairpins.pdf"),
+       egg::set_panel_size(p=p_dens,width=unit(10,"mm"),height=unit(35,"mm")),
+       width=75,height=75,units="mm",bg="transparent")
+```
+
+
+#Figure 6
+##Figure 6D Relative translation of different depletion strains
 ```{r}
 depletion_translation_data <- read_csv(file.path(github_dir,"data_processed/Fig6/radiolabelled_translation_depletions.csv"))
 depletion_translation_data_summary <- read_csv(file.path(github_dir,"data_processed/Fig6/radiolabelled_translation_depletions_summary.csv"))
@@ -1388,7 +1490,7 @@ ggsave( "../figures/Figure6/deplete_translation_plot.pdf",
        width=120,height=110,units="mm",bg = "transparent")
 
 ```
-#Figure 6E Bem2/PGK1 qPCR-TSP vs radiolabelling translation plot in depletion strains
+##Figure 6E Bem2/PGK1 qPCR-TSP vs radiolabelling translation plot in depletion strains
 ```{r}
 tsp_translation_aid <- read_csv(file.path(github_dir,"data_processed/Fig6/tsp_qpcr_vs_translation.csv"))
 
@@ -1832,8 +1934,7 @@ wilcox_result <- df %>%
   mutate(wilcox = map(data,function(df){
     wilcox.test(deltaZ ~ target, data = df, 
                              subset = (target %in% c("other", "HSF1 targets")),
-                             exact = FALSE, # Use this for large samples
-                             paired = FALSE # Set TRUE if the data are paired
+                             exact = FALSE
     )
   }))
 print(wilcox_result$wilcox)
@@ -2180,8 +2281,7 @@ df_muhl_upr_wilcox <- df_muhl_fc %>%
   nest %>%
   mutate(wilcox = map(data,function(df){
     wilcox.test(TPM.FC ~ Category, data = df, 
-                             exact = FALSE, # Use this for large samples
-                             paired = FALSE, # Set TRUE if the data are paired
+                             exact = FALSE
     )
   })) %>%
   mutate(p.wilcox = map_dbl(wilcox, ~ .x$p.value)) %>%
@@ -2592,12 +2692,12 @@ plot_hs <- function(df,xmin,xmax,ymin,ymax,xscale,xbreaks,yscale,ybreaks) {
 }
 p_42C <- plot_hs(df%>%filter(Temperature=="42C"), 0.5,60,-2.5,3.5,"log2",c(-2,0,2,4),"linear",c(-2,0,2))
 p_42C
-ggsave(file.path(github_dir,"figures/FigureS2/42C_zoom.pdf"),egg::set_panel_size(p_42C,width=unit(50,"mm"),height=unit(50,"mm")),
+ggsave(file.path(github_dir,"figures/Supplemental/42C_zoom.pdf"),egg::set_panel_size(p_42C,width=unit(50,"mm"),height=unit(50,"mm")),
        width=75,height=75,units="mm")
 p_46C <- plot_hs(df%>%filter(Temperature=="46C"),0.4,8,-2.5,3.5,"log2",c(0,1,2),"linear",c(-2,0,2))+
   theme(axis.text.y=element_blank())
 p_46C
-ggsave(file.path(github_dir,"figures/FigureS2/46C_zoom.pdf"),egg::set_panel_size(p_46C,width=unit(50,"mm"),height=unit(50,"mm")),
+ggsave(file.path(github_dir,"figures/Supplemental/46C_zoom.pdf"),egg::set_panel_size(p_46C,width=unit(50,"mm"),height=unit(50,"mm")),
        width=75,height=75,units="mm",bg="transparent")
 ```
 
@@ -2656,7 +2756,7 @@ translation_compare_plot <- translation_compare +theme(legend.position = "none",
 translation_compare_plot 
 
 
-ggsave("../figures/Supplemental/S6/polysome_radioactive_compare.pdf", translation_compare_plot, width = 1.75, height = 1.75)
+ggsave("../figures/Supplemental/polysome_radioactive_compare.pdf", translation_compare_plot, width = 1.75, height = 1.75)
 ```
 
 Relative translation vs. relative depletion
@@ -2685,7 +2785,7 @@ compare_WB_translation <- ggplot(data = compare_WB %>% filter(Strain != "BY4741"
 
 compare_WB_translation
 
-ggsave( "../figures/Supplemental/S6/compare_WB_translation.pdf", compare_WB_translation, width = 1.75, height = 1.75)
+ggsave( "../figures/Supplemental/compare_WB_translation.pdf", compare_WB_translation, width = 1.75, height = 1.75)
 ```
 Relative translation decreases during heat shock measured via radiolabelling
 ```{r}
@@ -2704,7 +2804,7 @@ temp_translation_plot <- ggplot(data = temp_translation_data, aes(x = Treatment,
 
 temp_translation_plot 
 
-ggsave( "../figures/Supplemental/S6/temp_translation_plot.pdf", temp_translation_plot, width = 1.75, height = 1.75)
+ggsave( "../figures/Supplemental/temp_translation_plot.pdf", temp_translation_plot, width = 1.75, height = 1.75)
 ```
 #Polysome traces 
 
@@ -2755,7 +2855,7 @@ protein_name <- "eIF2α"  # Modify with your protein name
 result <- plot_polysome (file_path, offsets, scale_color_manual_values, protein_name)
 result$plot
 
-ggsave( "../figures/Supplemental/S6/eIF2alpha_profile.pdf", result$plot+theme(strip.text.x= element_blank(), plot.title = element_blank()), width =3, height = 2)
+ggsave( "../figures/Supplemental/eIF2alpha_profile.pdf", result$plot+theme(strip.text.x= element_blank(), plot.title = element_blank()), width =3, height = 2)
 
 file_path <- "data_processed/Fig6/polysomes/yJB42_eIF3b_polysome_profile.csv"
 offsets <- c(1, 50, 0, 0)  # Modify with your offsets
@@ -2764,7 +2864,7 @@ protein_name <- "eIF3b"  # Modify with your protein name
 result <- plot_polysome (file_path, offsets, scale_color_manual_values, protein_name)
 result$plot
 
-ggsave( "../figures/Supplemental/S6/eIF3b_profile.pdf", result$plot+theme(strip.text.x= element_blank(), plot.title = element_blank()), width =3, height = 2)
+ggsave( "../figures/Supplemental/eIF3b_profile.pdf", result$plot+theme(strip.text.x= element_blank(), plot.title = element_blank()), width =3, height = 2)
 
 file_path <- "data_processed/Fig6/polysomes/yHG72_eIF4A_polysome_profile.csv"
 offsets <- c(1, 0, 0, 0)  # Modify with your offsets
@@ -2773,7 +2873,7 @@ protein_name <- "eIF4A"  # Modify with your protein name
 result <- plot_polysome (file_path, offsets, scale_color_manual_values, protein_name)
 result$plot
 
-ggsave( "../figures/Supplemental/S6/eIF4A_profile.pdf", result$plot+theme(strip.text.x= element_blank(), plot.title = element_blank()), width =3, height = 2)
+ggsave( "../figures/Supplemental/eIF4A_profile.pdf", result$plot+theme(strip.text.x= element_blank(), plot.title = element_blank()), width =3, height = 2)
 
 file_path <- "data_processed/Fig6/polysomes/yHG55_eIF4B_polysome_profile.csv"
 offsets <- c(1, 0, 0, 0)  # Modify with your offsets
@@ -2782,7 +2882,7 @@ protein_name <- "eIF4B"  # Modify with your protein name
 result <- plot_polysome (file_path, offsets, scale_color_manual_values, protein_name)
 result$plot
 
-ggsave("../figures/Supplemental/S6/eIF4B_profile.pdf", result$plot+theme(strip.text.x= element_blank(), plot.title = element_blank()), width =3, height = 2)
+ggsave("../figures/Supplemental/eIF4B_profile.pdf", result$plot+theme(strip.text.x= element_blank(), plot.title = element_blank()), width =3, height = 2)
 
 file_path <- "data_processed/Fig6/polysomes/yHG38_eIF4E_polysome_profile.csv"
 offsets <- c(1, 0, 0, 0)  # Modify with your offsets
@@ -2791,7 +2891,7 @@ protein_name <- "eIF4E"  # Modify with your protein name
 result <- plot_polysome (file_path, offsets, scale_color_manual_values, protein_name)
 result$plot
 
-ggsave( "../figures/Supplemental/S6/eIF4E_profile.pdf", result$plot+theme(strip.text.x= element_blank(), plot.title = element_blank()), width =3, height = 2)
+ggsave( "../figures/Supplemental/eIF4E_profile.pdf", result$plot+theme(strip.text.x= element_blank(), plot.title = element_blank()), width =3, height = 2)
 
 file_path <- "data_processed/Fig6/polysomes/yJB262_eIF4G_polysome_profile.csv"
 offsets <- c(1, 0, 0, 0)  # Modify with your offsets
@@ -2800,7 +2900,7 @@ protein_name <- "eIF4G"  # Modify with your protein name
 result <- plot_polysome (file_path, offsets, scale_color_manual_values, protein_name)
 result$plot
 
-ggsave( "../figures/Supplemental/S6/eIF4G_profile.pdf", result$plot+theme(strip.text.x= element_blank(), plot.title = element_blank()), width =3, height = 2)
+ggsave( "../figures/Supplemental/eIF4G_profile.pdf", result$plot+theme(strip.text.x= element_blank(), plot.title = element_blank()), width =3, height = 2)
 
 file_path <- "data_processed/Fig6/polysomes/yJB147_eIF5_polysome_profile.csv"
 offsets <- c(-5, 0.25, -1, -3.5)  # Modify with your offsets
@@ -2809,7 +2909,7 @@ protein_name <- "eIF5"  # Modify with your protein name
 result <- plot_polysome (file_path, offsets, scale_color_manual_values, protein_name)
 result$plot
 
-ggsave( "../figures/Supplemental/S6/eIF5_profile.pdf", result$plot+theme(strip.text.x= element_blank(), plot.title = element_blank()), width =3, height = 2)
+ggsave( "../figures/Supplemental/eIF5_profile.pdf", result$plot+theme(strip.text.x= element_blank(), plot.title = element_blank()), width =3, height = 2)
 
 file_path <- "data_processed/Fig6/polysomes/yJB148_eIF5B_polysome_profile.csv"
 offsets <- c(1, 0, 0, 0)  # Modify with your offsets
@@ -2818,5 +2918,5 @@ protein_name <- "eIF5B"  # Modify with your protein name
 result <- plot_polysome (file_path, offsets, scale_color_manual_values, protein_name)
 result$plot
 
-ggsave( "../figures/Supplemental/S6/eIF5B_profile.pdf", result$plot+theme(strip.text.x= element_blank(), plot.title = element_blank()), width =3, height = 2)
+ggsave( "../figures/Supplemental/eIF5B_profile.pdf", result$plot+theme(strip.text.x= element_blank(), plot.title = element_blank()), width =3, height = 2)
 ```
