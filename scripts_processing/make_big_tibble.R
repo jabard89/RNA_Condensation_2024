@@ -79,7 +79,9 @@ df_Zsup_Poly_minfilt <- df_Zsup_mean  %>%
   summarise(TPM.SedSeq = exp(mean(log(Total.TPM.mean))),
             SP.mean  = exp(mean(log(SP.mean))),
             pSup.mean = SP.mean/(1+SP.mean),
-            Zsup.mean = mean(Zsup.mean)) %>%
+            Zsup.mean = mean(Zsup.mean),
+            esc.mean = mean(esc.mean),
+            sed.mean = mean(sed.mean)) %>%
   group_by(ORF,Stress,Stress_group) %>%
   filter(length(ORF[Control==TRUE])==1) %>%
   mutate(SP.FC = SP.mean/SP.mean[Control==TRUE],
