@@ -308,7 +308,7 @@ df_rnafold <- read_tsv(file.path(github_dir,"RNAfold/","ViennaFold_UTR5plus20.ts
 # Figure 1
 
 ## Figure 1C (protein vs. mRNA condensation)
-```{r fig1_prot_vs_mrna}
+```{r fig1_prot_vs_mrna, fig.asp=1.44}
 df = df_Zsup_mean |> filter(Treatment_group=='EW_TSPP') |> filter(Temperature != '42CR')
 
 dr = df |> select(ORF, Temperature, pSup.mean) |> mutate(Treatment=paste('rna',Temperature,sep='.')) |> rename(pSup=pSup.mean)
@@ -327,8 +327,11 @@ p_prot_vs_mRNA_condensation = ggplot(drp, aes(x=Treatment, y=pSup, group=Treatme
   no.legend + theme(panel.border = element_blank()) +
   theme(axis.line = element_line(color = 'black')) + larger_labels
 
-#ggsave(file.path(github_dir, "figures/Figure1/Fig1_prot_vs_mRNA_condensation.pdf"), egg::set_panel_size(p_prot_vs_mRNA_condensation, width = unit(50, "mm"), height = unit(50, "mm")),
-#       width = 75, height = 75, units = "mm", bg = "transparent")
+fig.asp = 1/1.44
+fig.width = 150
+ggsave(file.path(github_dir, "figures/Figure1/Fig1_prot_vs_mRNA_condensation.pdf"), 
+       egg::set_panel_size(p_prot_vs_mRNA_condensation, width = unit(fig.width*0.7, "mm"), height = unit(fig.width*fig.asp*0.7, "mm")),
+       width = fig.width, height = fig.width*fig.asp, units = "mm", bg = "transparent", create.dir=TRUE)
 ```
 ## Figure 1D (pSup vs. length)
 ## Figure 1E (logodds pSup vs. length, sed and escape annotations)
