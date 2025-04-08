@@ -17,8 +17,9 @@ library(readxl)
 library(egg)
 library(ggsignif)
 library(ggrepel)
+library(ggforce)
 library(devtools)
-#install_github("jabard89/cat.extras")
+#devtools::install_github("jabard89/cat.extras")
 library(cat.extras) #has nicely formatted log scales
 library(flextable)
 library(patchwork)
@@ -273,6 +274,15 @@ df_uorfs <- read_delim(file.path(github_dir,"data_processed/20201206_dataAnalyze
   group_by(Strain,Biorep) %>%
   summarise(Clover=mean(Clover_corrected),
             mCherry=mean(mCherry_corrected))
+
+df_agg = read_tsv(file.path(github_dir,"src/scer_aggregation_psup.txt"), comment='#') |> rename(ORF=orf) |> rowwise() |>
+  mutate(pSup.30C=mean(c(psup_30C.rep1,psup_30C.rep2,psup_30C.rep3), na.rm=T)) |>
+  rename(pSup.42C=psup_42C.8min, pSup.46C=psup_46C.8min) |> 
+  select(ORF, gene, pSup.30C, pSup.42C, pSup.46C) |> 
+  pivot_longer(cols=c(pSup.30C, pSup.42C, pSup.46C), names_prefix = "pSup.") |> 
+  rename(Temperature=name, pSup=value)
+
+
 ```
 
 ```{r}
@@ -295,6 +305,35 @@ df_rnafold <- read_tsv(file.path(github_dir,"RNAfold/","ViennaFold_UTR5plus20.ts
                                              "most structured 5'UTR")))
 ```
 
+# Figure 1
+
+## Figure 1C (protein vs. mRNA condensation)
+```{r fig1_prot_vs_mrna}
+df = df_Zsup_mean |> filter(Treatment_group=='EW_TSPP') |> filter(Temperature != '42CR')
+
+dr = df |> select(ORF, Temperature, pSup.mean) |> mutate(Treatment=paste('rna',Temperature,sep='.')) |> rename(pSup=pSup.mean)
+dp = df_agg |> select(ORF, Temperature, pSup) |> mutate(Treatment=paste('prot',Temperature,sep='.'))
+drp = bind_rows(dr,dp)
+temps = c('30\u00b0C','42\u00b0C','46\u00b0C')
+p_prot_vs_mRNA_condensation = ggplot(drp, aes(x=Treatment, y=pSup, group=Treatment, color=Temperature)) +
+  ggrastr::rasterize(geom_jitter(position=position_jitternormal(sd_y=0, sd_x=0.1), alpha=alph, shape=16),dpi=600) +
+  #geom_jitter(position=position_jitternormal(sd_y=0, sd_x=0.1), alpha=alph, shape=16) +
+  geom_violin(aes(fill=Temperature), color=blackcol, alpha=0.7, draw_quantiles = c(0.5)) +
+  scale_color_manual(values=stress.cols) +
+  scale_fill_manual(values=stress.cols) + 
+  scale_x_discrete(labels=c(temps,temps)) +
+  coord_cartesian(ylim=c(0,1)) +
+  ylab("Proportion in supernatant (pSup)") +
+  no.legend + theme(panel.border = element_blank()) +
+  theme(axis.line = element_line(color = 'black')) + larger_labels
+
+#ggsave(file.path(github_dir, "figures/Figure1/Fig1_prot_vs_mRNA_condensation.pdf"), egg::set_panel_size(p_prot_vs_mRNA_condensation, width = unit(50, "mm"), height = unit(50, "mm")),
+#       width = 75, height = 75, units = "mm", bg = "transparent")
+```
+## Figure 1D (pSup vs. length)
+## Figure 1E (logodds pSup vs. length, sed and escape annotations)
+## Figure 1F/G (sed vs. length, escape vs. length)
+## Figure 1H (pSup with model comparison)
 #Figure 2
 
 ##Figure 2A (deltasedScore vs. FC TPM, 42/46)
