@@ -3,7 +3,7 @@ library(here)
 
 github_dir <- here()
 source(file.path(github_dir,"scripts_plotting/main_stylesheet_230605.R"))
-gene_labels <- gene_labels <- read_tsv(file.path(github_dir,"src/annotations/labeled_genes_scer.tsv")) %>%
+gene_labels <- read_tsv(file.path(github_dir,"src/annotations/labeled_genes_scer.tsv")) %>%
   dplyr::mutate(label=case_when(label=="RiBi"~"ribosome biogenesis",
                                 label=="translation factors"~"other",
                                 label=="RP"~"other",

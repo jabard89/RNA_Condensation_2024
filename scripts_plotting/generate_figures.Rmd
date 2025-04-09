@@ -258,9 +258,21 @@ no.legend = theme(legend.position="none")
 
 # annotations are built by src/annotations/label_genes.Rmd
 
-gene_labels <- read_tsv(file.path(github_dir,"src/annotations/labeled_genes_scer.tsv")) %>%
+# gene_labels <- read_tsv(file.path(github_dir,"src/annotations/labeled_genes_scer.tsv")) %>%
+#   dplyr::mutate(length.trans = LengthTxEst) %>%
+#   select(ORF,gene,classification,label,LengthTxEst,length.protein)
+gene_labels <- gene_labels <- read_tsv(file.path(github_dir,"src/annotations/labeled_genes_scer.tsv")) %>%
+  dplyr::mutate(label=case_when(label=="RiBi"~"ribosome biogenesis",
+                                label=="translation factors"~"other",
+                                label=="RP"~"other",
+                                label=="glycolysis"~"other",
+                                label=="HSF1"~"HSF1 targets",
+                                label=="MSN2/4"~"MSN2/4 targets",
+                                TRUE~label)) %>%
+  dplyr::mutate(label=factor(label,levels=label.levels)) %>%
   dplyr::mutate(length.trans = LengthTxEst) %>%
   select(ORF,gene,classification,label,LengthTxEst,length.protein)
+
 
 ## load data
 
@@ -379,7 +391,7 @@ ggsave(file.path(github_dir, "figures/Figure1/Fig1_prot_vs_mRNA_condensation.pdf
 ```
 
 ## Figure 1D (pSup vs. length)
-```{r fig1_psup_vs_length, dependson="setup"}
+```{r fig1_psup_vs_length, dependson="setup", fig.asp=0.5}
 df = df_Zsup_mean |> filter(Treatment_group=='EW_TSPP') |> filter(Temperature != '42CR') |> mutate(length=LengthTxEst)
 
 
@@ -387,6 +399,7 @@ df = df_Zsup_mean |> filter(Treatment_group=='EW_TSPP') |> filter(Temperature !=
 focal_genes = c('PMU1','HSP104')
 foci = df |> filter(gene %in% focal_genes)# & Temperature != '46C')
 
+control_gene = 'PMU1'
 overview_focal = c('PMU1')
 overview_foci = df |> filter(gene %in% overview_focal)
 mark_bounds = c(0.05, 0.98)
@@ -394,15 +407,21 @@ mark_bounds = c(0.05, 0.98)
 length_marks = unlist(unique(df |> filter(gene %in% focal_genes) |> select(length)))
 mark_alpha = 0.4
 
+ctrl_dat = df |> filter(gene==control_gene, Temperature=='42C')
+ctrl_gene_length = unlist(ctrl_dat$length)
+ctrl_gene_pSup = unlist(df |> filter(gene==control_gene, Temperature=='42C') |> select(pSup.mean))
+effective_ctrl_length = unlist(df |> filter(pSup.ctrl.window.mean.mean>0.995*ctrl_gene_pSup & pSup.ctrl.window.mean.mean<(1/0.995)*ctrl_gene_pSup) |> select(gene, length) |> summarize(ml=mean(length)))
 
 g_data = ggplot(df, aes(x=length, y=pSup.mean, group=Temperature, colour=Temperature)) + 
   ggrastr::rasterize(geom_point(shape=shap, alpha=alph), dpi=600) + 
   geom_line(aes(y=pSup.treatment.window.mean.mean, group=Temperature), linewidth=1, linetype=1, colour=blackcol, alpha=0.5) +
   scale_colour_manual(values=stress.cols) + no.legend +
   #geom_hline(data=overview_foci, yintercept = overview_foci[2:3,]$pSup, linetype="11", alpha=0.5) +
+  annotate("segment", x=ctrl_gene_length, y=ctrl_gene_pSup, xend=effective_ctrl_length, yend=ctrl_gene_pSup, linetype="11") +
+  annotate("segment", x=effective_ctrl_length, y=ctrl_gene_pSup, xend=effective_ctrl_length, yend=-0.2, linetype="11") +
+  annotate("point", x=effective_ctrl_length, y=ctrl_gene_pSup, colour="black", shape=16, size=1) +
   geom_point(data=overview_foci, size=2, colour=blackcol) + 
   geom_point(data=overview_foci, size=1) + 
-  #geom_vline(xintercept = 3600, linetype='11', alpha=0.5) +
   coord_cartesian(ylim=c(0,1)) +
   scale_x_log10nice("mRNA length (nucleotides)") + ylab("Proportion in supernatant (pSup)")
 
@@ -418,26 +437,6 @@ g_trans = ggplot(df, aes(x=length, y=trans(pSup.mean), group=Temperature, colour
   geom_point(data=foci, size=1) + 
   coord_cartesian(ylim=trans(mark_bounds)) +
   scale_x_log10nice("mRNA length (nucleotides)") + scale_y_log10nice("Odds in supernatant (pSup odds)")
-
-# # Introducing delta-zSup
-# g_zsup = ggplot(dh, aes(x=length,y=Zsup,color=Temperature)) +
-#   geom_hline(yintercept=0,linetype="dotted",color="grey50") +
-#   geom_point(alpha=0.2,shape=16, size = 1) +
-#   scale_x_log10nice("mRNA length (nucleotides)") +
-#   facet_grid(.~Temperature) +
-#   scale_y_continuous("Sedimentation score (SDs)",breaks=seq(-4,4)) +
-#   coord_cartesian(ylim=c(-4.5,4.5)) +
-#   no.legend +
-#   scale_color_manual(values=stress.cols)+
-#   geom_point(data=dh |> filter(gene%in%focal_genes),fill=NA,alpha=1,size=4,shape=16,stroke=1,color="black")+
-#   geom_point(data=dh |> filter(gene%in%focal_genes),aes(fill=Temperature),alpha=1,size=2,shape=16,stroke=1)+
-#   scale_fill_manual(values=stress.cols)+
-#   theme(strip.text.x = element_blank(),
-#         panel.spacing.x = grid::unit(0, "mm"),
-#         panel.border = element_rect(colour = "black", fill = NA, size = 0.35) # Adjust size for thickness
-#         )  + larger_labels
-
-# 
 
 p_data_and_logodds = g_data + g_trans
 p_data_and_logodds
@@ -459,7 +458,8 @@ ggsave(file.path(github_dir, "figures/Figure1/Fig1_pSup_vs_length.pdf"),
 
 ## Figure 1F/G (sed vs. length, escape vs. length)
 ```{r fig_hs_vs_sed_and_esc, dependson="sed_other_stresses", fig.asp=0.9, fig.height=4}
-res = res_hs #bind_rows(res_hs10, res_hs20)
+res = df |> filter(Temperature=='42C') #res_hs #bind_rows(res_hs10, res_hs20)
+
 theme_marginal = theme(
   axis.title.y = element_blank(), 
   axis.text.y = element_blank(), 
@@ -496,18 +496,18 @@ foc = res |> filter(gene %in% c('SSA4','HSP104','PMU1'))
 focal = bind_rows(hsf1 |> mutate(cat="focal"), control_set |> mutate(cat="control"))
 focal_label = focal |> filter(gene %in% c('SSA4','HSP104','PMU1','ADD66'))
 res = res |> mutate(cat=ifelse(gene %in% focal$gene,"focal", "other"))
-gsed = ggplot(res, aes(x=length, y=sed, fill=cat)) + theme(plot.margin=unit(c(1,0,1,1),'cm')) +
+gsed = ggplot(res, aes(x=length, y=sed.mean, fill=cat)) + theme(plot.margin=unit(c(1,0,1,1),'cm')) +
   geom_hline(yintercept = 0, linetype=3) +
   ggrastr::rasterize(geom_point(shape=shap, alpha=0.3, colour=gray50col),dpi=600) + 
   geom_point(data=focal, shape=21, stroke=0.25, fill=orangecol, size=2) +
   geom_point(data=focal_label, shape=21, stroke=0.25, size=3) +
-  geom_label_repel(data=focal_label, aes(label=gene), colour=blackcol, fill='white', force=2) +
+  geom_text_repel(data=focal_label, aes(label=gene), colour=blackcol, fill='white', force=2) +
   #scale_colour_manual(values=list("other"=blackcol, "focal"="#ee7700cc", "control"=violetcol)) +
-  scale_fill_manual(values=list("other"=blackcol, "focal"="#ee7700cc", "control"=blackcol)) +
+  scale_fill_manual(values=list("other"=blackcol, "focal"=orangecol, "control"=blackcol)) +
   scale_x_log10nice("Transcript length (nt)") +
   scale_y_continuous("Sedimentation score (SDs)", limits=c(-1,7)) + no.legend
-gsed = add_marginal_x(gsed, "sed", "cat")
-gesc = ggplot(res, aes(x=length, y=esc, fill=cat)) + 
+gsed = add_marginal_x(gsed, "sed.mean", "cat")
+gesc = ggplot(res, aes(x=length, y=esc.mean, fill=cat)) + 
   theme(plot.margin=unit(c(1,0,1,1),'cm'), 
         panel.margin=unit(c(0,0,0,0),'null'),
         legend.margin=unit(0,'null')) +
@@ -515,13 +515,24 @@ gesc = ggplot(res, aes(x=length, y=esc, fill=cat)) +
   ggrastr::rasterize(geom_point(shape=shap, alpha=0.3, colour=gray50col),dpi=600) + 
   geom_point(data=focal, shape=21, stroke=0.25, fill=orangecol, size=2) +
   geom_point(data=focal_label, shape=21, stroke=0.25, size=3) +
-  geom_label_repel(data=focal_label, aes(label=gene), colour=blackcol, fill="white", force=10, maxoverlaps=0) +
-  scale_fill_manual(values=list("other"=blackcol, "focal"="#ee7700cc", "control"=blackcol)) +
+  geom_text_repel(data=focal_label, aes(label=gene), colour=blackcol, fill="white", force=10, maxoverlaps=0) +
+  scale_fill_manual(values=list("other"=blackcol, "focal"=orangecol, "control"=blackcol)) +
   scale_x_log10nice("Transcript length (nt)") + 
   scale_y_continuous("Escape score (SDs)", limits=c(-2,4)) + no.legend
-gesc = add_marginal_x(gesc, "esc", "cat") # = ggMarginal(gesc, margins="y", groupColour=T, type="density")
+gesc = add_marginal_x(gesc, "esc.mean", "cat") # = ggMarginal(gesc, margins="y", groupColour=T, type="density")
 gsedesc = gsed / gesc
-ggsave("../figures/figure_1g.pdf", gsedesc, height=6, width=7)
+gsedesc
+#ggsave("../figures/figure_1g.pdf", gsedesc, height=6, width=7)
+fig.asp = 7/7
+fig.width = 97
+fig.vs.panel.ratio = 1/0.7
+
+ggsave(file.path(github_dir, "figures/Figure1/Fig1_sed_esc_hsf1.pdf"), 
+       #egg::set_panel_size(p_data_and_logodds, width = unit(fig.width, "mm"), height = unit(fig.width*fig.asp, "mm")),
+       gsedesc,
+       width = fig.width*fig.vs.panel.ratio, 
+       height = fig.width*fig.asp*fig.vs.panel.ratio, 
+       units = "mm", bg = "transparent", create.dir=TRUE)
 ```
 
 
