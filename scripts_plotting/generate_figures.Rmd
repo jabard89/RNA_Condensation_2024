@@ -414,7 +414,7 @@ effective_ctrl_length = unlist(df |> filter(pSup.ctrl.window.mean.mean>0.995*ctr
 
 g_data = ggplot(df, aes(x=length, y=pSup.mean, group=Temperature, colour=Temperature)) + 
   ggrastr::rasterize(geom_point(shape=shap, alpha=alph), dpi=600) + 
-  geom_line(aes(y=pSup.treatment.window.mean.mean, group=Temperature), linewidth=1, linetype=1, colour=blackcol, alpha=0.5) +
+  geom_line(aes(y=pSup.treatment.window.mean.mean, group=Temperature), linewidth=0.5, linetype=1, colour=blackcol, alpha=0.5) +
   scale_colour_manual(values=stress.cols) + no.legend +
   #geom_hline(data=overview_foci, yintercept = overview_foci[2:3,]$pSup, linetype="11", alpha=0.5) +
   annotate("segment", x=ctrl_gene_length, y=ctrl_gene_pSup, xend=effective_ctrl_length, yend=ctrl_gene_pSup, linetype="11") +
@@ -431,7 +431,7 @@ g_trans = ggplot(df, aes(x=length, y=trans(pSup.mean), group=Temperature, colour
   #geom_hline(yintercept=trans(mark_bounds), alpha=mark_alpha, colour=blackcol, linetype=2) +
   geom_vline(xintercept = length_marks, alpha=mark_alpha, linetype=1, colour=blackcol) +
   ggrastr::rasterize(geom_point(shape=shap, alpha=0.2*alph),dpi=600) + 
-  geom_line(aes(y=trans(pSup.treatment.window.mean.mean), group=Temperature), linewidth=1, linetype=1, colour=blackcol, alpha=0.7) +
+  geom_line(aes(y=trans(pSup.treatment.window.mean.mean), group=Temperature), linewidth=0.5, linetype=1, colour=blackcol, alpha=0.7) +
   scale_colour_manual(values=stress.cols) + no.legend +
   geom_point(data=foci, size=2, colour=blackcol) + 
   geom_point(data=foci, size=1) + 
