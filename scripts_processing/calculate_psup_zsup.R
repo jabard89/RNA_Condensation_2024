@@ -70,7 +70,7 @@ df_Zsup <- df_samples %>%
       select(ORF,Total.TPM,pSup,SP,est_counts.Total,est_counts.Sup,est_counts.Pellet,
              Mixing_ratio.Sup,counts_adj.Sup,Mixing_ratio.Pellet,counts_adj.Pellet)
 
-    # calcualte Zsup
+    # calculate Zsup
 
     rollup <- function(x, flds, name, ...) {
       y <- zoo(x[,flds])
@@ -112,7 +112,7 @@ df_Zsup <- df_samples %>%
 # 2. Calculate rolling mean using windowfunction
 # 3. calculate sed and esc per rep
 df_Zsup_filt <- df_Zsup %>% ungroup %>%
-  left_join(gene_labels %>% select(ORF,LengthTxEst,classification),by="ORF") %>%
+  left_join(gene_labels %>% select(ORF,gene,LengthTxEst,classification),by="ORF") %>%
   filter(classification=="Verified") %>%
   group_by(Lysate_sample) %>%
   mutate(Total.TPM = Total.TPM/sum(Total.TPM,na.rm=T)*1e6) %>%
@@ -140,11 +140,13 @@ df_ctrl <- df_Zsup_filt %>% ungroup %>%
   unique
 
 df_Zsup_sed_esc <- df_Zsup %>% ungroup %>%
-  left_join(gene_labels %>% select(ORF,LengthTxEst,classification),by="ORF") %>%
+  left_join(gene_labels %>% select(ORF,gene,LengthTxEst,classification),by="ORF") %>%
   left_join(df_pSup_windowmean, by = c("Lysate_sample", "LengthTxEst")) %>%
   left_join(df_ctrl, by = c("ORF","Treatment_group")) %>%
   mutate(sed = (logodds(pSup.ctrl.mean) - logodds(pSup)) / pSup.ctrl.sd,
-         esc = ((logodds(pSup) - logodds(pSup.lysate.windowmean)) - (logodds(pSup.ctrl.mean) - logodds(pSup.ctrl.windowmean.mean))) / pSup.ctrl.sd)
+         esc = ((logodds(pSup) - logodds(pSup.lysate.windowmean)) - (logodds(pSup.ctrl.mean) - logodds(pSup.ctrl.windowmean.mean))) / pSup.ctrl.sd,
+         pSup.ctrl.window.mean=pSup.ctrl.windowmean.mean,
+         pSup.treatment.window.mean=pSup.lysate.windowmean)
 
 
 write_tsv(df_Zsup_sed_esc,file.path(github_dir,"data_processed","sedseq_out.tsv.gz"))
@@ -191,7 +193,11 @@ df_Zsup_sed_esc_filt_mean <- df_Zsup_sed_esc %>%
             SP.mean = exp(mean(log(SP))),
             Zsup.mean = mean(Zsup),
             sed.mean = mean(sed),
-            esc.mean = mean(esc)) %>%
+            esc.mean = mean(esc),
+            pSup.ctrl.window.mean.mean=mean(pSup.ctrl.windowmean.mean),
+            pSup.treatment.window.mean.mean=mean(pSup.lysate.windowmean)
+) %>%
   write_tsv(file.path(github_dir,"data_processed","sedseq_filt_mean.tsv.gz"))
+
 
 
