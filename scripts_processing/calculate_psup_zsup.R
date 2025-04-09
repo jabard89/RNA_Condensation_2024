@@ -124,7 +124,7 @@ df_pSup_windowmean <- df_Zsup_filt %>%
   nest %>%
   mutate(data = map(data, function(df) {
     windowfunction(df,"pSup", "LengthTxEst", "Treatment",
-                   range_x=lengths, minwidth_fraction=0.05, logx=TRUE, minn=1, na.rm=T) %>%
+                   n=lengths, minwidth_fraction=0.05, logx=TRUE, minn=1, na.rm=T) %>%
       rename("pSup.lysate.windowmean" = "pSup") %>% select(LengthTxEst,pSup.lysate.windowmean)
     })) %>%
   unnest(c(data))
@@ -137,7 +137,7 @@ df_ctrl <- df_Zsup_filt %>% ungroup %>%
   group_by(Treatment_group) %>%
   mutate(pSup.ctrl.sd = sd(logodds(pSup.ctrl.mean) - logodds(pSup.ctrl.windowmean.mean), na.rm=T)) %>%
   select(ORF,Treatment_group,pSup.ctrl.mean,pSup.ctrl.windowmean.mean,pSup.ctrl.sd) %>%
-  unique
+  unique()
 
 df_Zsup_sed_esc <- df_Zsup %>% ungroup %>%
   left_join(gene_labels %>% select(ORF,gene,LengthTxEst,classification),by="ORF") %>%

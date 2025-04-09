@@ -119,44 +119,58 @@ invlogodds <- function(x) {
   y/(1+y)
 }
 
-# Use a fixed window size for x. n is the number of windows
+# Use a fixed window size for x. 
+# n is the number of windows, or (if a list is given)
+# the center of each window
 # Window size is 2*range(x)/n
-windowfunction_stratum = function(x, y, n, range_x=NULL, fn=mean, logx=F, minn=20, minwidth_fraction=NULL, na.rm=TRUE, ...) {
+windowfunction_stratum = function(x, y, n, fn=mean, logx=F, minn=20, minwidth_fraction=NULL, na.rm=TRUE, ...) {
+  
+  if (length(n)>1) {
+    # centers are given
+    range_x = n
+    n_windows = length(range_x)
+    range_xin = range_x
+  } else {
+    n_windows = n
+    range_xin = NULL
+    range_x = NULL
+  }
+  
   xin = x
-  range_xin = range_x
   if (logx) {
     xin = log(xin)
   }
   minx = min(xin, na.rm=na.rm)
   maxx = max(xin, na.rm=na.rm)
+  
   if (is_null(range_x)) {
-    range_x = seq(minx, maxx, length.out=n)
+    range_x = seq(minx, maxx, length.out=n_windows)
   } else {
-    n = length(range_x)
     if (logx) {
       range_x = log(range_x)
     }
   }
   # Calculate window size.
   if (is_null(minwidth_fraction)) {
-    windowsize = 2*(maxx-minx)/n
+    windowsize = 2*(maxx-minx)/n_windows
   } else {
     # use minwidth_fraction, which is a fraction of the range
     windowsize = minwidth_fraction*(maxx-minx)
   }
   
   d = tibble(x=xin, y=y)
-  yvals = sapply(range_x, function(center_x){
+  yvals = bind_rows(lapply(range_x, function(center_x){
     # Lower bound of window
     lower_x = max(minx, center_x-windowsize, na.rm=na.rm)
     # Upper bound of window
     upper_x = min(maxx, center_x+windowsize, na.rm=na.rm)
     # Filter to isolate values in window
     wind = d |> filter(x>=lower_x & x<=upper_x) |> select(y)
+    ny = nrow(wind |> filter(!is.na(y)))
     # Compute value of function in window, or NA if fewer than minn values
-    if (nrow(wind)<minn) {res = NA} else {res = fn(unlist(wind), na.rm=na.rm, ...)}
+    if (nrow(wind)<minn) {res = c(y=NA, n=nrow(wind))} else {res = c(y=fn(unlist(wind), na.rm=na.rm, ...), nx=nrow(wind), ny=ny)}
     res
-  })
+  }))
   xout = range_x
   if (logx) {
     xout = exp(range_x)
@@ -164,7 +178,7 @@ windowfunction_stratum = function(x, y, n, range_x=NULL, fn=mean, logx=F, minn=2
   if (!is_null(range_x)) {
     xout = range_xin
   }
-  tibble(x=xout, y=yvals)
+  bind_cols(tibble(x=xout), yvals)
 }
 
 # Rolling function (e.g. mean)
@@ -176,10 +190,12 @@ windowfunction = function(d, var, window_var, by, fn=mean, ...) {
     # Filter by stratum
     x = d |> filter(!!as.name(by)==stratum)
     # Calculate windowed function for this stratum
-    wm = windowfunction_stratum(x[[window_var]], x[[var]], fn=fn, ...) |> mutate(!!by:=stratum) |> rename(!!window_var:=x, !!var:=y)
+    wm = windowfunction_stratum(x[[window_var]], x[[var]], fn=fn, ...) |> 
+      mutate(!!by:=stratum) |> rename(!!window_var:=x, !!var:=y, !!paste(window_var,"n",sep="_"):=nx, !!paste(var,"n",sep="_"):=ny)
     wm
   }))
   as_tibble(res)
 }
+
 
 
