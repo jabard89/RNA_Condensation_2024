@@ -119,6 +119,40 @@ close(con)
 shap = 16
 alph = 0.3
 
+# Helper functions
+
+odds <- function(p) {
+  p/(1-p)
+}
+
+odds2p <- function(o) {
+  o/(1+o)
+}
+
+p2odds <- function(p) {
+  res <- odds(p)
+  res[!is.finite(res)] <- NA
+  res
+}
+
+p2logodds <- function(p) {
+  res = log(p2odds(p))
+  res
+}
+
+logodds <- function(x) {
+  # log odds, a shortcut
+  res <- log(odds(x))
+  res[!is.finite(res)] <- NA
+  res
+}
+
+invlogodds <- function(x) {
+  # inverse log odds: a = invlogodds(logodds(a))
+  y <- exp(x)
+  y/(1+y)
+}
+
 geom_cross <- function(data = NULL, grouping= NULL,
                        x = NULL, y = NULL, qmin = 0.25, qmax = 0.75, color = "black", ...){
   label <- sym(grouping)
@@ -218,6 +252,8 @@ plot_density_y <- function(df,var,scale,min,max,cols,alph=0.5,siz=0.25,fill="top
   return(p)
 }
 
+no.legend = theme(legend.position="none")
+
 # annotations
 
 # annotations are built by src/annotations/label_genes.Rmd
@@ -239,9 +275,11 @@ df_stress_samples <- read_csv(file.path(github_dir,"data_raw/stress_labels.csv")
                                                    "Ethanol 5%","Ethanol 7.5%","Ethanol 10%","Ethanol 15%",
                                                    "DTT 10mM")))
 
-df_Zsup_mean <- read_tsv(file.path(github_dir,
-                                   "data_processed/sedseq_filt_mean.tsv.gz")) %>%
-  left_join(df_samples_byLysate %>% select(Treatment_group,Treatment,Temperature,Time) %>% unique,by=c("Treatment","Treatment_group","Temperature"))
+df_Zsup_mean = read_tsv(file.path(github_dir, "data_processed/sedseq_filt_mean.tsv.gz")) |>
+  left_join(df_samples_byLysate |> 
+              select(Treatment_group,Treatment,Temperature,Time) |> unique(),
+              by=c("Treatment","Treatment_group","Temperature")) |>
+  left_join(gene_labels |> select(-LengthTxEst), by='ORF')
 
 df_Occ_mean_minfilt <- read_tsv(file.path(github_dir,
                                           "data_processed/PolySeq_minfilt_mean.tsv.gz")) %>%
@@ -309,7 +347,7 @@ df_rnafold <- read_tsv(file.path(github_dir,"RNAfold/","ViennaFold_UTR5plus20.ts
 # Figure 1
 
 ## Figure 1C (protein vs. mRNA condensation)
-```{r fig1_prot_vs_mrna, fig.asp=1.44}
+```{r fig1_prot_vs_mrna, fig.asp=0.7}
 df = df_Zsup_mean |> filter(Treatment_group=='EW_TSPP') |> filter(Temperature != '42CR')
 
 dr = df |> select(ORF, Temperature, pSup.mean) |> mutate(Treatment=paste('rna',Temperature,sep='.')) |> rename(pSup=pSup.mean)
@@ -328,16 +366,228 @@ p_prot_vs_mRNA_condensation = ggplot(drp, aes(x=Treatment, y=pSup, group=Treatme
   no.legend + theme(panel.border = element_blank()) +
   theme(axis.line = element_line(color = 'black')) + larger_labels
 
+p_prot_vs_mRNA_condensation
+
 fig.asp = 1/1.44
-fig.width = 150
+fig.width = 105
+fig.vs.panel.ratio = 1/0.7
 ggsave(file.path(github_dir, "figures/Figure1/Fig1_prot_vs_mRNA_condensation.pdf"), 
-       egg::set_panel_size(p_prot_vs_mRNA_condensation, width = unit(fig.width*0.7, "mm"), height = unit(fig.width*fig.asp*0.7, "mm")),
-       width = fig.width, height = fig.width*fig.asp, units = "mm", bg = "transparent", create.dir=TRUE)
+       egg::set_panel_size(p_prot_vs_mRNA_condensation, width = unit(fig.width, "mm"), height = unit(fig.width*fig.asp, "mm")),
+       width = fig.width*fig.vs.panel.ratio, 
+       height = fig.width*fig.asp*fig.vs.panel.ratio, 
+       units = "mm", bg = "transparent", create.dir=TRUE)
 ```
+
 ## Figure 1D (pSup vs. length)
+```{r fig1_psup_vs_length, dependson="setup"}
+df = df_Zsup_mean |> filter(Treatment_group=='EW_TSPP') |> filter(Temperature != '42CR') |> mutate(length=LengthTxEst)
+
+
+
+focal_genes = c('PMU1','HSP104')
+foci = df |> filter(gene %in% focal_genes)# & Temperature != '46C')
+
+overview_focal = c('PMU1')
+overview_foci = df |> filter(gene %in% overview_focal)
+mark_bounds = c(0.05, 0.98)
+
+length_marks = unlist(unique(df |> filter(gene %in% focal_genes) |> select(length)))
+mark_alpha = 0.4
+
+
+g_data = ggplot(df, aes(x=length, y=pSup.mean, group=Temperature, colour=Temperature)) + 
+  ggrastr::rasterize(geom_point(shape=shap, alpha=alph), dpi=600) + 
+  geom_line(aes(y=pSup.treatment.mean, group=Temperature), linewidth=1, linetype=1, colour=blackcol, alpha=0.5) +
+  scale_colour_manual(values=stress.cols) + no.legend +
+  #geom_hline(data=overview_foci, yintercept = overview_foci[2:3,]$pSup, linetype="11", alpha=0.5) +
+  geom_point(data=overview_foci, size=2, colour=blackcol) + 
+  geom_point(data=overview_foci, size=1) + 
+  #geom_vline(xintercept = 3600, linetype='11', alpha=0.5) +
+  coord_cartesian(ylim=c(0,1)) +
+  scale_x_log10nice("mRNA length (nucleotides)") + ylab("Proportion in supernatant (pSup)")
+
+# Introducing sed
+g_trans = ggplot(df, aes(x=length, y=trans(pSup.mean), group=Temperature, colour=Temperature)) + 
+  #geom_hline(yintercept=trans(mark_bounds), alpha=mark_alpha, colour=blackcol, linetype=2) +
+  geom_vline(xintercept = length_marks, alpha=mark_alpha, linetype=1, colour=blackcol) +
+  ggrastr::rasterize(geom_point(shape=shap, alpha=0.2*alph),dpi=600) + 
+  geom_line(aes(y=trans(pSup.treatment.mean), group=Temperature), linewidth=1, linetype=1, colour=blackcol, alpha=0.7) +
+  scale_colour_manual(values=stress.cols) + no.legend +
+  geom_point(data=foci, size=2, colour=blackcol) + 
+  geom_point(data=foci, size=1) + 
+  coord_cartesian(ylim=trans(mark_bounds)) +
+  scale_x_log10nice("mRNA length (nucleotides)") + scale_y_log10nice("Odds in supernatant (pSup odds)")
+
+# # Introducing delta-zSup
+# g_zsup = ggplot(dh, aes(x=length,y=Zsup,color=Temperature)) +
+#   geom_hline(yintercept=0,linetype="dotted",color="grey50") +
+#   geom_point(alpha=0.2,shape=16, size = 1) +
+#   scale_x_log10nice("mRNA length (nucleotides)") +
+#   facet_grid(.~Temperature) +
+#   scale_y_continuous("Sedimentation score (SDs)",breaks=seq(-4,4)) +
+#   coord_cartesian(ylim=c(-4.5,4.5)) +
+#   no.legend +
+#   scale_color_manual(values=stress.cols)+
+#   geom_point(data=dh |> filter(gene%in%focal_genes),fill=NA,alpha=1,size=4,shape=16,stroke=1,color="black")+
+#   geom_point(data=dh |> filter(gene%in%focal_genes),aes(fill=Temperature),alpha=1,size=2,shape=16,stroke=1)+
+#   scale_fill_manual(values=stress.cols)+
+#   theme(strip.text.x = element_blank(),
+#         panel.spacing.x = grid::unit(0, "mm"),
+#         panel.border = element_rect(colour = "black", fill = NA, size = 0.35) # Adjust size for thickness
+#         )  + larger_labels
+
+# 
+
+p_data_and_logodds = g_data + g_trans
+
+fig.asp = 1/2
+fig.width = 210
+fig.vs.panel.ratio = 1/0.7
+
+ggsave(file.path(github_dir, "figures/Figure1/Fig1_pSup_vs_length.pdf"), 
+       egg::set_panel_size(p_data_and_logodds, width = unit(fig.width, "mm"), height = unit(fig.width*fig.asp, "mm")),
+       width = fig.width*fig.vs.panel.ratio, 
+       height = fig.width*fig.asp*fig.vs.panel.ratio, 
+       units = "mm", bg = "transparent", create.dir=TRUE)
+
+```
+
 ## Figure 1E (logodds pSup vs. length, sed and escape annotations)
+
 ## Figure 1F/G (sed vs. length, escape vs. length)
+```{r fig_hs_vs_sed_and_esc, dependson="sed_other_stresses", fig.asp=0.9, fig.height=4}
+res = res_hs #bind_rows(res_hs10, res_hs20)
+theme_marginal = theme(
+  axis.title.y = element_blank(), 
+  axis.text.y = element_blank(), 
+  axis.ticks.y = element_blank(),
+  axis.title.x = element_blank(),
+  axis.text.x = element_blank(), 
+  axis.ticks.x = element_blank(), 
+  plot.margin = unit(c(1,1,0,0),'cm'),
+  panel.margin = unit(c(0,0,0,0),'null'),
+  panel.border=element_blank(),
+  legend.position = "none",
+  axis.ticks.length = unit(0, "null"),
+  axis.ticks.margin = unit(0, "null"),
+  legend.margin = unit(0, "null")
+)
+
+add_marginal_x = function(the_plot, var, category, scale_colour=NULL) {
+  ymarg = ggplot(the_plot$data, aes(x=!!rlang::sym(var), fill=!!rlang::sym(category))) + 
+    geom_density(alpha=0.6) + xlim(limits=ggplot_build(the_plot)$layout$get_scales(1)$y$limits) + 
+    #scale_y_continuous(expand=expansion()) + 
+    coord_flip() + theme_marginal + scale_fill_manual(values=c("other"=blackcol, "focal"=orangecol))
+  #if (!is_null(scale_colour)) {
+  #  ymarg = ymarg |> scale_colour()
+  #}
+  wrap_plots(
+    the_plot + theme(panel.spacing.x=unit(0,'cm')), ymarg, nrow = 1, design="11112"
+  )
+}
+
+hsf1 = res |> filter(label %in% c('HSF1 targets'))
+control_set = res |> filter(gene %in% c('PMU1','ADD66'))
+foc = res |> filter(gene %in% c('SSA4','HSP104','PMU1'))
+
+focal = bind_rows(hsf1 |> mutate(cat="focal"), control_set |> mutate(cat="control"))
+focal_label = focal |> filter(gene %in% c('SSA4','HSP104','PMU1','ADD66'))
+res = res |> mutate(cat=ifelse(gene %in% focal$gene,"focal", "other"))
+gsed = ggplot(res, aes(x=length, y=sed, fill=cat)) + theme(plot.margin=unit(c(1,0,1,1),'cm')) +
+  geom_hline(yintercept = 0, linetype=3) +
+  ggrastr::rasterize(geom_point(shape=shap, alpha=0.3, colour=gray50col),dpi=600) + 
+  geom_point(data=focal, shape=21, stroke=0.25, fill=orangecol, size=2) +
+  geom_point(data=focal_label, shape=21, stroke=0.25, size=3) +
+  geom_label_repel(data=focal_label, aes(label=gene), colour=blackcol, fill='white', force=2) +
+  #scale_colour_manual(values=list("other"=blackcol, "focal"="#ee7700cc", "control"=violetcol)) +
+  scale_fill_manual(values=list("other"=blackcol, "focal"="#ee7700cc", "control"=blackcol)) +
+  scale_x_log10nice("Transcript length (nt)") +
+  scale_y_continuous("Sedimentation score (SDs)", limits=c(-1,7)) + no.legend
+gsed = add_marginal_x(gsed, "sed", "cat")
+gesc = ggplot(res, aes(x=length, y=esc, fill=cat)) + 
+  theme(plot.margin=unit(c(1,0,1,1),'cm'), 
+        panel.margin=unit(c(0,0,0,0),'null'),
+        legend.margin=unit(0,'null')) +
+  geom_hline(yintercept = 0, linetype=3) +
+  ggrastr::rasterize(geom_point(shape=shap, alpha=0.3, colour=gray50col),dpi=600) + 
+  geom_point(data=focal, shape=21, stroke=0.25, fill=orangecol, size=2) +
+  geom_point(data=focal_label, shape=21, stroke=0.25, size=3) +
+  geom_label_repel(data=focal_label, aes(label=gene), colour=blackcol, fill="white", force=10, maxoverlaps=0) +
+  scale_fill_manual(values=list("other"=blackcol, "focal"="#ee7700cc", "control"=blackcol)) +
+  scale_x_log10nice("Transcript length (nt)") + 
+  scale_y_continuous("Escape score (SDs)", limits=c(-2,4)) + no.legend
+gesc = add_marginal_x(gesc, "esc", "cat") # = ggMarginal(gesc, margins="y", groupColour=T, type="density")
+gsedesc = gsed / gesc
+ggsave("../figures/figure_1g.pdf", gsedesc, height=6, width=7)
+```
+
+
 ## Figure 1H (pSup with model comparison)
+```{r fig_theory_psup, dependson='setup'}
+# Theory
+psup_curve = function(length, beta, chi, mu, nu, baseline=0.0) {
+  res = sapply(length, function(L) {
+    baseline + exp(-mu)*exp(-nu*L)*max(1-beta*L^chi,0)
+  })
+  res
+}
+
+length_from_psup = function(pSup, beta, chi, mu, nu, baseline=0.0) {
+  res = ((1/beta)*(1-(pSup-baseline)))^{1/chi}
+  res
+}
+
+lengths = 10^seq(log10(300),log10(15000), length.out=1000)
+shared_nu = 0.00005
+shared_beta = 0.0001
+shared_chi = 0.9
+shared_mu = 0.04
+s = list('30C'=tibble(length=lengths, pSup=psup_curve(length, shared_beta, shared_chi, shared_mu*1, shared_nu*1, baseline=0.05), Temperature='30C.line'), 
+         '30C.inv'=tibble(length=lengths, pSup=psup_curve(length, shared_beta, shared_chi, shared_mu*1, shared_nu*1, baseline=0.05), length.inv=length_from_psup(pSup, shared_beta, shared_chi, shared_mu, shared_nu, baseline=0.05), Temperature='30C'),
+         '42C'=tibble(length=lengths, pSup=psup_curve(length, shared_beta, shared_chi, shared_mu*9, shared_nu*2.5, baseline=0.05), Temperature='42C.line'),
+         '46C'=tibble(length=lengths, pSup=psup_curve(length, shared_beta, shared_chi, shared_mu*30.5, shared_nu*6, baseline=0.05), Temperature='46C.line'))
+sx = bind_rows(s)
+
+s.nomu = list('30C'=tibble(length=lengths, pSup=psup_curve(length, shared_beta, shared_chi, shared_mu, shared_nu*1, baseline=0.05), Temperature='30C.line'),
+         '42C'=tibble(length=lengths, pSup=psup_curve(length, shared_beta, shared_chi, shared_mu, shared_nu*2.5, baseline=0.05), Temperature='42C.line'),
+         '46C'=tibble(length=lengths, pSup=psup_curve(length, shared_beta, shared_chi, shared_mu, shared_nu*6, baseline=0.05), Temperature='46C.line'))
+sx.nomu = bind_rows(s.nomu)
+
+trans = function(x) {
+  odds(x)
+}
+
+theory_colors = c("30C"=stress.cols[["30C"]],
+                              "42C"=stress.cols[["42C"]],"46C"=stress.cols[["46C"]],
+                              "30C.line"="black","42C.line"="#d65e09",
+                              "46C.line"=redcol)
+# Theory vs experiment
+# Theory vs experiment
+g_fit = ggplot(df, aes(x=length, y=pSup, group=Temperature, colour=Temperature)) + 
+  ggrastr::rasterize(geom_point(shape=shap, alpha=0.2*alph),dpi=600) + 
+  geom_line(aes(y=pSup.treatment.mean, group=Temperature), linewidth=1, linetype=1, colour=blackcol, alpha=0.5) +
+  geom_line(data=sx_nlsfit, linewidth=1.3, lty=1, alpha=0.8) +
+  geom_line(data=sx_nlsfit.nomu, linewidth=1.3, linetype='11', alpha=0.8) +
+  scale_colour_manual(values=theory_colors) + no.legend +
+  #geom_hline(yintercept=(mark_bounds), alpha=mark_alpha, colour=blackcol, linetype=2) +
+  coord_cartesian(ylim=c(0,1)) +
+  scale_y_continuous("Proportion in supernatant (pSup)", breaks=c(0,0.5,1)) +
+  scale_x_log10nice("mRNA length (nucleotides)") + larger_labels
+
+# g_theory = ggplot(dh, aes(x=length, y=pSup, group=Temperature, colour=Temperature)) + 
+#   geom_point(shape=shap, alpha=0.2*alph) + 
+#   geom_line(data=windowed, linewidth=1, linetype=1, colour=blackcol, alpha=0.5) +
+#   geom_line(data=sx, linewidth=1.3, lty=1, alpha=0.8) +
+#   geom_line(data=sx.nomu, linewidth=1.3, linetype='11', alpha=0.8) +
+#   scale_colour_manual(values=theory_colors) + no.legend +
+#   #geom_hline(yintercept=(mark_bounds), alpha=mark_alpha, colour=blackcol, linetype=2) +
+#   coord_cartesian(ylim=c(0,1)) +
+#   scale_y_continuous("Proportion in supernatant (pSup)", breaks=c(0,0.5,1)) +
+#   scale_x_log10nice("mRNA length (nucleotides)") + larger_labels
+
+```
+
+
 #Figure 2
 
 ##Figure 2A (deltasedScore vs. FC TPM, 42/46)
@@ -496,7 +746,7 @@ sg_plot <- ggplot(data =stress_sg_data%>% filter(Treatment != "1_0"), aes(x = Tr
 
 sg_plot
 
-ggsave("../figures/Figure3/sg_comparison_plot.pdf", sg_plot, width = 7, height = 3)
+ggsave("../figures/Figure3/sg_comparison_plot.pdf", sg_plot, width = 7, height = 3, create.dir = TRUE)
 ```
 
 ## stress sedscore violins
