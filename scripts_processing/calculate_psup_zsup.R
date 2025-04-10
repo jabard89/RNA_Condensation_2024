@@ -143,8 +143,12 @@ df_Zsup_sed_esc <- df_Zsup %>% ungroup %>%
   left_join(gene_labels %>% select(ORF,gene,LengthTxEst,classification),by="ORF") %>%
   left_join(df_pSup_windowmean, by = c("Lysate_sample", "LengthTxEst")) %>%
   left_join(df_ctrl, by = c("ORF","Treatment_group")) %>%
+  group_by(Lysate_sample) %>%
+  mutate(pSup.lysate.sd = sd(logodds(pSup) - logodds(pSup.lysate.windowmean), na.rm=T)) %>%
+  ungroup %>%
   mutate(sed = (logodds(pSup.ctrl.mean) - logodds(pSup)) / pSup.ctrl.sd,
          esc = ((logodds(pSup) - logodds(pSup.lysate.windowmean)) - (logodds(pSup.ctrl.mean) - logodds(pSup.ctrl.windowmean.mean))) / pSup.ctrl.sd,
+         newZ = (logodds(pSup) - logodds(pSup.lysate.windowmean)) / pSup.lysate.sd,
          pSup.ctrl.window.mean=pSup.ctrl.windowmean.mean,
          pSup.treatment.window.mean=pSup.lysate.windowmean)
 
@@ -194,6 +198,7 @@ df_Zsup_sed_esc_filt_mean <- df_Zsup_sed_esc %>%
             Zsup.mean = mean(Zsup),
             sed.mean = mean(sed),
             esc.mean = mean(esc),
+            newZ.mean = mean(newZ),
             pSup.ctrl.window.mean.mean=mean(pSup.ctrl.windowmean.mean),
             pSup.treatment.window.mean.mean=mean(pSup.lysate.windowmean)
 ) %>%
