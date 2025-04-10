@@ -592,10 +592,10 @@ plot_fc_top100_2A <- function(df, xvar, yvar,
   p_scatter <- ggplot(df,aes(x=!!X,y=!!Y,color=top100))+
     geom_hline(yintercept = yint, linetype = 'dashed') +
     geom_vline(xintercept = xint, linetype = 'dashed') +
-    geom_point(data=df %>% filter(gene %!in% genes_to_lab_2A, top100 == FALSE), alpha = 0.55, shape = 16, size = 0.8) +
-    geom_point(data=df %>% filter(gene %!in% genes_to_lab_2A, top100 == TRUE), alpha = 0.8, shape = 16, size = 0.9) +
-    geom_point(data=df %>% filter(gene %in% genes_to_lab_2A, top100 == FALSE), alpha = 1, shape = 16, size = 2, color = "black") +
-    geom_point(data=df %>% filter(gene %in% genes_to_lab_2A, top100 == TRUE), alpha = 1, shape = 16, size = 2) +
+    ggrastr::rasterize(dpi = 600, geom_point(data=df %>% filter(gene %!in% genes_to_lab_2A, top100 == FALSE), alpha = 0.55, shape = 16, size = 0.8)) +
+    ggrastr::rasterize(dpi = 600, geom_point(data=df %>% filter(gene %!in% genes_to_lab_2A, top100 == TRUE), alpha = 0.8, shape = 16, size = 0.9)) +
+    ggrastr::rasterize(dpi = 600, geom_point(data=df %>% filter(gene %in% genes_to_lab_2A, top100 == FALSE), alpha = 1, shape = 16, size = 2, color = "black")) +
+    ggrastr::rasterize(dpi = 600, geom_point(data=df %>% filter(gene %in% genes_to_lab_2A, top100 == TRUE), alpha = 1, shape = 16, size = 2)) +
     guides(color = "none") +
     scale_color_manual(values = c("TRUE" = col, "FALSE" = "grey80")) +
     coord_cartesian(xlim = c(xmin, xmax), ylim = c(ymin, ymax), expand = F) +
@@ -715,7 +715,7 @@ stress_sg_data <- bind_rows(hs_subset, azide_subset, etoh_subset) %>% mutate(Tre
 
 
 sg_plot <- ggplot(data =stress_sg_data%>% filter(Treatment != "1_0"), aes(x = Treatment, y = Cell_Parent_Children_stress_granule_Count, color = Treatment))+
-  geom_point(aes(group = Stress), position=position_jitterdodge(dodge.width = 0.9, jitter.width = 4, jitter.height = 0.3), alpha = 0.2, shape = 16)+
+  ggrastr::rasterize(dpi = 600, geom_point(aes(group = Stress), position=position_jitterdodge(dodge.width = 0.9, jitter.width = 4, jitter.height = 0.3), alpha = 0.2, shape = 16))+
   geom_boxplot(aes(fill = Treatment), alpha = 1, color = "black", size = 0.7, outlier.colour = NA)+ 
   ylab("SGs/cell")+
   scale_color_manual(values = c("#7F7F7F", "#7F7F7F", "#7F7F7F", "#7F7F7F", "#7F7F7F", "#7F7F7F", "#7F7F7F", "#7F7F7F", "#7F7F7F"))+
@@ -777,7 +777,7 @@ p_violin <- ggplot(df,
                    #%>%filter(Stress_label!="mock"),
        aes(x=Stress_label,y=SP.FC))+
   geom_hline(yintercept=1,linetype="dotted")+
-  geom_point(shape=16,alpha=0.2,color="grey50",position=position_jitter(width=0.2), size = 0.5)+
+  ggrastr::rasterize(dpi = 600, geom_point(shape=16,alpha=0.2,color="grey50",position=position_jitter(width=0.2), size = 0.5)) +
   geom_violin(aes(fill=Stress_label,alpha=Stress_label))+
   geom_violin(fill=NA,alpha=1,draw_quantiles = c(0.5),size=0.5)+
   scale_y_log10nice()+
@@ -872,10 +872,10 @@ plot_fc_top100 <- function(df,xvar,yvar,
                linetype = 'dashed') +
     geom_vline(xintercept = xint,
                linetype = 'dashed') +
-    geom_point(data=df%>%filter(gene%!in%genes_to_lab,top100==FALSE),alpha=0.6,shape=16,size=0.4)+
-    geom_point(data=df%>%filter(gene%!in%genes_to_lab,top100==TRUE),alpha=0.5,shape=16,size=0.5)+
-    geom_point(data=df%>%filter(gene%in%genes_to_lab,top100==FALSE),alpha=1,shape=16,size=1.5,color="black")+
-    geom_point(data=df%>%filter(gene%in%genes_to_lab,top100==TRUE),alpha=1,shape=16,size=1.5)+
+    ggrastr::rasterize(dpi = 600, geom_point(data=df%>%filter(gene%!in%genes_to_lab,top100==FALSE),alpha=0.6,shape=16,size=0.4)) +
+    ggrastr::rasterize(dpi = 600, geom_point(data=df%>%filter(gene%!in%genes_to_lab,top100==TRUE),alpha=0.5,shape=16,size=0.5)) +
+    ggrastr::rasterize(dpi = 600, geom_point(data=df%>%filter(gene%in%genes_to_lab,top100==FALSE),alpha=1,shape=16,size=1.5,color="black")) +
+    ggrastr::rasterize(dpi = 600, geom_point(data=df%>%filter(gene%in%genes_to_lab,top100==TRUE),alpha=1,shape=16,size=1.5)) +
     guides(color="none")+
     scale_color_manual(values=c("TRUE"=col, "FALSE"="grey"))+
     coord_cartesian(xlim=c(xmin,xmax),ylim=c(ymin,ymax),expand=F)+
@@ -1407,10 +1407,10 @@ plot_fc_top100_no_margdist <- function(df,xvar,yvar,
                linetype = 'dashed') +
     geom_vline(xintercept = xint,
                linetype = 'dashed') +
-    geom_point(data=df%>%filter(gene%!in%genes_to_lab,top100==FALSE),alpha=0.6,shape=16,size=0.4)+
-    geom_point(data=df%>%filter(gene%!in%genes_to_lab,top100==TRUE),alpha=0.5,shape=16,size=0.5)+
-    geom_point(data=df%>%filter(gene%in%genes_to_lab,top100==FALSE),alpha=1,shape=16,size=1.5,color="black")+
-    geom_point(data=df%>%filter(gene%in%genes_to_lab,top100==TRUE),alpha=1,shape=16,size=1.5)+
+    ggrastr::rasterize(dpi = 600, geom_point(data=df%>%filter(gene%!in%genes_to_lab,top100==FALSE),alpha=0.6,shape=16,size=0.4)) +
+    ggrastr::rasterize(dpi = 600, geom_point(data=df%>%filter(gene%!in%genes_to_lab,top100==TRUE),alpha=0.5,shape=16,size=0.5)) +
+    ggrastr::rasterize(dpi = 600, geom_point(data=df%>%filter(gene%in%genes_to_lab,top100==FALSE),alpha=1,shape=16,size=1.5,color="black")) +
+    ggrastr::rasterize(dpi = 600, geom_point(data=df%>%filter(gene%in%genes_to_lab,top100==TRUE),alpha=1,shape=16,size=1.5)) +
     guides(color="none")+
     scale_color_manual(values=c("TRUE"=col, "FALSE"="grey"))+
     coord_cartesian(xlim=c(xmin,xmax),ylim=c(ymin,ymax),expand=F)+
@@ -1490,10 +1490,10 @@ plot_fc_top100_no_margdist_nocross <- function(df,xvar,yvar,
                linetype = 'dashed') +
     geom_vline(xintercept = xint,
                linetype = 'dashed') +
-    geom_point(data=df%>%filter(gene%!in%genes_to_lab,top100==FALSE),alpha=0.6,shape=16,size=0.4)+
-    geom_point(data=df%>%filter(gene%!in%genes_to_lab,top100==TRUE),alpha=0.5,shape=16,size=0.5)+
-    geom_point(data=df%>%filter(gene%in%genes_to_lab,top100==FALSE),alpha=1,shape=16,size=1.5,color="black")+
-    geom_point(data=df%>%filter(gene%in%genes_to_lab,top100==TRUE),alpha=1,shape=16,size=1.5)+
+    ggrastr::rasterize(dpi = 600, geom_point(data=df%>%filter(gene%!in%genes_to_lab,top100==FALSE),alpha=0.6,shape=16,size=0.4)) +
+    ggrastr::rasterize(dpi = 600, geom_point(data=df%>%filter(gene%!in%genes_to_lab,top100==TRUE),alpha=0.5,shape=16,size=0.5)) +
+    ggrastr::rasterize(dpi = 600, geom_point(data=df%>%filter(gene%in%genes_to_lab,top100==FALSE),alpha=1,shape=16,size=1.5,color="black")) +
+    ggrastr::rasterize(dpi = 600, geom_point(data=df%>%filter(gene%in%genes_to_lab,top100==TRUE),alpha=1,shape=16,size=1.5)) +
     guides(color="none")+
     scale_color_manual(values=c("TRUE"=col, "FALSE"="grey"))+
     coord_cartesian(xlim=c(xmin,xmax),ylim=c(ymin,ymax),expand=F)+
@@ -1576,8 +1576,8 @@ df <- df_Zsup_Poly_minfilt %>% filter(Control==FALSE,Stress_group%in%c("Azide 0.
 p_TPMFC_deltaZ <- ggplot(df,
        aes(x=TPM.FC.SedSeq,y=deltaZ,color=TE_cat))+
   geom_hline(yintercept=0,linetype="dotted")+geom_vline(xintercept=1,linetype="dotted")+
-  geom_point(shape=16,data=df%>%filter(highlight=="other"),alpha=0.1)+
-  geom_point(shape=16,data=df%>%filter(highlight!="other"),alpha=0.5)+
+  ggrastr::rasterize(dpi = 600, geom_point(shape=16,data=df%>%filter(highlight=="other"),alpha=0.1)) +
+  ggrastr::rasterize(dpi = 600, geom_point(shape=16,data=df%>%filter(highlight!="other"),alpha=0.5)) +
   scale_x_log10nice(omag=c(-1,0,2,4))+
   scale_y_continuous(breaks=c(-3,0,3))+
   coord_cartesian(xlim=c(0.1,500),ylim=c(-4.3,4.3),expand=F)+
@@ -1592,9 +1592,9 @@ stress_labs <- c("42C"="42\u00B0C","Azide 0.8%"="0.8% Azide","Ethanol 7.5%"="7.5
 p_deltaZ_byTPMbyTE <- ggplot(df,
        aes(x=TPM_cat,y=deltaZ,fill=TE_cat,group=interaction(TPM_cat,TE_cat)))+
   geom_hline(yintercept=0,linetype="dotted")+
-  geom_point(shape=16,alpha=0.3,size=0.5,color="grey50",
+  ggrastr::rasterize(dpi = 600, geom_point(shape=16,alpha=0.3,size=0.5,color="grey50",
              aes(group=TE_cat),
-             position=position_jitterdodge(jitter.width=0.2,seed=1,dodge.width = dge_wid))+
+             position=position_jitterdodge(jitter.width=0.2,seed=1,dodge.width = dge_wid))) +
   geom_boxplot(outlier.shape=NA,alpha=0.5,position=position_dodge(width=dge_wid),size=0.25)+
   geom_boxplot(fill=NA,outlier.shape=NA,position=position_dodge(width=dge_wid),size=0.25)+
   facet_grid(.~Stress_label,
@@ -1741,8 +1741,8 @@ df <- df_Zsup_Poly_minfilt %>% filter(Control==FALSE,Stress_group%in%c("Azide 0.
 p_TPMFC_esc <- ggplot(df,
        aes(x=TPM.FC.SedSeq,y=esc.mean,color=TE_cat))+
   geom_hline(yintercept=0,linetype="dotted")+geom_vline(xintercept=1,linetype="dotted")+
-  geom_point(shape=16,data=df%>%filter(highlight=="other"),alpha=0.1)+
-  geom_point(shape=16,data=df%>%filter(highlight!="other"),alpha=0.5)+
+  ggrastr::rasterize(dpi = 600, geom_point(shape=16,data=df%>%filter(highlight=="other"),alpha=0.1)) +
+  ggrastr::rasterize(dpi = 600, geom_point(shape=16,data=df%>%filter(highlight!="other"),alpha=0.5)) +
   scale_x_log10nice(omag=c(-1,0,2,4))+
   scale_y_continuous(breaks=c(-3,0,3))+
   coord_cartesian(xlim=c(0.1,500),ylim=c(-4.3,4.3),expand=F)+
@@ -1757,9 +1757,9 @@ stress_labs <- c("42C"="42\u00B0C","Azide 0.8%"="0.8% Azide","Ethanol 7.5%"="7.5
 p_esc_byTPMbyTE <- ggplot(df,
        aes(x=TPM_cat,y=esc.mean,fill=TE_cat,group=interaction(TPM_cat,TE_cat)))+
   geom_hline(yintercept=0,linetype="dotted")+
-  geom_point(shape=16,alpha=0.3,size=0.5,color="grey50",
+  ggrastr::rasterize(dpi = 600, geom_point(shape=16,alpha=0.3,size=0.5,color="grey50",
              aes(group=TE_cat),
-             position=position_jitterdodge(jitter.width=0.2,seed=1,dodge.width = dge_wid))+
+             position=position_jitterdodge(jitter.width=0.2,seed=1,dodge.width = dge_wid))) +
   geom_boxplot(outlier.shape=NA,alpha=0.5,position=position_dodge(width=dge_wid),size=0.25)+
   geom_boxplot(fill=NA,outlier.shape=NA,position=position_dodge(width=dge_wid),size=0.25)+
   facet_grid(.~Stress_label,
@@ -1921,8 +1921,8 @@ p_Occ <- ggplot(df,
        aes(x=Occ.odds.mean,y=Zsup.mean))+
   geom_hline(yintercept=0,linetype="dotted")+
   geom_vline(xintercept=median(df$Occ.odds.mean,na.rm=T),linetype="dotted")+
-  geom_point(data=df%>%filter(EnergyBin=="other"),alpha=0.5, shape = 16, size = 0.8, color = "grey")+
-  geom_point(data=df%>%filter(EnergyBin!="other"),alpha=0.75,aes(color=EnergyBin), shape = 16, size = 0.8)+
+  ggrastr::rasterize(dpi = 600, geom_point(data=df%>%filter(EnergyBin=="other"),alpha=0.5, shape = 16, size = 0.8, color = "grey")) +
+  ggrastr::rasterize(dpi = 600, geom_point(data=df%>%filter(EnergyBin!="other"),alpha=0.75,aes(color=EnergyBin), shape = 16, size = 0.8)) +
   scale_color_manual(values=energy_color_scale)+
   #scale_x_log10nice()+#coord_cartesian(xlim=c(0.2,50))+
   scale_x_log10nice()+
@@ -1938,8 +1938,8 @@ p_Occ <- ggplot(df,
 p_Occ
 p_zsup_box <- ggplot(df %>% filter(!is.na(EnergyBin)),
          aes(x=EnergyBin,y=Zsup.mean,fill=EnergyBin))+
-    geom_point(position=position_jitterdodge(jitter.width=1.5),
-               aes(color=EnergyBin,alpha=EnergyBin), shape =16, size = 0.75)+
+    ggrastr::rasterize(dpi = 600, geom_point(position=position_jitterdodge(jitter.width=1.5),
+               aes(color=EnergyBin,alpha=EnergyBin), shape =16, size = 0.75)) +
   scale_color_manual(values=energy_color_scale)+
     scale_alpha_manual(values=c("least" = 0.6, "other" = 0.1, "most" = 0.6)) +
   geom_violin(fill=NA,draw_quantiles = c(0.5),size=0.5,color="black")+
@@ -1993,18 +1993,18 @@ p_TPM_TE <- ggplot(df,
        aes(x=TPM.mean,y=TE))+
   scale_x_log10nice()+coord_cartesian(xlim=c(1,1e4))+
   scale_y_log10nice()+coord_cartesian(ylim=c(0.01,10))+
-  geom_point(alpha=0.3, size = 0.5, shape = 16, color = "black", )+
-  geom_point(data=df %>% filter(gene%in%genes_to_label),size=2,color="red")+
+  ggrastr::rasterize(dpi = 600, geom_point(alpha=0.3, size = 0.5, shape = 16, color = "black")) +
+  ggrastr::rasterize(dpi = 600, geom_point(data=df %>% filter(gene%in%genes_to_label),size=2,color="red")) +
   geom_text_repel(data=df,size=4.2,aes(label=gene_label),max.overlaps = 10000,min.segment.length = 0)+
   labs(x="mRNA Abundance",y="Translation\nEfficiency")
 p_TPM_TE
 
 p_Z_box <- ggplot(df,
                   aes(x=1,y=Zsup.mean))+
-  geom_point(data=df%>%filter(gene%!in%genes_to_label),position=position_jitter(width=0.43),alpha=0.02, size = 0.3)+
+  ggrastr::rasterize(dpi = 600, geom_point(data=df%>%filter(gene%!in%genes_to_label),position=position_jitter(width=0.43),alpha=0.02, size = 0.3)) +
   #geom_boxplot(fill=NA,outlier.shape=NA)+
   geom_violin(fill="grey70", alpha = 0.6, draw_quantiles = c(0.5))+
-  geom_point(data=df%>%filter(gene%in%genes_to_label),alpha=1,color="red",size=1)+
+  ggrastr::rasterize(dpi = 600, geom_point(data=df%>%filter(gene%in%genes_to_label),alpha=1,color="red",size=1)) +
   #geom_text_repel(data=df%>%filter(gene=="GCN4"),size=4.2,aes(label=gene_label),max.overlaps = 10000,min.segment.length = 0,nudge_y=2.5,nudge_x=0.25)+
   #geom_text_repel(data=df%>%filter(gene=="HAC1"),size=4.2,aes(label=gene_label),max.overlaps = 10000,min.segment.length = 0,nudge_y=-2.5 ,nudge_x=0.25)+
   labs(x="",y="Zsup")+
@@ -2080,7 +2080,7 @@ strain_shapes <- setNames(strain_tibble$shape,strain_tibble$Strain)
 p_reps <- ggplot(df %>%arrange(desc(TE_norm)),
        aes(x=TE_norm,y=pSup.mean))+
   geom_errorbar(aes(x=TE_norm,ymin=pSup.mean-pSup.se,ymax=pSup.mean+pSup.se),width=0.5,size=0.5)+
-  geom_point(aes(color=Strain,shape=Strain),size=3.1)+
+  ggrastr::rasterize(dpi = 600, geom_point(aes(color=Strain,shape=Strain),size=3.1)) +
   scale_y_continuous(breaks=c(0.5,0.75,1.0))+
   scale_color_manual(values=strain_colors)+
   scale_shape_manual(values=strain_shapes)+
@@ -2151,9 +2151,9 @@ df <- df_Zsup_mean %>%
 p_dtt <- ggplot(df,
                 aes(x=lab,y=esc.mean))+
   theme_half_open(font_size = 6) +
-  ggrastr::rasterize(geom_point(data=df%>%filter(gene!="HAC1"),aes(y=esc_compress),
+  ggrastr::rasterize(dpi = 600, geom_point(data=df%>%filter(gene!="HAC1"),aes(y=esc_compress),
              position=position_jitter(width=0.1),alpha=0.3,shape=16,
-             size = 0.5, color = "grey50"), dpi = 600)+
+             size = 0.5, color = "grey50"))+
   geom_violin(alpha=0.5,aes(fill = lab), linewidth = 0)+
   scale_fill_manual(values = c("42°C" = stress.cols[["42C"]],
                     "46°C" = stress.cols[["46C"]],
@@ -2307,7 +2307,7 @@ plot_table <- df %>%
     ggplot(data = df, aes(x = BR1, y = BR2)) +
     geom_hline(yintercept = 0, color = "grey",linetype="dotted") +
     geom_vline(xintercept = 0, color = "grey",linetype="dotted") +
-    geom_point(size = 0.5, shape=16,alpha=0.5,color="grey",na.rm = TRUE) +
+    ggrastr::rasterize(dpi = 600, geom_point(size = 0.5, shape=16,alpha=0.5,color="grey",na.rm = TRUE)) +
     coord_cartesian(xlim = c(-5, 5), ylim = c(-5, 5)) +
     scale_x_continuous(breaks = c(-4, 0, 4)) +
     scale_y_continuous(breaks = c(-4, 0, 4)) +
@@ -2391,7 +2391,7 @@ plot_table <- df %>%
     ggplot(data = df, aes(x = BR1, y = BR2)) +
     geom_hline(yintercept = 0, color = "grey",linetype="dotted") +
     geom_vline(xintercept = 0, color = "grey",linetype="dotted") +
-    geom_point(size = 0.5, shape=16,alpha=0.5,color="grey",na.rm = TRUE) +
+    ggrastr::rasterize(dpi = 600, geom_point(size = 0.5, shape=16,alpha=0.5,color="grey",na.rm = TRUE)) +
     coord_cartesian(xlim = c(-5, 5), ylim = c(-5, 5)) +
     scale_x_continuous(breaks = c(-4, 0, 4)) +
     scale_y_continuous(breaks = c(-4, 0, 4)) +
@@ -2511,7 +2511,7 @@ set_label_size = theme(
   axis.text.y = element_text(size = 10))
 p <- ggplot(df,
             aes(x=LengthTxEst,y=SP.mean.all))+
-  geom_point(alpha=0.3,shape=16,size=0.5,color="grey60")+
+  ggrastr::rasterize(dpi = 600, geom_point(alpha=0.3,shape=16,size=0.5,color="grey60")) +
   geom_line(aes(y=mean.SP.mean.all),color="black",size=0.5,alpha=0.5,linetype=1,linewidth=0.5)+
   geom_line(aes(y=exp(mean.lo.psup-sd.lo.psup)),color=okabe_ito_colors[4],size=1,linewidth=0.5, linetype=1)+
   geom_line(aes(y=exp(mean.lo.psup+sd.lo.psup)),color=okabe_ito_colors[4],size=1, linewidth=0.5, linetype=1)+
@@ -2595,7 +2595,7 @@ hac1_30C_equiv_length <- df %>%
 hac1_length <- gene_labels %>% filter(ORF=="YFL031W") %>% pull(LengthTxEst)
 p_SP <- ggplot(df %>% filter(!is.infinite(SP.mean),SP.mean>0),
             aes(x=LengthTxEst,y=SP.mean))+
-  geom_point(alpha=0.2,shape=16, size= 0.3,color="grey50")+
+  ggrastr::rasterize(dpi = 600, geom_point(alpha=0.2,shape=16, size= 0.3,color="grey50")) +
   geom_line(aes(y=mean.SP.mean,group=Temperature),color="black",size=0.5)+
   scale_x_log10nice()+scale_y_log10nice()+
   coord_cartesian(ylim=c(0.05,80))+
@@ -2637,8 +2637,8 @@ corr <- (df_corr %>% filter(term=="Zsup.30C") %>% pull(Zsup.42C))^2
 p_zsup <- ggplot(df,
        aes(x=Zsup.30C,y=Zsup.42C))+
   geom_abline(slope=1,linetype="dotted")+
-  geom_point(data=df%>%filter(target=="other"),alpha=0.2,shape=16,color="grey50", size = 0.5)+
-  geom_point(data=df%>%filter(target!="other"),aes(color=target),size=0.8,shape=16,alph=0.3)+
+  ggrastr::rasterize(dpi = 600, geom_point(data=df%>%filter(target=="other"),alpha=0.2,shape=16,color="grey50", size = 0.5)) +
+  ggrastr::rasterize(dpi = 600, geom_point(data=df%>%filter(target!="other"),aes(color=target),size=0.8,shape=16,alph=0.3)) +
   scale_x_continuous(breaks=c(-4,0,4))+scale_y_continuous(breaks=c(-4,0,4))+
   scale_color_manual(values=target.cols)+
   coord_cartesian(xlim=c(lower,upper),ylim=c(lower,upper),expand=F)+
@@ -2655,8 +2655,8 @@ ggsave("../figures/Supplemental/Zsup.pdf",
 p_zsup_46C <- ggplot(df,
        aes(x=Zsup.30C,y=Zsup.46C))+
   geom_abline(slope=1,linetype="dotted")+
-  geom_point(data=df%>%filter(target=="other"),alpha=0.2,shape=16,color="grey50", size = 0.5)+
-  geom_point(data=df%>%filter(target!="other"),aes(color=target),size=0.8,shape=16,alph=0.3)+
+  ggrastr::rasterize(dpi = 600, geom_point(data=df%>%filter(target=="other"),alpha=0.2,shape=16,color="grey50", size = 0.5)) +
+  ggrastr::rasterize(dpi = 600, geom_point(data=df%>%filter(target!="other"),aes(color=target),size=0.8,shape=16,alph=0.3)) +
   scale_x_continuous(breaks=c(-4,0,4))+scale_y_continuous(breaks=c(-4,0,4))+
   scale_color_manual(values=target.cols)+
   coord_cartesian(xlim=c(lower,upper),ylim=c(lower,upper),expand=F)+
@@ -2689,8 +2689,8 @@ df <- df_Zsup_mean %>% filter(Treatment_group=="EW_TSPP") %>%
 p_zsup_boxes <- ggplot(df,
        aes(x=target,y=deltaZ))+
   geom_hline(yintercept=0,linetype="dotted")+
-    geom_point(position=position_jitterdodge(jitter.width=1.5),
-               aes(y=deltaZ.trimmed,color=target),shape=16,alpha=0.5, size = 0.5)+
+    ggrastr::rasterize(dpi = 600, geom_point(position=position_jitterdodge(jitter.width=1.5),
+               aes(y=deltaZ.trimmed,color=target),shape=16,alpha=0.5, size = 0.5)) +
   scale_color_manual(values=target.cols)+
   geom_violin(fill=NA,draw_quantiles = c(0.5),size=0.25,color="black")+
     theme(legend.position="none")+
@@ -2769,9 +2769,9 @@ annotation_df <- df_wilcox %>%
 p_spec <- ggplot(df,
        aes(x=Stress_label,y=deltaZ,fill=stress_specific))+
   geom_hline(yintercept=0,linetype="dotted")+
-  geom_point(aes(group=interaction(Stress_label,stress_specific),alpha=stress_specific),
+  ggrastr::rasterize(dpi = 600, geom_point(aes(group=interaction(Stress_label,stress_specific),alpha=stress_specific),
                  shape=16,color="black",position=position_jitterdodge(jitter.width = 0.2,
-                                                                                dodge.width = 0.75), size = 0.5)+
+                                                                                dodge.width = 0.75), size = 0.5)) +
   scale_alpha_manual(values=c("none"=0.3,"42C"=0.3,"Azide 0.8%"=0.3,"Ethanol 7.5%"=0.3))+
   ggnewscale::new_scale_color() +
   # geom_violin(alpha=0.5)+
@@ -2809,17 +2809,17 @@ gene_to_lab <- c("SOL4", "SPI1", "HSP42", "HXT6", "ARO10", "TPO2", "NRG1", "SDP1
 
 khong_induced <- ggplot(pskho %>% filter(Stress_label == "Azide 0.8%"),
        aes(x = LengthTxEst, y = 1/foldchange.sg.total, colour = sg.classification)) + 
-  geom_point(shape = shap, alpha = 0.5, size = 0.3) + 
+  ggrastr::rasterize(dpi = 600, geom_point(shape = shap, alpha = 0.5, size = 0.3)) + 
   scale_loglog()+
   scale_colour_manual(values = sg_enrichment_colors) +
-  geom_point(data = pskho %>% 
+  ggrastr::rasterize(dpi = 600, geom_point(data = pskho %>% 
                filter(Stress_label == "Azide 0.8%" & gene %in% gene_to_lab), 
              aes(x = LengthTxEst, y = 1/foldchange.sg.total), 
-             shape = 16, size = 1, color = "black")+
-  geom_point(data = pskho %>% 
+             shape = 16, size = 1, color = "black")) +
+  ggrastr::rasterize(dpi = 600, geom_point(data = pskho %>% 
                filter(Stress_label == "Azide 0.8%" & gene %in% gene_to_lab), 
              aes(x = LengthTxEst, y = 1/foldchange.sg.total), 
-             shape = 16, size = 0.5, color = "white")+
+             shape = 16, size = 0.5, color = "white")) +
     guides(colour = guide_legend(override.aes = list(alpha = 1)))+
    theme(panel.spacing.x = grid::unit(0, "mm"),
         strip.placement = "outside",
@@ -2854,7 +2854,7 @@ df <- read_tsv(file.path(github_dir,"data_processed","pSup_spombe_spikeIn.tsv.gz
   arrange(Species)
 p <- ggplot(data = df %>% filter(!is.na(Species)),
        aes(x = LengthTxEst, y = SP.mean, color = Species, group = Species)) +
- geom_point(alpha=0.3,shape=16, size= 0.5)+
+ ggrastr::rasterize(dpi = 600, geom_point(alpha=0.3,shape=16, size= 0.5)) +
   geom_smooth(se = FALSE, size = 1, method = "glm",
               method.args = list(family = "binomial"), color = 'black',
               aes(linetype=Species)) +
@@ -2922,7 +2922,7 @@ stress_labels <- c("mock"="mock",
 p_length_hs <- ggplot(df %>% filter(Stress_label %in% c("42C", "46C")),
                    aes(x=LengthTxEst,y=SP.FC,color=Stress_label))+
   geom_hline(yintercept=1,linetype="dotted")+
-  geom_point(alpha=0.2, shape = 16, size = 0.3)+
+  ggrastr::rasterize(dpi = 600, geom_point(alpha=0.2, shape = 16, size = 0.3)) +
   scale_color_manual(values=stress.cols)+
   facet_grid(.~Stress_label,
              labeller=labeller(Stress_label=stress_labels))+
@@ -2940,7 +2940,7 @@ p_length_hs
 p_length_N3 <- ggplot(df %>% filter(Stress_label %in% c("Azide 0.5%", "Azide 0.8%")),
                    aes(x=LengthTxEst,y=SP.FC,color=Stress_label))+
   geom_hline(yintercept=1,linetype="dotted")+
-  geom_point(alpha=0.2, shape = 16, size = 0.3)+
+  ggrastr::rasterize(dpi = 600, geom_point(alpha=0.2, shape = 16, size = 0.3)) +
   scale_color_manual(values=stress.cols)+
   facet_grid(.~Stress_label,
              labeller=labeller(Stress_label=stress_labels))+
@@ -2959,7 +2959,7 @@ p_length_EtOH <- ggplot(df %>% filter(Stress_label %in% c("Ethanol 5%", "Ethanol
                                                           "Ethanol 10%","Ethanol 15%")),
                    aes(x=LengthTxEst,y=SP.FC,color=Stress_label))+
   geom_hline(yintercept=1,linetype="dotted")+
-  geom_point(alpha=0.2, shape = 16, size = 0.3)+
+  ggrastr::rasterize(dpi = 600, geom_point(alpha=0.2, shape = 16, size = 0.3)) +
   scale_color_manual(values=stress.cols)+
   facet_grid(.~Stress_label,
              labeller=labeller(Stress_label=stress_labels))+
@@ -3083,7 +3083,7 @@ p_violin = ggplot(df %>% filter(Treatment!="25C.control"),
                   aes(x=Treatment,y=TPM.FC,fill=Category,group=grouping_var)) +
   geom_hline(yintercept=1,linetype="dotted")+
   scale_y_log10nice()+
-  geom_point(position=position_jitterdodge(jitter.width=0.2,dodge.width = 0.9),shape=16,alpha=0.4,color="grey50", size = 0.3)+
+  ggrastr::rasterize(dpi = 600, geom_point(position=position_jitterdodge(jitter.width=0.2,dodge.width = 0.9),shape=16,alpha=0.4,color="grey50", size = 0.3)) +
   geom_violin(size=0.25,color="black",alpha=0.5,position=position_dodge(width=0.9))+
   geom_violin(fill=NA,draw_quantiles = c(0.25,0.5,0.75),size=0.25,color="black",position=position_dodge(width=0.9))+
   coord_cartesian(ylim=c(1e-2,1e3))+
@@ -3144,8 +3144,8 @@ annotation_df <- df_wilcox %>%
 p_box <- ggplot(df,
                 aes(x=Induction_cat,y=deltaZ,fill=Stress_label))+
   geom_hline(yintercept=0,linetype="dotted")+
-  geom_point(shape=16,alpha=0.5,size=0.5,color="grey50",
-             position=position_jitter(width=0.2,seed=1))+
+  ggrastr::rasterize(dpi = 600, geom_point(shape=16,alpha=0.5,size=0.5,color="grey50",
+             position=position_jitter(width=0.2,seed=1))) +
   geom_boxplot(outlier.shape=NA,alpha=0.5,size=0.5)+
   geom_boxplot(fill=NA,outlier.shape=NA,size=0.5)+
   facet_grid(.~Stress_label,
@@ -3205,8 +3205,8 @@ annotation_df <- df_wilcox %>%
 p_box <- ggplot(df,
                 aes(x=Induction_cat,y=FC.vs.ctrl_TE,fill=Stress_label))+
   geom_hline(yintercept=1,linetype="dotted")+
-  geom_point(shape=16,alpha=0.5,size=0.5,color="grey50",
-             position=position_jitter(width=0.2,seed=1))+
+  ggrastr::rasterize(dpi = 600, geom_point(shape=16,alpha=0.5,size=0.5,color="grey50",
+             position=position_jitter(width=0.2,seed=1))) +
   geom_boxplot(outlier.shape=NA,alpha=0.5,size=0.5)+
   geom_boxplot(fill=NA,outlier.shape=NA,size=0.5)+
   facet_grid(.~Stress_label,
@@ -3266,8 +3266,8 @@ annotation_df <- df_wilcox %>%
 p_box <- ggplot(df,
                 aes(x=TE_cat,y=deltaZ,fill=Stress_label))+
   geom_hline(yintercept=0,linetype="dotted")+
-  geom_point(shape=16,alpha=0.5,size=0.5,color="grey50",
-             position=position_jitter(width=0.2,seed=1))+
+  ggrastr::rasterize(dpi = 600, geom_point(shape=16,alpha=0.5,size=0.5,color="grey50",
+             position=position_jitter(width=0.2,seed=1))) +
   geom_boxplot(outlier.shape=NA,alpha=0.5,size=0.5)+
   geom_boxplot(fill=NA,outlier.shape=NA,size=0.5)+
   facet_grid(.~Stress_label,
@@ -3394,7 +3394,7 @@ p_TPM_Occ <- ggplot(df,
   scale_x_log10nice()+
   scale_y_log10nice()+
   coord_cartesian(xlim=c(1,1e4),ylim=c(0.1,50))+
-  geom_point(alpha=0.2, size = 0.3)+
+  ggrastr::rasterize(dpi = 600, geom_point(alpha=0.2, size = 0.3)) +
   geom_point(data=df %>% filter(gene%in%genes_to_label),size=2,color="red")+
   geom_text_repel(data=df,size=4.2,aes(label=gene_label),max.overlaps = 10000,min.segment.length = 0)+
   labs(x="mRNA Abundance",y="Rib. Occ.\n(odds)")
@@ -3403,7 +3403,7 @@ p_TPM_Occ
 p_Z_box <- ggplot(df,
                   aes(x=1,y=Zsup.mean))+
   geom_hline(yintercept=0,linetype="dotted")+
-  geom_point(data=df%>%filter(gene%!in%genes_to_label),position=position_jitter(width=0.43),alpha=0.08, size = 1, shape = 16)+
+  ggrastr::rasterize(dpi = 600, geom_point(data=df%>%filter(gene%!in%genes_to_label),position=position_jitter(width=0.43),alpha=0.08, size = 1, shape = 16)) +
   #geom_boxplot(fill=NA,outlier.shape=NA)+
   geom_violin(fill=NA)+
   geom_point(data=df%>%filter(gene%in%genes_to_label),alpha=1,color="red",size=3, shape = 16)+
@@ -3439,10 +3439,10 @@ plot_hs <- function(df,xmin,xmax,ymin,ymax,xscale,xbreaks,yscale,ybreaks) {
                                if_else(deltaZ>ymax,ymax,deltaZ)))
   p_scatter <- ggplot(df,aes(x=TPM.FC.SedSeq,y=deltaZ,color=target))+
     geom_hline(yintercept=0,linetype="dotted")+geom_vline(xintercept=1,linetype="dotted")+
-    geom_point(data=df%>%filter(target=="other"),aes(x=TPM.FC.SedSeq.plot,y=deltaZ.plot),
-               alpha=0.8,color="gray80",shape=16,size=0.8)+
-    geom_point(data=df%>%filter(target!="other"),aes(x=TPM.FC.SedSeq.plot,y=deltaZ.plot),
-               alpha=0.8,shape=16,size=1)+
+    ggrastr::rasterize(dpi = 600, geom_point(data=df%>%filter(target=="other"),aes(x=TPM.FC.SedSeq.plot,y=deltaZ.plot),
+               alpha=0.8,color="gray80",shape=16,size=0.8)) +
+    ggrastr::rasterize(dpi = 600, geom_point(data=df%>%filter(target!="other"),aes(x=TPM.FC.SedSeq.plot,y=deltaZ.plot),
+               alpha=0.8,shape=16,size=1)) +
     coord_cartesian(xlim=c(xmin,xmax),ylim=c(ymin,ymax),expand=F)+
     scale_color_manual(values=c("HSF1 targets"=unname(target.cols["HSF1 targets"]),
                                 "MSN2/4 targets"=unname(target.cols["MSN2/4 targets"]),
