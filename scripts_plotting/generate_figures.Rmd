@@ -454,11 +454,13 @@ theme_marginal = theme(
   legend.margin = unit(0, "null")
 )
 
-add_marginal_x = function(the_plot, var, category, scale_colour=NULL) {
+add_marginal_x = function(the_plot, var, category, reverse=FALSE) {
   ymarg = ggplot(the_plot$data, aes(x=!!rlang::sym(var), fill=!!rlang::sym(category))) + 
     geom_density(alpha=0.6) + xlim(limits=ggplot_build(the_plot)$layout$get_scales(1)$y$limits) + 
-    #scale_y_continuous(expand=expansion()) + 
     coord_flip() + theme_marginal + scale_fill_manual(values=c("other"=blackcol, "focal"=orangecol))
+  if (reverse) {
+    ymarg = ymarg + scale_x_reverse(limits=-ggplot_build(the_plot)$layout$get_scales(1)$y$limits)
+  }
   #if (!is_null(scale_colour)) {
   #  ymarg = ymarg |> scale_colour()
   #}
@@ -476,8 +478,8 @@ focal_label = focal |> filter(gene %in% c('SSA4','HSP104','PMU1','ADD66'))
 res = res |> mutate(cat=ifelse(gene %in% focal$gene,"focal", "other"))
 gsed = ggplot(res, aes(x=length, y=sed.mean, fill=cat)) + theme(plot.margin=unit(c(1,0,1,1),'cm')) +
   geom_hline(yintercept = 0, linetype=3) +
-  ggrastr::rasterize(geom_point(shape=shap, alpha=0.3, colour=gray50col),dpi=600) + 
-  #geom_point(shape=shap, alpha=0.3, colour=gray50col) + 
+  #ggrastr::rasterize(geom_point(shape=shap, alpha=0.3, colour=gray50col),dpi=600) + 
+  geom_point(shape=shap, alpha=0.3, colour=gray50col) + 
   geom_point(data=focal, shape=21, stroke=0.25, fill=orangecol, size=2) +
   geom_point(data=focal_label, shape=21, stroke=0.25, size=3) +
   geom_text_repel(data=focal_label, aes(label=gene), colour=blackcol, fill='white', force=2) +
@@ -485,7 +487,7 @@ gsed = ggplot(res, aes(x=length, y=sed.mean, fill=cat)) + theme(plot.margin=unit
   scale_fill_manual(values=list("other"=blackcol, "focal"=orangecol, "control"=blackcol)) +
   scale_x_log10nice("Transcript length (nt)") +
   scale_y_reverse("Sedimentation score (SDs)", limits=c(7,-0.5)) + no.legend
-gsed = add_marginal_x(gsed, "sed.mean", "cat")
+gsed = add_marginal_x(gsed, "sed.mean", "cat", reverse=T)
 gesc = ggplot(res, aes(x=length, y=esc.mean, fill=cat)) + 
   theme(plot.margin=unit(c(1,0,1,1),'cm'), 
         panel.margin=unit(c(0,0,0,0),'null'),
