@@ -862,7 +862,7 @@ plot_group_labels <- c("EW_TSPP~mock"="mock",
                    "HyperOsmotic_EtOH~Ethanol 15%"="15")
 p_violin <- ggplot(df,
        aes(x=plot_group,y=sed.mean.compHairpin))+
-  theme_half_open(font_size = 9) +
+  #theme_half_open(font_size = 9) +
   geom_hline(yintercept=0,linetype="dotted")+
   ggrastr::rasterize(dpi = 600,
                      geom_point(aes(y = sed.mean.compHairpin.compress),
@@ -932,7 +932,7 @@ plot_group_labels <- c("EW_TSPP~mock"="mock",
                    "HyperOsmotic_EtOH~Ethanol 15%"="15")
 p_violin <- ggplot(df,
        aes(x=plot_group,y=sed.mean))+
-  theme_half_open(font_size = 9) +
+  #theme_half_open(font_size = 9) +
   geom_hline(yintercept=0,linetype="dotted")+
   ggrastr::rasterize(dpi = 600,
                      geom_point(aes(y = sed.mean),
@@ -1335,11 +1335,28 @@ df_sum <- df %>%
                                         "native"))) %>% 
   mutate(Reporter_age = factor(Reporter_age, levels = c("Old", "New"))) %>% mutate(Probe =factor(Probe, levels = c("PMU1", "HSP26", "YONL", "BEM2", "PGK1")))
 
+native_stats <- df %>%
+  filter(Probe %in% c("HSP26", "PMU1")) %>%
+  group_by(Temperature) %>%
+  nest() %>%
+  mutate(p.value = map_dbl(data, ~ wilcox.test(log10(SP.FC) ~ Probe, data = .x)$p.value),
+         label = case_when(
+           p.value < 0.001 ~ "***",
+           p.value < 0.01 ~ "**",
+           p.value < 0.05 ~ "*",
+           TRUE ~ "ns"
+         ))
+
+
+
+
 dodge_wid <- 0.9
 SP.FC.breaks <- c(-2,0)
 SP.FC.labels <- c(expression(10^{-2}),
                   expression(10^{0}))
 SP.FC.ylims <- c(-2.75,0.4)
+
+
 p_native_SPFC <- ggplot(df %>% filter(Probe!="YONL",Probe%in%c("HSP26","PMU1")),
                    aes(x=Temperature,y=log10(SP.FC), color = Probe))+
   geom_col(data=df_sum %>%  filter(Probe!="YONL",Probe%in%c("HSP26","PMU1")), 
@@ -1376,6 +1393,18 @@ df_combined_plot <- df %>%
            Group == "native" ~ "native",
            TRUE ~ Reporter_age))%>%
   mutate(Reporter_age = factor(Reporter_age, levels = c("native", "Old", "New"))) %>% mutate(UTR5 = factor(UTR5, levels = c("PMU1", "HSP26", "YONL")))
+
+synth_stats <- df_combined_plot %>%
+  filter(Group != "native") %>%
+  group_by(UTR5, Temperature) %>%
+  nest() %>%
+  mutate(p.value = map_dbl(data, ~ t.test(log10(SP.FC) ~ Reporter_age, data = .x)$p.value),
+         label = case_when(
+           p.value < 0.001 ~ "***",
+           p.value < 0.01 ~ "**",
+           p.value < 0.05 ~ "*",
+           TRUE ~ "ns"
+         ))
          
          
 native_rep_comb_plot <- ggplot(df_combined_plot,  # Set the order of Reporter_age),
@@ -2616,6 +2645,98 @@ ggsave(file.path(github_dir,"figures/Figure6/4E_30C_length_SP.pdf"),
        width=75,height=75,units="mm",bg="transparent")
 ```
 ```{r}
+## 4E/3b 30C
+df_30C_occ <- df_Occ_mean_minfilt %>%
+  filter(Treatment%in%c("none","mock"),Temperature=="30C") %>%
+  group_by(ORF) %>%
+  summarise(Occ.odds.mean = exp(mean(log(Occ.odds.mean))))
+min_4E <- -2.5
+max_4E <- 3.25
+min_3b <- -5
+max_3b <- 5.25
+df <- df_Zsup_mean %>% filter(Treatment_group%in%c("eIF3b_deplete","eIF4E_deplete")) %>%
+  mutate(Target=case_when(Treatment_group=="eIF3b_deplete"~"eIF3b",
+                              Treatment_group=="eIF4E_deplete"~"eFI4E")) %>%
+  group_by(Treatment_group,ORF,Temperature) %>%
+  filter(length(ORF[Treated==FALSE])==1) %>%
+  mutate(deltaZ = Zsup.mean-Zsup.mean[Treated==FALSE],
+         SP.FC = SP.mean/SP.mean[Treated==FALSE]) %>%
+  left_join(df_30C_occ,by="ORF") %>%
+  filter(Temperature=="30C") %>%
+  group_by(Treatment_group,Temperature,Treatment) %>%
+  #mutate(Occ_bin = cut_number(Occ.odds.mean,n=5,labels=paste0(c("0-20%","20-40%","40-60%","60-80%","80-100%")))) %>%
+  mutate(Occ_bin = cut_number(Occ.odds.mean,n=5,labels=paste0("q",seq(5,1,by=-1)))) %>%
+  mutate(Occ_bin=factor(Occ_bin,levels=c(paste0("q",seq(1:5))))) %>%
+  filter(!is.na(Occ.odds.mean)&Occ.odds.mean>0&!is.infinite(Occ.odds.mean)) %>%
+  mutate(Target=case_when(Treatment_group=="eIF3b_deplete"~"eIF3b",
+                              Treatment_group=="eIF4E_deplete"~"eIF4E")) %>%
+  mutate(deltaZ_lim = case_when(Target=="eIF4E"&deltaZ<(min_4E)~(min_4E),
+                                Target=="eIF4E"&deltaZ>(max_4E)~(max_4E),
+                                Target=="eIF3b"&deltaZ<(min_3b)~(min_3b),
+                                Target=="eIF3b"&deltaZ>(max_3b)~(max_3b),
+                                TRUE~deltaZ)) %>%
+  arrange(Treated)
+
+plot_length_dist <- function(df,targ,xmin,xmax,ymin,ymax){
+  comb_cols <- c("eIF3b.FALSE"="grey50","eIF3b.TRUE"="#E69F00",
+    "eIF4E.FALSE"="grey50","eIF4E.TRUE"="#0072B2")
+  genes_to_label <- c("HAC1","SSB1")
+  df <- df %>% filter(Target==!!enquo(targ)) %>%
+    mutate(gene_lab = if_else(gene%in%genes_to_label,gene,""))
+  df_med <- df %>% group_by(Treated,Target) %>%
+    summarise(SP.median = median(SP.mean,na.rm=T))
+  p_scatter <- ggplot(df,
+                   aes(x=LengthTxEst,y=SP.mean,color=interaction(Target,Treated)))+
+    geom_hline(data=df_med,aes(yintercept=SP.median,
+                               color=interaction(Target,Treated)),linetype="dotted",size=0.5)+
+    ggrastr::rasterize(dpi = 600, geom_point(alpha=0.3,shape=16, size = 0.3)) +
+    coord_cartesian(xlim=c(xmin,xmax),
+                    ylim=c(ymin,ymax),expand=FALSE)+
+    scale_x_log10nice()+scale_y_log10nice()+
+    scale_color_manual(values=comb_cols)+
+    facet_grid(.~Target)+
+    geom_point(data=df%>%filter(gene%in%genes_to_label,Treated==FALSE),
+               alpha=1,size=1, shape = 19, color="black")+
+    geom_point(data=df%>%filter(gene%in%genes_to_label,Treated==TRUE),
+               alpha=1,size=1, shape = 19, color="black", fill = "black")+
+    geom_point(data=df%>%filter(gene%in%genes_to_label,Treated==TRUE),
+               alpha=1,size=0.3, shape = 19,)
+  
+  # For the density of y-axis
+  y_density_left <- log10(xmin)
+  y_density_right <- log10(xmin) + 0.2 * (log10(xmax)-log10(xmin))
+  p_density_y <- ggplot(df,aes(x=log10(SP.mean),fill=interaction(Target,Treated)))+
+    geom_density(alpha=0.5)+
+    scale_fill_manual(values=comb_cols)+
+    scale_x_continuous(limits=c(log10(ymin)-1,log10(ymax)+1))+
+    coord_flip(xlim=c(log10(ymin),log10(ymax)))+
+    theme_void()+
+    theme(legend.position="none")
+  #Overlay the density plots onto the main plot using annotation_custom
+  p_combined <- p_scatter +
+  #   annotation_custom(grob = ggplotGrob(p_density_y), 
+  #                     xmin = y_density_left, xmax = y_density_right,
+  #                     ymin = log10(ymin), ymax = log10(ymax))+
+    labs(x="")+
+    theme(legend.position="none")
+  return(p_combined)
+}
+
+p_length_3b <- plot_length_dist(df,"eIF3b",300,15000,0.25,50)
+p_length_3b
+ggsave(file.path(github_dir,"figures/Figure6/3b_30C_length_SP.pdf"),
+       egg::set_panel_size(p=p_length_3b+labs(x="",y=""),width=unit(35,"mm"),height=unit(35,"mm")),
+       width=75,height=75,units="mm",bg="transparent")
+p_length_4E <- plot_length_dist(df,"eIF4E",300,15000,0.25,50) +
+  theme(axis.ticks.y=element_blank(),
+        axis.text.y=element_blank())
+p_length_4E
+ggsave(file.path(github_dir,"figures/Figure6/4E_30C_length_SP.pdf"),
+       egg::set_panel_size(p=p_length_4E+labs(x="",y=""),width=unit(35,"mm"),height=unit(35,"mm")),
+       width=75,height=75,units="mm",bg="transparent")
+```
+
+```{r}
 ## 3B vs Occ 
 df <- df_Zsup_mean %>% filter(Treatment_group%in%c("eIF3b_deplete")) %>%
   mutate(Target=case_when(Treatment_group=="eIF3b_deplete"~"eIF3b",
@@ -2641,7 +2762,7 @@ df_corr <- df %>%
 
 p_Zsup_corr_nocolor <- ggplot(df,
        aes(x=Occ.odds.mean,y=newZ.mean,color=Occ_bin))+
-  ggrastr::rasterize(dpi = 600, geom_point(alpha=0.5, size = 0.5, shape = 16,color="grey50"))+
+  ggrastr::rasterize(dpi = 600, geom_point(alpha=0.5, size = 0.2, shape = 16,color="grey50"))+
   scale_x_log10nice()+
   facet_grid(.~Treated)+
   scale_y_continuous(breaks=c(-3,0,3))+
@@ -2659,6 +2780,7 @@ ggsave(file.path(github_dir,"figures/Figure6/3b_30C_esc_occ_nocolor.pdf"),
                            width=unit(25,"mm"),height=unit(25,"mm")),
        width=100,height=100,units="mm",bg="transparent")
 ```
+
 ```{r}
 df <- df_Zsup_mean %>% filter(Treatment_group=="CHX") %>%
   mutate(pattern_type=case_when(Treatment=="mock"~"none",
@@ -2710,53 +2832,62 @@ sedMax <- 12
 sedMin <- (-1)
 df_42_46 <- df %>% filter(Temperature %in% c("42C","46C"))
 p_chx_sed_bytreat <- ggplot(df_42_46,
-                aes(x=Temperature,y=sed.mean.byTreat,
-                    fill=Temperature,group=interaction(Temperature,Treatment),pattern=Treatment))+
+                             aes(x = Temperature, y = sed.mean.byTreat,
+                                 fill = Temperature, group = interaction(Temperature, Treatment), pattern = Treatment)) +
   ggrastr::rasterize(dpi = 600, geom_point(aes(y = sed.mean.byTreat.compress),
-             alpha=0.3,position=position_jitterdodge(jitter.width=0.15,dodge.width = 0.9),color="grey50", size = 0.2, shape = 16))+
-  geom_violin( aes(alpha= Treated, linetype = Treated, color = Treated), draw_quantiles = c(0.5), color = "black", size = 0.5)+
-  # ggpattern::geom_boxplot_pattern(aes(pattern=Treatment),alpha=0.8,outlier.shape=NA,
-  #                                pattern_density=0.5,
-  #                                pattern_spacing=0.035,
-  #                                pattern_fill="white",
-  #                                pattern_size=0.1)+
-  #ggpattern::scale_pattern_manual(values=c("mock"="none","CHX"="stripe"))+
-  #geom_violin(fill=NA,draw_quantiles = c(0.5),color="black")+
-  scale_fill_manual(values=stress.cols)+
-  labs(x="",y="")+
-  guides(fill="none",pattern="none")+
-  scale_x_discrete(labels=c("30C"="30\u00B0C", "42C"="42\u00B0C", "46C"="46\u00B0C"))+
-  scale_y_continuous(breaks = c(0, 5, 10)) +
-  coord_cartesian(ylim=c(sedMax,sedMin))+
-   scale_alpha_manual(values = c(0.9, 0.9))+
-  guides(alpha = "none", linetype = "none")
+             alpha = 0.3, position = position_jitterdodge(jitter.width = 0.15, dodge.width = 0.9), color = "grey50", size = 0.2, shape = 16)) +
+  geom_violin(aes(alpha = Treated, linetype = Treated, color = Treated), 
+              draw_quantiles = c(0.5), color = "black", size = 0.5) +
+  scale_fill_manual(values = stress.cols) +
+  labs(x = "", y = "") +
+  guides(fill = "none", pattern = "none") +
+  scale_x_discrete(labels = c("30C" = "30\u00B0C", "42C" = "42\u00B0C", "46C" = "46\u00B0C")) +
+  scale_y_reverse(
+    breaks = c(10, 5, 0),    # Explicitly setting the breaks to 10, 5, 0
+    limits = c(13, -3),       # Reversing the y-axis with limits from 10 to 0
+    oob = scales::oob_keep   # Ensure data outside the limits is still visible
+  ) +
+  scale_alpha_manual(values = c(0.9, 0.9)) +
+  guides(alpha = "none", linetype = "none") +
+  theme(
+    axis.title.x = element_text(),
+    axis.title.y = element_text(),
+    axis.text.y = element_text(),
+    axis.ticks.y = element_line())
+
 p_chx_sed_bytreat
+
 ggsave(file.path(github_dir,"figures/Figure7/CHX_violin_sed_normbytreat.pdf"),p_chx_sed_bytreat,width=60,height=50,units="mm",bg="white")
 
 p_chx_sed_compMock <- ggplot(df,
-                aes(x=Temperature,y=sed.mean.compMock,
-                    fill=Temperature,group=interaction(Temperature,Treatment),pattern=Treatment))+
+                aes(x = Temperature, y = sed.mean.compMock,
+                    fill = Temperature, group = interaction(Temperature, Treatment), pattern = Treatment)) +
   ggrastr::rasterize(dpi = 600, geom_point(aes(y = sed.mean.compMock.compress),
-             alpha=0.3,position=position_jitterdodge(jitter.width=0.15,dodge.width = 0.9),color="grey50", size = 0.2, shape = 16))+
-  geom_violin( aes(alpha= Treated, linetype = Treated, color = Treated), draw_quantiles = c(0.5), color = "black", size = 0.5)+
-  # ggpattern::geom_boxplot_pattern(aes(pattern=Treatment),alpha=0.8,outlier.shape=NA,
-  #                                pattern_density=0.5,
-  #                                pattern_spacing=0.035,
-  #                                pattern_fill="white",
-  #                                pattern_size=0.1)+
-  #ggpattern::scale_pattern_manual(values=c("mock"="none","CHX"="stripe"))+
-  #geom_violin(fill=NA,draw_quantiles = c(0.5),color="black")+
-  scale_fill_manual(values=stress.cols)+
-  labs(x="",y="")+
-  guides(fill="none",pattern="none")+
-  scale_x_discrete(labels=c("30C"="30\u00B0C", "42C"="42\u00B0C", "46C"="46\u00B0C"))+
-  scale_y_continuous(breaks = c(0, 5, 10)) +
-  coord_cartesian(ylim=c(sedMax,sedMin))+
-   scale_alpha_manual(values = c(0.9, 0.9))+
-  guides(alpha = "none", linetype = "none")
+             alpha = 0.3, position = position_jitterdodge(jitter.width = 0.15, dodge.width = 0.9), color = "grey50", size = 0.2, shape = 16)) +
+  geom_violin(aes(alpha = Treated, color = Treated), 
+              draw_quantiles = c(0.5), color = "black", size = 0.4, scale = "width", width = 0.9, trim = TRUE) +
+  scale_fill_manual(values = stress.cols) +
+  labs(x = "", y = "Sedimentation score (SDs)") +
+  guides(fill = "none", pattern = "none") +
+  scale_x_discrete(labels = c("30C" = "30\u00B0C", "42C" = "42\u00B0C", "46C" = "46\u00B0C")) +
+  scale_y_reverse(
+    breaks = c(0, 5, 10),  # The breaks for your reversed y-axis
+    limits = c(12, -2),    # The reversed limits: 13 at the bottom and -3 at the top
+    oob = scales::oob_keep  # Ensure data outside the limits is still visible
+  ) +
+  scale_alpha_manual(values = c(0.9, 0.9)) +
+  guides(alpha = "none", linetype = "none") +
+  theme(
+    axis.title.x = element_text(),
+    axis.title.y = element_text(),
+    axis.text.y = element_text(),  # Ensure y-axis labels are visible
+    axis.ticks.y = element_line())
+
 p_chx_sed_compMock
+
 ggsave(file.path(github_dir,"figures/Figure7/CHX_violin_sed_compMock.pdf"),p_chx_sed_compMock,width=60,height=50,units="mm",bg="white")
 ```
+
 ## eIF4e/eIF3b deplete violins
 ```{r}
 df <- df_Zsup_mean %>% filter(Treatment_group%in%c("eIF3b_deplete","eIF4E_deplete")) %>%
@@ -2786,27 +2917,30 @@ df <- df_Zsup_mean %>% filter(Treatment_group%in%c("eIF3b_deplete","eIF4E_deplet
          Treatment = factor(Treatment, levels = c("mock","eIF3b_deplete","eIF4E_deplete")))
 
 p_3b_violin_sed <- ggplot(df %>% filter(Treatment_group == "eIF3b_deplete"),
-                aes(x=Temperature,y=sed.mean.compMock,
-                    fill=Temperature,group=interaction(Temperature,Treatment),pattern=Treatment))+
+                aes(x = Temperature, y = sed.mean.compMock,
+                    fill = Temperature, group = interaction(Temperature, Treatment), pattern = Treatment)) +
   ggrastr::rasterize(dpi = 600, geom_point(aes(y = sed.mean.compMock.compress),
-             alpha=0.3,position=position_jitterdodge(jitter.width=0.15,dodge.width = 0.9),color="grey50", size = 0.2, shape = 16))+
-  geom_violin( aes(alpha= Treated, linetype = Treated, color = Treated), draw_quantiles = c(0.5), color = "black", size = 0.5)+
-  # ggpattern::geom_boxplot_pattern(aes(pattern=Treatment),alpha=0.8,outlier.shape=NA,
-  #                                pattern_density=0.5,
-  #                                pattern_spacing=0.035,
-  #                                pattern_fill="white",
-  #                                pattern_size=0.1)+
-  #ggpattern::scale_pattern_manual(values=c("mock"="none","CHX"="stripe"))+
-  #geom_violin(fill=NA,draw_quantiles = c(0.5),color="black")+
-  scale_fill_manual(values=stress.cols)+
-  labs(x="",y="")+
-  guides(fill="none",pattern="none")+
-  scale_x_discrete(labels=c("30C"="30\u00B0C", "42C"="42\u00B0C", "46C"="46\u00B0C"))+
-  scale_y_continuous(breaks = c(0, 5, 10)) +
-  coord_cartesian(ylim=c(sedMax,sedMin))+
-   scale_alpha_manual(values = c(0.9, 0.9))+
-  guides(alpha = "none", linetype = "none")
+             alpha = 0.3, position = position_jitterdodge(jitter.width = 0.15, dodge.width = 0.9), color = "grey50", size = 0.2, shape = 16)) +
+  geom_violin(aes(alpha = Treated, color = Treated), draw_quantiles = c(0.5), color = "black", size = 0.4, scale = "width", width = 0.9, trim = TRUE) +
+  scale_fill_manual(values = stress.cols) +
+  labs(x = "", y = "Sedimentation score (SDs)") +
+  guides(fill = "none", pattern = "none") +
+  scale_x_discrete(labels = c("30C" = "30\u00B0C", "42C" = "42\u00B0C", "46C" = "46\u00B0C")) +
+  scale_y_reverse(
+    breaks = c(0, 5, 10),  # The breaks for your reversed y-axis
+    limits = c(13, -3),    # The reversed limits: 13 at the bottom and -3 at the top
+    oob = scales::oob_keep  # Ensure data outside the limits is still visible
+  ) +
+  scale_alpha_manual(values = c(0.9, 0.9)) +
+  guides(alpha = "none", linetype = "none") +
+  theme(
+    axis.title.x = element_text(),
+    axis.title.y = element_text(),
+    axis.text.y = element_text(),  # Ensure y-axis labels are visible
+    axis.ticks.y = element_line())
+
 p_3b_violin_sed
+
 ggsave(file.path(github_dir,"figures/Figure7/eIF3b_violin_sed_compMock.pdf"),p_3b_violin_sed,width=60,height=50,units="mm",bg="white")
 
 ```
