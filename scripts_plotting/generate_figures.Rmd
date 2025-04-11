@@ -261,6 +261,7 @@ no.legend = theme(legend.position="none")
 # gene_labels <- read_tsv(file.path(github_dir,"src/annotations/labeled_genes_scer.tsv")) %>%
 #   dplyr::mutate(length.trans = LengthTxEst) %>%
 #   select(ORF,gene,classification,label,LengthTxEst,length.protein)
+source(file.path(github_dir,"scripts_plotting/main_stylesheet_230605.R"))
 gene_labels <- gene_labels <- read_tsv(file.path(github_dir,"src/annotations/labeled_genes_scer.tsv")) %>%
   dplyr::mutate(label=case_when(label=="RiBi"~"ribosome biogenesis",
                                 label=="translation factors"~"other",
@@ -457,7 +458,7 @@ ggsave(file.path(github_dir, "figures/Figure1/Fig1_pSup_vs_length.pdf"),
 ## Figure 1E (logodds pSup vs. length, sed and escape annotations)
 
 ## Figure 1F/G (sed vs. length, escape vs. length)
-```{r fig_hs_vs_sed_and_esc, dependson="sed_other_stresses", fig.asp=0.9, fig.height=4}
+```{r fig_hs_vs_sed_and_esc, dependson="fig1_psup_vs_length", fig.asp=0.9, fig.height=4}
 res = df |> filter(Temperature=='42C') #res_hs #bind_rows(res_hs10, res_hs20)
 
 theme_marginal = theme(
@@ -537,7 +538,102 @@ ggsave(file.path(github_dir, "figures/Figure1/Fig1_sed_esc_hsf1.pdf"),
 
 
 ## Figure 1H (pSup with model comparison)
-```{r fig_theory_psup, dependson='setup'}
+```{r fig_theory_psup, dependson='dependson="fig1_psup_vs_length"'}
+logit = function(p) { log(p / (1 - p)) }
+invlogit = function (x) { 1 / (1 + exp(-x)) }
+
+nls_fit_30C_noclust <- 
+  nls(lopSup ~ logit(1 - beta_param * length^chi_param), 
+      data = df |> 
+        filter(Temperature == '30C') |> 
+        mutate(lopSup = logit(pSup.mean)),
+      start = list(beta_param = 1e-5, chi_param = 1))
+
+beta_fit <- coef(nls_fit_30C_noclust)["beta_param"]
+chi_fit  <- coef(nls_fit_30C_noclust)["chi_param"]
+
+#summary(nls_fit_30C_noclust)
+
+nls_fit_42C <- 
+  nls(lopSup ~ logit( (1 - beta_fit * length^chi_fit) * exp( - mu_param - nu_param * length) ), 
+      data = df |> 
+        filter(Temperature == '42C') |> 
+        mutate(lopSup = logit(pSup.mean)),
+      start = list(mu_param = 1e-5, nu_param = 1e-5))
+
+mu_fit_42C <- coef(nls_fit_42C)["mu_param"]
+nu_fit_42C  <- coef(nls_fit_42C)["nu_param"]
+
+#summary(nls_fit_42C)
+
+
+nls_fit_46C <- 
+  nls(lopSup ~ logit( (1 - beta_fit * length^chi_fit) * exp( - mu_param - nu_param * length) ), 
+      data = df |> 
+        filter(Temperature == '46C') |> 
+        mutate(lopSup = logit(pSup.mean)),
+      start = list(mu_param = 1e-5, nu_param = 1e-5))
+
+mu_fit_46C <- coef(nls_fit_46C)["mu_param"]
+nu_fit_46C  <- coef(nls_fit_46C)["nu_param"]
+
+#summary(nls_fit_46C)
+
+
+nls_fitnuonly_42C <- 
+  nls(lopSup ~ logit( (1 - beta_fit * length^chi_fit) * exp( - nu_param * length) ), 
+      data = df |> 
+        filter(Temperature == '42C') |> 
+        mutate(lopSup = logit(pSup.mean)),
+      start = list(nu_param = 1e-5))
+
+nuonly_fit_42C  <- coef(nls_fitnuonly_42C)["nu_param"]
+
+#summary(nls_fitnuonly_42C)
+
+nls_fitnuonly_46C <- 
+  nls(lopSup ~ logit( (1 - beta_fit * length^chi_fit) * exp( - nu_param * length) ), 
+      data = df |> 
+        filter(Temperature == '46C') |> 
+        mutate(lopSup = logit(pSup.mean)),
+      start = list(nu_param = 1e-5))
+
+nuonly_fit_46C  <- coef(nls_fitnuonly_46C)["nu_param"]
+
+#summary(nls_fitnuonly_46C)
+
+s_nlsfit = 
+  list('30C' =
+         tibble(length=lengths, 
+                pSup=psup_curve(length, beta = beta_fit, chi = chi_fit, mu = 0, nu = 0, baseline=0), 
+                Temperature='30C.line'), 
+       '42C' = 
+         tibble(length=lengths,                       
+                pSup=psup_curve(length, beta = beta_fit, chi = chi_fit, mu = mu_fit_42C, nu = nu_fit_42C, baseline=0), 
+                Temperature='42C.line'),
+       '46C' = 
+         tibble(length=lengths,                       
+                pSup=psup_curve(length, beta = beta_fit, chi = chi_fit, mu = mu_fit_46C, nu = nu_fit_46C, baseline=0), 
+                Temperature='46C.line') 
+  )
+sx_nlsfit = bind_rows(s_nlsfit)
+
+s_nlsfit.nomu = 
+    list('30C' =
+         tibble(length=lengths, 
+                pSup=psup_curve(length, beta = beta_fit, chi = chi_fit, mu = 0, nu = 0, baseline=0), 
+                Temperature='30C.line'), 
+       '42C' = 
+         tibble(length=lengths,                       
+                pSup=psup_curve(length, beta = beta_fit, chi = chi_fit, mu = 0, nu = nuonly_fit_42C, baseline=0), 
+                Temperature='42C.line'),
+       '46C' = 
+         tibble(length=lengths,                       
+                pSup=psup_curve(length, beta = beta_fit, chi = chi_fit, mu = 0, nu = nuonly_fit_46C, baseline=0), 
+                Temperature='46C.line') 
+  )
+sx_nlsfit.nomu = bind_rows(s_nlsfit.nomu)
+
 # Theory
 psup_curve = function(length, beta, chi, mu, nu, baseline=0.0) {
   res = sapply(length, function(L) {
