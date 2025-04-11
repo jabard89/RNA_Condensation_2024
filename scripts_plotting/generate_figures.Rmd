@@ -519,9 +519,11 @@ ggsave(file.path(github_dir, "figures/Figure1/Fig1_sed_esc_hsf1.pdf"),
 logit = function(p) { log(p / (1 - p)) }
 invlogit = function (x) { 1 / (1 + exp(-x)) }
 
+fit_data = df |> filter(pSup.mean>0)
+
 nls_fit_30C_noclust <- 
   nls(lopSup ~ logit(1 - beta_param * length^chi_param), 
-      data = df |> 
+      data = fit_data |> 
         filter(Temperature == '30C') |> 
         mutate(lopSup = logit(pSup.mean)),
       start = list(beta_param = 1e-5, chi_param = 1))
@@ -533,7 +535,7 @@ chi_fit  <- coef(nls_fit_30C_noclust)["chi_param"]
 
 nls_fit_42C <- 
   nls(lopSup ~ logit( (1 - beta_fit * length^chi_fit) * exp( - mu_param - nu_param * length) ), 
-      data = df |> 
+      data = fit_data |> 
         filter(Temperature == '42C') |> 
         mutate(lopSup = logit(pSup.mean)),
       start = list(mu_param = 1e-5, nu_param = 1e-5))
@@ -546,7 +548,7 @@ nu_fit_42C  <- coef(nls_fit_42C)["nu_param"]
 
 nls_fit_46C <- 
   nls(lopSup ~ logit( (1 - beta_fit * length^chi_fit) * exp( - mu_param - nu_param * length) ), 
-      data = df |> 
+      data = fit_data |> 
         filter(Temperature == '46C') |> 
         mutate(lopSup = logit(pSup.mean)),
       start = list(mu_param = 1e-5, nu_param = 1e-5))
@@ -559,7 +561,7 @@ nu_fit_46C  <- coef(nls_fit_46C)["nu_param"]
 
 nls_fitnuonly_42C <- 
   nls(lopSup ~ logit( (1 - beta_fit * length^chi_fit) * exp( - nu_param * length) ), 
-      data = df |> 
+      data = fit_data |> 
         filter(Temperature == '42C') |> 
         mutate(lopSup = logit(pSup.mean)),
       start = list(nu_param = 1e-5))
@@ -570,7 +572,7 @@ nuonly_fit_42C  <- coef(nls_fitnuonly_42C)["nu_param"]
 
 nls_fitnuonly_46C <- 
   nls(lopSup ~ logit( (1 - beta_fit * length^chi_fit) * exp( - nu_param * length) ), 
-      data = df |> 
+      data = fit_data |> 
         filter(Temperature == '46C') |> 
         mutate(lopSup = logit(pSup.mean)),
       start = list(nu_param = 1e-5))
@@ -579,18 +581,26 @@ nuonly_fit_46C  <- coef(nls_fitnuonly_46C)["nu_param"]
 
 #summary(nls_fitnuonly_46C)
 
+# Theory
+psup_curve = function(length, beta, chi, mu, nu, baseline=0.0) {
+  res = sapply(length, function(L) {
+    baseline + exp(-mu)*exp(-nu*L)*max(1-beta*L^chi,0)
+  })
+  res
+}
+
 s_nlsfit = 
   list('30C' =
          tibble(length=lengths, 
-                pSup=psup_curve(length, beta = beta_fit, chi = chi_fit, mu = 0, nu = 0, baseline=0), 
+                pSup.mean=psup_curve(length, beta = beta_fit, chi = chi_fit, mu = 0, nu = 0, baseline=0), 
                 Temperature='30C.line'), 
        '42C' = 
          tibble(length=lengths,                       
-                pSup=psup_curve(length, beta = beta_fit, chi = chi_fit, mu = mu_fit_42C, nu = nu_fit_42C, baseline=0), 
+                pSup.mean=psup_curve(length, beta = beta_fit, chi = chi_fit, mu = mu_fit_42C, nu = nu_fit_42C, baseline=0), 
                 Temperature='42C.line'),
        '46C' = 
          tibble(length=lengths,                       
-                pSup=psup_curve(length, beta = beta_fit, chi = chi_fit, mu = mu_fit_46C, nu = nu_fit_46C, baseline=0), 
+                pSup.mean=psup_curve(length, beta = beta_fit, chi = chi_fit, mu = mu_fit_46C, nu = nu_fit_46C, baseline=0), 
                 Temperature='46C.line') 
   )
 sx_nlsfit = bind_rows(s_nlsfit)
@@ -598,26 +608,38 @@ sx_nlsfit = bind_rows(s_nlsfit)
 s_nlsfit.nomu = 
     list('30C' =
          tibble(length=lengths, 
-                pSup=psup_curve(length, beta = beta_fit, chi = chi_fit, mu = 0, nu = 0, baseline=0), 
+                pSup.mean=psup_curve(length, beta = beta_fit, chi = chi_fit, mu = 0, nu = 0, baseline=0), 
                 Temperature='30C.line'), 
        '42C' = 
          tibble(length=lengths,                       
-                pSup=psup_curve(length, beta = beta_fit, chi = chi_fit, mu = 0, nu = nuonly_fit_42C, baseline=0), 
+                pSup.mean=psup_curve(length, beta = beta_fit, chi = chi_fit, mu = 0, nu = nuonly_fit_42C, baseline=0), 
                 Temperature='42C.line'),
        '46C' = 
          tibble(length=lengths,                       
-                pSup=psup_curve(length, beta = beta_fit, chi = chi_fit, mu = 0, nu = nuonly_fit_46C, baseline=0), 
+                pSup.mean=psup_curve(length, beta = beta_fit, chi = chi_fit, mu = 0, nu = nuonly_fit_46C, baseline=0), 
                 Temperature='46C.line') 
   )
 sx_nlsfit.nomu = bind_rows(s_nlsfit.nomu)
 
-# Theory
-# psup_curve = function(length, beta, chi, mu, nu, baseline=0.0) {
-#   res = sapply(length, function(L) {
-#     baseline + exp(-mu)*exp(-nu*L)*max(1-beta*L^chi,0)
-#   })
-#   res
-# }
+ranklength = df |> filter(Temperature=='30C');
+ranklength = ranklength |> mutate(rl=rank(length)/nrow(ranklength)) |> select(gene, length, rl)
+lower_length = median(unlist(ranklength |> filter(rl>0.0099 & rl<0.011) |> select(length)),na.rm=T) # |(rl<0.99&rl>0.989)) |> arrange(desc(rl))
+upper_length = median(unlist(ranklength |> filter(rl>0.989 & rl<0.991) |> select(length)),na.rm=T) # |(rl<0.99&rl>0.989)) |> arrange(desc(rl))
+g_fit = ggplot(df, aes(x=length, y=pSup.mean, group=Temperature, colour=Temperature)) + 
+  #ggrastr::rasterize(geom_point(shape=shap, alpha=0.2*alph),dpi=600) + 
+  geom_vline(xintercept = upper_length, alpha=0.1) + geom_vline(xintercept = lower_length, alpha=0.1) +
+  geom_point(shape=shap, alpha=0.2*alph) + 
+  geom_line( aes(y=pSup.treatment.window.mean.mean, group=Temperature), linewidth=1, linetype=1, colour=blackcol, alpha=0.1) +
+  geom_line(data=dat_hs |> filter(length>=lower_length, length<=upper_length), aes(y=pSup.treatment.window.mean.mean, group=Temperature), linewidth=1, linetype=1, colour=blackcol, alpha=0.5) +
+  geom_line(data=sx_nlsfit, linewidth=1.3, lty=1, alpha=0.8) +
+  geom_line(data=sx_nlsfit.nomu, linewidth=1.3, linetype='11', alpha=0.8) +
+  scale_colour_manual(values=theory_colors) + no.legend +
+  #geom_hline(yintercept=(mark_bounds), alpha=mark_alpha, colour=blackcol, linetype=2) +
+  coord_cartesian(ylim=c(0,1)) +
+  scale_y_continuous("Proportion in supernatant (pSup)", breaks=c(0,0.5,1)) +
+  scale_x_log10nice("mRNA length (nucleotides)") + larger_labels
+
+
 # 
 # length_from_psup = function(pSup, beta, chi, mu, nu, baseline=0.0) {
 #   res = ((1/beta)*(1-(pSup-baseline)))^{1/chi}
@@ -1734,6 +1756,7 @@ plot(p_3b_deplete_FC_panel)
 p_3b_FC <- gtable_cbind(p_3b_mock_FC_panel,p_3b_deplete_FC_panel)
 ggsave(file.path(github_dir,"figures","Figure4/3b_FC.pdf"),p_3b_FC,bg="transparent")
 ```
+
 ##eIF3b esc
 ```{r}
 sedseq_compTemp_bygroup <- read_tsv(file.path(github_dir,"data_processed/deseq_results/TSP_DESeq_compTemp_byGroup_deseq2_230510.tsv")) %>%
