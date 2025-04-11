@@ -1335,21 +1335,6 @@ df_sum <- df %>%
                                         "native"))) %>% 
   mutate(Reporter_age = factor(Reporter_age, levels = c("Old", "New"))) %>% mutate(Probe =factor(Probe, levels = c("PMU1", "HSP26", "YONL", "BEM2", "PGK1")))
 
-native_stats <- df %>%
-  filter(Probe %in% c("HSP26", "PMU1")) %>%
-  group_by(Temperature) %>%
-  nest() %>%
-  mutate(p.value = map_dbl(data, ~ wilcox.test(log10(SP.FC) ~ Probe, data = .x)$p.value),
-         label = case_when(
-           p.value < 0.001 ~ "***",
-           p.value < 0.01 ~ "**",
-           p.value < 0.05 ~ "*",
-           TRUE ~ "ns"
-         ))
-
-
-
-
 dodge_wid <- 0.9
 SP.FC.breaks <- c(-2,0)
 SP.FC.labels <- c(expression(10^{-2}),
@@ -1382,7 +1367,6 @@ p_native_SPFC <- ggplot(df %>% filter(Probe!="YONL",Probe%in%c("HSP26","PMU1")),
 
 p_native_SPFC
 
-
 df_combined_plot <- df %>% 
   filter(Probe == "YONL" | Probe == "HSP26" | Probe == "PMU1") %>%
   mutate(Probe = case_when(
@@ -1393,19 +1377,6 @@ df_combined_plot <- df %>%
            Group == "native" ~ "native",
            TRUE ~ Reporter_age))%>%
   mutate(Reporter_age = factor(Reporter_age, levels = c("native", "Old", "New"))) %>% mutate(UTR5 = factor(UTR5, levels = c("PMU1", "HSP26", "YONL")))
-
-synth_stats <- df_combined_plot %>%
-  filter(Group != "native") %>%
-  group_by(UTR5, Temperature) %>%
-  nest() %>%
-  mutate(p.value = map_dbl(data, ~ t.test(log10(SP.FC) ~ Reporter_age, data = .x)$p.value),
-         label = case_when(
-           p.value < 0.001 ~ "***",
-           p.value < 0.01 ~ "**",
-           p.value < 0.05 ~ "*",
-           TRUE ~ "ns"
-         ))
-         
          
 native_rep_comb_plot <- ggplot(df_combined_plot,  # Set the order of Reporter_age),
        aes(x = Temperature, y = log10(SP.FC)), color = Reporter_age) +
@@ -2809,18 +2780,10 @@ p_chx <- ggplot(df,
                     fill=Temperature,group=interaction(Temperature,Treatment),pattern=Treatment))+
   ggrastr::rasterize(dpi = 600, geom_point(alpha=0.3,position=position_jitterdodge(jitter.width=0.15,dodge.width = 0.9),color="grey50", size = 0.2, shape = 16)) +
   geom_violin( aes(alpha= Treated, linetype = Treated, color = Treated), draw_quantiles = c(0.5), color = "black", size = 0.5)+
-  # ggpattern::geom_boxplot_pattern(aes(pattern=Treatment),alpha=0.8,outlier.shape=NA,
-  #                                pattern_density=0.5,
-  #                                pattern_spacing=0.035,
-  #                                pattern_fill="white",
-  #                                pattern_size=0.1)+
-  #ggpattern::scale_pattern_manual(values=c("mock"="none","CHX"="stripe"))+
-  #geom_violin(fill=NA,draw_quantiles = c(0.5),color="black")+
   scale_fill_manual(values=stress.cols)+
   labs(x="",y="")+
   guides(fill="none",pattern="none")+
   scale_x_discrete(labels=c("30C"="30\u00B0C", "42C"="42\u00B0C", "46C"="46\u00B0C"))+
-  #scale_y_continuous(labels=c(0,0.2,0.5,0.8,1))
   scale_y_log10nice(omag=c(-1,0,1))+
   coord_cartesian(ylim=c(0.05,50))+
    scale_alpha_manual(values = c(0.9, 0.9))+
@@ -2843,9 +2806,9 @@ p_chx_sed_bytreat <- ggplot(df_42_46,
   guides(fill = "none", pattern = "none") +
   scale_x_discrete(labels = c("30C" = "30\u00B0C", "42C" = "42\u00B0C", "46C" = "46\u00B0C")) +
   scale_y_reverse(
-    breaks = c(10, 5, 0),    # Explicitly setting the breaks to 10, 5, 0
-    limits = c(13, -3),       # Reversing the y-axis with limits from 10 to 0
-    oob = scales::oob_keep   # Ensure data outside the limits is still visible
+    breaks = c(10, 5, 0),  
+    limits = c(13, -3),       
+    oob = scales::oob_keep   
   ) +
   scale_alpha_manual(values = c(0.9, 0.9)) +
   guides(alpha = "none", linetype = "none") +
@@ -2871,16 +2834,16 @@ p_chx_sed_compMock <- ggplot(df,
   guides(fill = "none", pattern = "none") +
   scale_x_discrete(labels = c("30C" = "30\u00B0C", "42C" = "42\u00B0C", "46C" = "46\u00B0C")) +
   scale_y_reverse(
-    breaks = c(0, 5, 10),  # The breaks for your reversed y-axis
-    limits = c(12, -2),    # The reversed limits: 13 at the bottom and -3 at the top
-    oob = scales::oob_keep  # Ensure data outside the limits is still visible
+    breaks = c(0, 5, 10),  
+    limits = c(12, -2),    
+    oob = scales::oob_keep 
   ) +
   scale_alpha_manual(values = c(0.9, 0.9)) +
   guides(alpha = "none", linetype = "none") +
   theme(
     axis.title.x = element_text(),
     axis.title.y = element_text(),
-    axis.text.y = element_text(),  # Ensure y-axis labels are visible
+    axis.text.y = element_text(),  
     axis.ticks.y = element_line())
 
 p_chx_sed_compMock
@@ -2927,16 +2890,16 @@ p_3b_violin_sed <- ggplot(df %>% filter(Treatment_group == "eIF3b_deplete"),
   guides(fill = "none", pattern = "none") +
   scale_x_discrete(labels = c("30C" = "30\u00B0C", "42C" = "42\u00B0C", "46C" = "46\u00B0C")) +
   scale_y_reverse(
-    breaks = c(0, 5, 10),  # The breaks for your reversed y-axis
-    limits = c(13, -3),    # The reversed limits: 13 at the bottom and -3 at the top
-    oob = scales::oob_keep  # Ensure data outside the limits is still visible
+    breaks = c(0, 5, 10), 
+    limits = c(13, -3),   
+    oob = scales::oob_keep  
   ) +
   scale_alpha_manual(values = c(0.9, 0.9)) +
   guides(alpha = "none", linetype = "none") +
   theme(
     axis.title.x = element_text(),
     axis.title.y = element_text(),
-    axis.text.y = element_text(),  # Ensure y-axis labels are visible
+    axis.text.y = element_text(),  
     axis.ticks.y = element_line())
 
 p_3b_violin_sed
