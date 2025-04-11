@@ -890,7 +890,76 @@ ggsave("../figures/Figure3/all_violins_sed.pdf",
                axis.text.y = element_blank()),
        width=70,height=65,units="mm",bg="transparent")
 ```
+## sed violins no mock
+```{r}
+sedMin <- (-3)
+sedMax <- (12)
+df <- df_Zsup_mean %>%
+  filter(Temperature!="42CR",
+         Treatment!="KCl_1M") %>%
+  filter(Treatment_group%in%c("EW_TSPP","Azide_0.5%_pH6.8","azide3",
+                              "milderEtOH1","milderEtOH2","HyperOsmotic_EtOH")) %>%
+  mutate(Stress_label=case_when(Treated == FALSE & Temperature == "30C" ~ "mock",
+                                Treatment_group == "EW_TSPP" & Temperature=="42C" ~ "42C",
+                                Treatment_group == "EW_TSPP" & Temperature=="46C" ~ "46C",
+                                Treatment=="EtOH_15%"~"Ethanol 15%",
+                                Treatment=="EtOH_10%"~"Ethanol 10%",
+                                Treatment=="EtOH_7.5%"~"Ethanol 7.5%",
+                                Treatment=="EtOH_5%"~"Ethanol 5%",
+                                Treatment=="Azide_0.8%_pH6.8"~"Azide 0.8%",
+                                Treatment=="Azide_0.5%_pH6.8"~"Azide 0.5%")) %>%
+  filter(Stress_label%in%c("mock","42C","46C","Azide 0.5%","Azide 0.8%",
+                           "Ethanol 7.5%","Ethanol 15%"),
+         Treatment_group != "hairpinReporters") %>%
+  mutate(plot_group = factor(paste0(Treatment_group,"~",Stress_label),
+                             levels = c("EW_TSPP~42C",
+                                        "EW_TSPP~46C",
+                                        "Azide_0.5%_pH6.8~Azide 0.5%",
+                                        "azide3~Azide 0.8%",
+                                        "milderEtOH1~Ethanol 5%",
+                                        "milderEtOH2~Ethanol 7.5%",
+                                        "HyperOsmotic_EtOH~Ethanol 15%"))) %>%
+  filter(!is.na(plot_group))
+plot_group_labels <- c("EW_TSPP~mock"="mock",
+                   "EW_TSPP~42C"="42",
+                   "EW_TSPP~46C"="46",
+                   "Azide_0.5%_pH6.8~mock"="mock",
+                   "Azide_0.5%_pH6.8~Azide 0.5%"="0.5",
+                   "azide3~Azide 0.8%"="0.8",
+                   "milderEtOH1~mock"="mock",
+                   "milderEtOH1~Ethanol 5%"="5",
+                   "milderEtOH2~Ethanol 7.5%"="7.5",
+                   "HyperOsmotic_EtOH~Ethanol 15%"="15")
+p_violin <- ggplot(df,
+       aes(x=plot_group,y=sed.mean))+
+  theme_half_open(font_size = 9) +
+  geom_hline(yintercept=0,linetype="dotted")+
+  ggrastr::rasterize(dpi = 600,
+                     geom_point(aes(y = sed.mean),
+                                shape=16,alpha=0.2,color="grey50",position=position_jitter(width=0.3), size = 0.5)) +
+  geom_violin(aes(fill=Stress_label,alpha=Stress_label), linewidth = 0, width = 1)+
+  geom_violin(fill=NA,alpha=1,draw_quantiles = c(0.5),size=0.25, width = 1)+
+  scale_x_discrete(labels=plot_group_labels)+
+  scale_y_continuous(limits = c(sedMax,sedMin), breaks = c(10,5,0), transform = "reverse") +
+  scale_fill_manual(values=stress.cols)+
+  scale_alpha_manual(values=c("mock"=0.8,
+                   "42C"=0.8,
+                   "46C"=0.8,
+                   "Azide 0.5%"=0.8,
+                   "Azide 0.8%"=0.8,
+                   "Ethanol 5%"=0.8,
+                   "Ethanol 7.5%"=0.8,
+                   "Ethanol 10%"=0.8,
+                   "Ethanol 15%"=0.7))+
+  labs(y="",x="")
+p_violin
 
+ggsave("../figures/Figure3/all_violins_sed_nomocks.pdf",
+       p_violin+theme(legend.position="none") +
+         theme(axis.text.x = element_blank(),
+               axis.text.y = element_blank()),
+       width=70,height=65,units="mm",bg="transparent")
+```
 ## comparison plots sedscore, fc abundance, ribosome association
 
 ```{r}
