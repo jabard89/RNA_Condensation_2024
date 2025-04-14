@@ -3784,67 +3784,15 @@ ggsave("../figures/Supplemental/Zsup_30vs46.pdf",
        egg::set_panel_size(p=p_zsup_46C,width=unit(30,"mm"),height=unit(30,"mm")),
        bg="transparent",width=50,height=50,units="mm")
 ```
-```{r}
-upper<-7.5 
-lower<-(-4.7)
-df <- df_Zsup_mean %>% filter(Treatment_group=="EW_TSPP") %>%
-  select(ORF,Temperature,gene,label,Zsup.mean) %>%
-  mutate(target = if_else(label=="HSF1","HSF1 targets","other")) %>%
-  mutate(target=factor(target,levels=c("other","MSN2/4 targets","HSF1 targets"))) %>%
-  arrange(target) %>%
-  ungroup %>%
-  mutate(deltaZ = Zsup.mean-Zsup.mean[Temperature=="30C"]) %>%
-  mutate(deltaZ.trimmed =case_when(deltaZ>upper~upper,
-                            deltaZ<lower~lower,
-                            TRUE~deltaZ)) %>%
-  mutate(gene_lab = if_else(gene%in%genes_to_lab,gene,"")) %>%
-  filter(Temperature %in% c("42C","46C"))
 
-p_zsup_boxes <- ggplot(df,
-       aes(x=target,y=deltaZ))+
-  geom_hline(yintercept=0,linetype="dotted")+
-    ggrastr::rasterize(dpi = 600, geom_point(position=position_jitterdodge(jitter.width=1.5),
-               aes(y=deltaZ.trimmed,color=target),shape=16,alpha=0.5, size = 0.5)) +
-  scale_color_manual(values=target.cols)+
-  geom_violin(fill=NA,draw_quantiles = c(0.5),size=0.25,color="black")+
-    theme(legend.position="none")+
-  coord_cartesian(y=c(lower,upper))+
-  ggsignif::geom_signif(na.rm=T,
-                        map_signif_level=T,
-                        test="wilcox.test",
-              y_position=c(5.5),
-              textsize = 4.2,
-              comparisons=list(
-                c("other","HSF1 targets")
-              ))+
-  labs(x="",y="")+
-  facet_grid(.~Temperature)+
-  theme(axis.text.x = element_blank(),
-        strip.text.x = element_blank())
-p_zsup_boxes
-ggsave("../figures/Supplemental/Zsup_hsf1_boxplot.pdf",
-       egg::set_panel_size(p=p_zsup_boxes,width=unit(30,"mm"),height=unit(30,"mm")),
-       bg="transparent",width=100,height=50,units="mm")
-
-wilcox_result <- df %>%
-  group_by(Temperature) %>%
-  nest %>%
-  mutate(wilcox = map(data,function(df){
-    wilcox.test(deltaZ ~ target, data = df, 
-                             subset = (target %in% c("other", "HSF1 targets")),
-                             exact = FALSE
-    )
-  }))
-print(wilcox_result$wilcox)
-```
 ## esc hsf msn24 box
 ```{r}
 upper<-5.5 
 lower<-(-3)
 df <- df_Zsup_mean %>% filter(Treatment_group=="EW_TSPP") %>%
   select(ORF,Temperature,gene,label,esc.mean) %>%
-  mutate(target = if_else(label=="HSF1","HSF1 targets",
-                          if_else(label == "MSN2/4","MSN2/4 targets","other"))) %>%
+  mutate(target = if_else(label=="HSF1 targets","HSF1 targets",
+                          if_else(label == "MSN2/4 targets","MSN2/4 targets","other"))) %>%
   mutate(target=factor(target,levels=c("other","MSN2/4 targets","HSF1 targets"))) %>%
   arrange(target) %>%
   ungroup %>%
