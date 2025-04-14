@@ -148,7 +148,7 @@ df_Zsup_sed_esc <- df_Zsup %>% ungroup %>%
   ungroup %>%
   mutate(sed = (logodds(pSup.ctrl.mean) - logodds(pSup)) / pSup.ctrl.sd,
          esc = ((logodds(pSup) - logodds(pSup.lysate.windowmean)) - (logodds(pSup.ctrl.mean) - logodds(pSup.ctrl.windowmean.mean))) / pSup.ctrl.sd,
-         newZ = (logodds(pSup) - logodds(pSup.lysate.windowmean)) / pSup.lysate.sd,
+         RelSed = (logodds(pSup) - logodds(pSup.lysate.windowmean)) / pSup.lysate.sd,
          pSup.ctrl.window.mean=pSup.ctrl.windowmean.mean,
          pSup.treatment.window.mean=pSup.lysate.windowmean)
 
@@ -198,7 +198,7 @@ df_Zsup_sed_esc_filt_mean <- df_Zsup_sed_esc %>%
             Zsup.mean = mean(Zsup),
             sed.mean = mean(sed),
             esc.mean = mean(esc),
-            newZ.mean = mean(newZ),
+            RelSed.mean = mean(RelSed),
             pSup.ctrl.window.mean.mean=mean(pSup.ctrl.windowmean.mean),
             pSup.treatment.window.mean.mean=mean(pSup.lysate.windowmean)
 ) %>%
