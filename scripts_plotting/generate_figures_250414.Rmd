@@ -2150,7 +2150,7 @@ ggsave(file.path(github_dir,"figures","Figure4/esc_byTPMbyTE_boxes_allcat_wide.p
 
 ## esc box TPM_UP
 ```{r}
-cutoff <- 0.02
+cutoff <- 0.1
 df <- df_Zsup_Poly_minfilt %>% filter(Control==FALSE,Stress_group%in%c("Azide 0.8%","Ethanol 7.5%","Heat Shock"),
                                       Temperature%in%c("30C","42C")) %>%
   group_by(Stress_label) %>%
@@ -2160,8 +2160,8 @@ df <- df_Zsup_Poly_minfilt %>% filter(Control==FALSE,Stress_group%in%c("Azide 0.
                      breaks = quantile(FC.vs.ctrl_TE, probs = c(0, 0.25, 0.5, 0.75, 1)),
                      labels = c("0-\n25%", "25-\n50%", "50-\n75%", "75-\n100%"),
                      include.lowest = TRUE),
-         TPM_cat=if_else(TPM.FC.SedSeq<=quantile(TPM.FC.SedSeq,cutoff),"down",
-                        if_else(TPM.FC.SedSeq>=quantile(TPM.FC.SedSeq,1-cutoff),"up","other"))) %>%
+         TPM_cat=if_else(TPM.FC.SedSeq<=0.66,"down",
+                        if_else(TPM.FC.SedSeq>=1.5,"up","other"))) %>%
   # Filter to keep only TPM_cat = "up"
   filter(TPM_cat == "up")
 dge_wid <- 0.1
@@ -2195,6 +2195,114 @@ p_esc_byTPMbyTE <- ggplot(df,
               )) +
   no.legend
 p_esc_byTPMbyTE
+```
+```{r}
+df <- df_Zsup_Poly_minfilt %>% filter(Control==FALSE,Stress_group%in%c("Azide 0.8%","Ethanol 7.5%","Heat Shock"),
+                                      Temperature%in%c("30C","42C")) %>%
+  group_by(Stress_label) %>%
+  # Changing TE categorization to quartiles
+  filter(!is.na(Rel_Occ)) %>%
+  mutate(TE_cat = cut(FC.vs.ctrl_TE, 
+                     breaks = quantile(FC.vs.ctrl_TE, probs = c(0, 0.25, 0.5, 0.75, 1)),
+                     labels = c("0-\n25%", "25-\n50%", "50-\n75%", "75-\n100%"),
+                     include.lowest = TRUE),
+         TPM_cat=if_else(TPM.FC.SedSeq<=0.66,"down",
+                        if_else(TPM.FC.SedSeq>=1.5,"up","other")))
+
+plot_density_x_cat <- function(df,var,scale,min,max,fill_cat,fill_colors,alph=0.5,siz=0.25){
+  X <- sym(var)
+  cat_sym <- sym(fill_cat)
+  density_data <- ggplot_build(ggplot(df, aes(x = !!X, fill = !!cat_sym)) + 
+                            geom_density())
+  max_density <- max(density_data$data[[1]]$density) * 1.1  # Add 10% buffer
+  if (scale %in% c("log2","log10")){
+    p <- ggplot(df,aes(x=log10(!!X),fill=!!cat_sym))+
+      geom_density(alpha=alph,size=siz)+
+      scale_fill_manual(values=fill_colors)+
+      theme_void()+
+      guides(fill="none")+
+      scale_x_continuous(limits=c(log10(min)-1,log10(max)+1))+
+      coord_cartesian(xlim=c(log10(min),log10(max)),expand=F)
+  } else{
+    p <- ggplot(df,aes(x=!!X,fill=!!cat_sym))+
+      geom_density(alpha=alph,size=siz)+
+      scale_fill_manual(values=fill_colors)+
+      theme_void()+
+      guides(fill="none")+
+      coord_cartesian(xlim=c(min,max), ylim = c(0, max_density), expand=F)
+  }
+  return(p)
+}
+
+
+plot_fc_xdens <- function(df,xvar,yvar,
+                           xmin,xmax,ymin,ymax,
+                          yvar_cutoff,
+                         cat,cat_to_highlight,cat_colors,
+                           xscale,xbreaks,yscale,ybreaks) {
+  X <- sym(xvar)
+  Y <- sym(yvar)
+  cat_sym <- sym(cat)
+  xint <- ifelse (xscale%in%c("log2","log10"),1,0)
+  yint <- ifelse (yscale%in%c("log2","log10"),1,0)
+  p_scatter <- ggplot(df,
+                      aes(x=!!X,y=!!Y))+
+    geom_hline(yintercept = yint,
+               linetype = 'dashed') +
+    geom_vline(xintercept = xint,
+               linetype = 'dashed') +
+    ggrastr::rasterize(dpi = 600, geom_point(data=df%>%filter(!!Y < yvar_cutoff | !!cat_sym %!in% cat_to_highlight),alpha=0.4,shape=16,size=1, color = "grey50")) +
+    ggrastr::rasterize(dpi = 600, geom_point(data=df%>%filter(!!Y >= yvar_cutoff & !!cat_sym %in% cat_to_highlight), aes(color = !!cat_sym), alpha=0.6,shape=16,size=2)) +
+    guides(color="none")+
+    scale_color_manual(values = cat_colors) +
+    coord_cartesian(xlim=c(xmin,xmax),ylim=c(ymin,ymax),expand=F)+
+    labs(x="",y="")
+  if (xscale=="log2"){
+    p_scatter <- p_scatter+scale_x_log2nice(omag=xbreaks)  
+  } else if (xscale=="log10"){
+    p_scatter <- p_scatter+scale_x_log10nice(omag=xbreaks)
+  } else {
+    p_scatter <- p_scatter+scale_x_continuous(breaks=xbreaks)
+  }
+  if (yscale=="log2"){
+    p_scatter <- p_scatter+scale_y_log2nice(omag=ybreaks)  
+  } else if (yscale=="log10"){
+    p_scatter <- p_scatter+scale_y_log10nice(omag=ybreaks)
+  } else {
+    p_scatter <- p_scatter+scale_y_continuous(breaks=ybreaks)
+  }
+  
+  # Create density plots
+  
+  p_dens_x <- plot_density_x_cat(df %>% filter(!!Y >= yvar_cutoff & !!cat_sym %in% cat_to_highlight),xvar,xscale,xmin,xmax,cat,cat_colors)
+  # Overlay the density plots onto the main plot using annotation_custom
+  combined_plot <- egg::ggarrange(
+    p_dens_x, p_scatter,
+    ncol = 1,
+    heights = c(0.3, 1)  # Density plot takes 30% of the vertical space
+  )
+  return(combined_plot)
+}
+
+p_HS <- plot_fc_xdens(df = df %>% filter(Stress_label == "42C"), xvar = "esc.mean", yvar = "TPM.FC.SedSeq", 
+                      xmin = (-3),xmax = 5,ymin = 1, ymax = 100, yvar_cutoff = 1.5,
+                      "TE_cat", c("0-\n25%","75-\n100%"), c("0-\n25%" = "#4575b4", "75-\n100%" = "#d73027"),
+                      xscale="linear",xbreaks=c(-2,0,2),yscale="log10",ybreaks=c(1,10,100))
+p_HS
+
+
+p_EtOH <- plot_fc_xdens(df = df %>% filter(Stress_label == "Ethanol 7.5%"), xvar = "esc.mean", yvar = "TPM.FC.SedSeq", 
+                      xmin = (-3),xmax = 5,ymin = 1, ymax = 100, yvar_cutoff = 1.5,
+                      "TE_cat", c("0-\n25%","75-\n100%"), c("0-\n25%" = "#4575b4", "75-\n100%" = "#d73027"),
+                      xscale="linear",xbreaks=c(-2,0,2),yscale="log10",ybreaks=c(1,10,100))
+p_EtOH
+
+p_N3 <- plot_fc_xdens(df = df %>% filter(Stress_label == "Azide 0.8%"), xvar = "esc.mean", yvar = "TPM.FC.SedSeq", 
+                      xmin = (-3),xmax = 5,ymin = 1, ymax = 100, yvar_cutoff = 1.5,
+                      "TE_cat", c("0-\n25%","75-\n100%"), c("0-\n25%" = "#4575b4", "75-\n100%" = "#d73027"),
+                      xscale="linear",xbreaks=c(-2,0,2),yscale="log10",ybreaks=c(1,10,100))
+p_N3
+
 ```
 
 ```{r}

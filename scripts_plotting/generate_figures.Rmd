@@ -2152,6 +2152,56 @@ ggsave(file.path(github_dir,"figures","Figure4/esc_byTPMbyTE_boxes_allcat_wide.p
                            width=unit(45,"mm"),height=unit(35,"mm")),
        width=200,height=50,units="mm",bg="transparent")
 ```
+## esc box simple
+```{r}
+up_cutoff <- 1.5
+down_cutoff <- 0.66
+df <- df_Zsup_Poly_minfilt %>% filter(Control==FALSE,Stress_group%in%c("Ethanol 7.5%","Heat Shock"),
+                                      Temperature%in%c("30C","42C")) %>%
+  group_by(Stress_label) %>%
+  # Changing TE categorization to quartiles
+  filter(!is.na(Rel_Occ)) %>%
+  mutate(TE_cat = cut(Rel_Occ, 
+                     breaks = quantile(Rel_Occ, probs = c(0, 0.25, 0.5, 0.75, 1)),
+                     labels = c("0-\n25%", "25-\n50%", "50-\n75%", "75-\n100%"),
+                     include.lowest = TRUE),
+         TPM_cat=if_else(TPM.FC.SedSeq > up_cutoff,"up",
+                         if_else(TPM.FC.SedSeq < down_cutoff,"down","other")))
+dge_wid <- 0.1
+stress_labs <- c("42C"="42\u00B0C","Azide 0.8%"="0.8% Azide","Ethanol 7.5%"="7.5% EtOH")
+p_esc_byTPMbyTE_up <- ggplot(df %>% filter(TPM_cat == "up"),
+       aes(x=TE_cat,y=esc.mean))+
+  geom_hline(yintercept=0,linetype="dotted")+
+  ggrastr::rasterize(dpi = 600, geom_point(shape=16,alpha=0.3,size=0.5,color="grey50",
+             aes(group=TE_cat),
+             position=position_jitter(width=0.2,seed=1))) +
+  geom_boxplot(aes(fill = Stress_label),
+               outlier.shape=NA,alpha=0.5,position=position_dodge(width=dge_wid),linewidth=0)+
+  geom_boxplot(fill=NA,outlier.shape=NA,position=position_dodge(width=dge_wid),size=0.25)+
+  # Use the original stress colors
+  facet_grid(.~Stress_label,
+             labeller=labeller(Stress_label=stress_labs))+
+  # Use a sequential color palette for TE quartiles
+  scale_fill_manual(values = c("42C" = stress.cols[["42C"]],
+                               "Azide 0.8%" = stress.cols[["Azide\n0.8%"]],
+                               "Ethanol 7.5%" = stress.cols[["Ethanol\n7.5%"]])) +
+  labs(x="Ribosome occupancy quartile",y="escape score (SD)",subtitle="mRNA abundance FC > 1.5")+
+  coord_cartesian(ylim=c(-4.3,4.3))+
+  scale_y_continuous(breaks=c(-3,0,3))+
+  ggsignif::geom_signif(na.rm=T,
+                        map_signif_level=T,
+                        test="wilcox.test",
+              y_position=c(3),
+              textsize = 8 * 0.35,
+              comparisons=list(
+                c("0-\n25%","75-\n100%")
+              )) +
+  no.legend
+p_esc_byTPMbyTE_up
+ggsave(file.path(github_dir,"figures","Figure4/esc_byTE_TPMup_HS_EtOH.pdf"),
+       egg::set_panel_size(p=p_esc_byTPMbyTE_up,
+                           width=unit(45,"mm"),height=unit(35,"mm")),bg="transparent")
+```
 
 # Figure 5
 ## A: Occ vs Zsup
