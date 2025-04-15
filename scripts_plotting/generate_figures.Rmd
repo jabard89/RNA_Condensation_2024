@@ -483,8 +483,8 @@ focal_label = focal |> filter(gene %in% c('SSA4','HSP104','PMU1','ADD66'))
 res = res |> mutate(cat=ifelse(gene %in% focal$gene,"focal", "other"))
 gsed = ggplot(res, aes(x=length, y=sed.mean, fill=cat)) + theme(plot.margin=unit(c(1,0,1,1),'cm')) +
   geom_hline(yintercept = 0, linetype=3) +
-  #ggrastr::rasterize(geom_point(shape=shap, alpha=0.3, colour=gray50col),dpi=600) + 
-  geom_point(shape=shap, alpha=0.3, colour=gray50col) + 
+  ggrastr::rasterize(geom_point(shape=shap, alpha=0.3, colour=gray50col),dpi=600) + 
+  #geom_point(shape=shap, alpha=0.3, colour=gray50col) + 
   geom_point(data=focal, shape=21, stroke=0.25, fill=orangecol, size=2) +
   geom_point(data=focal_label, shape=21, stroke=0.25, size=3) +
   geom_text_repel(data=focal_label, aes(label=gene), colour=blackcol, fill='white', force=2) +
@@ -509,7 +509,7 @@ gesc = add_marginal_x(gesc, "esc.mean", "cat") # = ggMarginal(gesc, margins="y",
 gsedesc = gsed / gesc
 gsedesc
 #ggsave("../figures/figure_1g.pdf", gsedesc, height=6, width=7)
-fig.asp = 7/7
+fig.asp = 7.5/7
 fig.width = 97
 fig.vs.panel.ratio = 1/0.7
 
