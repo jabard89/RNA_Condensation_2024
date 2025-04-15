@@ -1428,13 +1428,39 @@ df_sum <- df %>%
                                 if_else(str_detect(Group,"Old"),"Old",
                                         "native"))) %>% 
   mutate(Reporter_age = factor(Reporter_age, levels = c("Old", "New"))) %>% mutate(Probe =factor(Probe, levels = c("PMU1", "HSP26", "YONL", "BEM2", "PGK1")))
-
+df_stats_SPFC_native <- df %>%
+  filter(Skip == FALSE) %>% select(-Skip) %>%
+  ungroup %>%
+  pivot_longer(cols = c(SP.FC,Occ_odds,SP,Occ_odds.FC,Occupancy_corr),
+               names_to = "key", values_to = "value") %>%
+  filter(key == "SP.FC") %>%
+  filter(Probe %in% c("HSP26","PMU1")) %>%
+  group_by(Temperature,key) %>%
+  nest %>%
+  mutate(t_test = map(data, function(df){
+    t.test(df$value ~ df$Probe, 
+           alternative = "two.sided"
+    ) %>% broom::tidy()
+  })) %>%
+  select(-data) %>%
+  unnest(t_test) %>%
+  select(Temperature, key, p.value) %>%
+  mutate(p.format = if_else(p.value < 0.01, formatC(p.value, format = "e", digits = 1),
+                            format(p.value, digits = 2)))
+p_native_SPFC_stats <- df_stats_SPFC_native %>%
+  filter(Temperature != "30C") %>%
+  mutate(xmin = case_when(Temperature == "42C" ~ 1.75,
+                          Temperature == "46C" ~ 2.75),
+         xmax = case_when(Temperature == "42C" ~ 2.25,
+                          Temperature == "46C" ~ 3.25),
+         y_position = case_when(Temperature == "42C" ~ (-0.75),
+                          Temperature == "46C" ~ (-2))
+  )
 dodge_wid <- 0.9
 SP.FC.breaks <- c(-2,0)
 SP.FC.labels <- c(expression(10^{-2}),
                   expression(10^{0}))
 SP.FC.ylims <- c(-2.75,0.4)
-
 
 p_native_SPFC <- ggplot(df %>% filter(Probe!="YONL",Probe%in%c("HSP26","PMU1")),
                    aes(x=Temperature,y=log10(SP.FC), color = Probe))+
@@ -1457,7 +1483,17 @@ p_native_SPFC <- ggplot(df %>% filter(Probe!="YONL",Probe%in%c("HSP26","PMU1")),
   scale_x_discrete(labels=c("30C"="30°C",
                             "42C"="42°C",
                             "46C"="46°C"))+
-  scale_y_continuous(breaks=SP.FC.breaks,labels=SP.FC.labels)
+  scale_y_continuous(breaks=SP.FC.breaks,labels=SP.FC.labels)  #+
+  # geom_signif(
+  #   data = p_native_SPFC_stats,
+  #   aes(xmin = xmin, xmax = xmax, y_position = y_position, annotations = p.format),
+  #   textsize = 6*0.35,
+  #   size = 0.5,
+  #   color = "black",
+  #   tip_length = (-0.02),
+  #   vjust = 2,
+  #   manual = TRUE
+  # )
 
 p_native_SPFC
 
@@ -1471,7 +1507,34 @@ df_combined_plot <- df %>%
            Group == "native" ~ "native",
            TRUE ~ Reporter_age))%>%
   mutate(Reporter_age = factor(Reporter_age, levels = c("native", "Old", "New"))) %>% mutate(UTR5 = factor(UTR5, levels = c("PMU1", "HSP26", "YONL")))
-         
+
+df_stats_SPFC_YONL <- df %>%
+  filter(Skip == FALSE) %>% select(-Skip) %>%
+  ungroup %>%
+  pivot_longer(cols = c(SP.FC,Occ_odds,SP,Occ_odds.FC,Occupancy_corr),
+               names_to = "key", values_to = "value") %>%
+  filter(key == "SP.FC") %>%
+  filter(Probe == "YONL") %>%
+  group_by(Probe,UTR5,Temperature,Experiment_group,key) %>%
+  nest %>%
+  mutate(t_test = map(data, function(df){
+    t.test(df$value ~ df$Reporter_age, 
+           alternative = "two.sided"
+    ) %>% broom::tidy()
+  })) %>%
+  select(-data) %>%
+  unnest(t_test) %>%
+  select(Probe, UTR5, Temperature, key, p.value) %>%
+  mutate(p.format = format(p.value, digits = 2))
+native_rep_comb_plot_stats <- df_stats_SPFC %>%
+  filter(Probe == "YONL") %>%
+  filter(Temperature != "30C") %>%
+  arrange(UTR5,Temperature) %>%
+  mutate(xmin = case_when(Temperature == "42C" ~ 1.75,
+                          Temperature == "46C" ~ 2.75),
+         xmax = case_when(Temperature == "42C" ~ 2.25,
+                          Temperature == "46C" ~ 3.25)
+  )
 native_rep_comb_plot <- ggplot(df_combined_plot,  # Set the order of Reporter_age),
        aes(x = Temperature, y = log10(SP.FC)), color = Reporter_age) +
   geom_col(data = df_sum %>% filter(Probe == "YONL") %>% 
@@ -1498,7 +1561,17 @@ native_rep_comb_plot <- ggplot(df_combined_plot,  # Set the order of Reporter_ag
   ylab("deltapSup (odds)")+
   labs(x="",y="")+
   coord_cartesian(ylim=SP.FC.ylims)+
-  scale_y_continuous(breaks=SP.FC.breaks,labels=SP.FC.labels)
+  scale_y_continuous(breaks=SP.FC.breaks,labels=SP.FC.labels) #+
+  # geom_signif(
+  #   data = native_rep_comb_plot_stats,
+  #   aes(xmin = xmin, xmax = xmax, annotations = p.format),
+  #   y_position = 0.2,
+  #   textsize = 6*0.35,
+  #   size = 0.5,
+  #   color = "black",
+  #   tip_length = 0.02,
+  #   manual = TRUE
+  # )
 
 native_rep_comb_plot 
 
@@ -1511,6 +1584,34 @@ ggsave(file.path(github_dir,"figures","Figure4/native_SPFC.pdf"),
        egg::set_panel_size(p=p_native_SPFC,width=unit(30,"mm"),height=unit(30,"mm")),
        width=100,height=100,units="mm",bg="transparent")
 ```
+## reporter stats
+```{r}
+df <- df_reporter_pSup %>%
+  left_join(df_occ,by=c("Reporter_age","Biorep","Temperature","Probe","UTR5","Experiment_group")) %>%
+  mutate(Group=case_when(Probe!="YONL"~"native",
+                         UTR5=="PMU1"&Reporter_age=="New"~"PMU1_New",
+                         UTR5=="PMU1"&Reporter_age=="Old"~"PMU1_Old",
+                         UTR5=="HSP26"&Reporter_age=="New"~"HSP26_New",
+                         UTR5=="HSP26"&Reporter_age=="Old"~"HSP26_Old")) %>%
+  mutate(Skip=if_else(Probe=="PMU1"&UTR5=="PMU1",TRUE,FALSE)) %>%
+  filter(Skip!=TRUE) %>%
+  group_by(Group,Probe,Experiment_group) %>%
+  mutate(SP.FC = SP/exp(mean(log(SP[Temperature=="30C"]),na.rm=T)),
+         Occ_odds = Occupancy_corr/(1-Occupancy_corr),
+         Occ_odds.FC = Occ_odds/exp(mean(log(Occ_odds[Temperature=="30C"]),na.rm=T)))  %>% 
+  mutate(Reporter_age = factor(Reporter_age, levels = c("Old", "New"))) %>% mutate(Probe =factor(Probe, levels = c("PMU1", "HSP26", "YONL", "BEM2", "PGK1")))
+
+# anova
+df_YONL <- df %>%
+  filter(Probe == "YONL", Temperature != "30C")
+full_model_SPFC <- aov(SP.FC ~ Temperature * Reporter_age * UTR5, data = df_YONL)
+summary(full_model_SPFC)
+full_model_Occ <- aov(Occ_odds ~ Reporter_age * UTR5,
+                      data = df_YONL %>% filter(Temperature == "42C"))
+summary(full_model_Occ)
+
+```
+
 Figure 4 reporter translation figures
 ```{r}
 
@@ -2184,8 +2285,8 @@ p_esc_byTPMbyTE_up <- ggplot(df %>% filter(TPM_cat == "up"),
              labeller=labeller(Stress_label=stress_labs))+
   # Use a sequential color palette for TE quartiles
   scale_fill_manual(values = c("42C" = stress.cols[["42C"]],
-                               "Azide 0.8%" = stress.cols[["Azide\n0.8%"]],
-                               "Ethanol 7.5%" = stress.cols[["Ethanol\n7.5%"]])) +
+                               "Azide 0.8%" = stress.cols[["Azide 0.8%"]],
+                               "Ethanol 7.5%" = stress.cols[["Ethanol 7.5%"]])) +
   labs(x="Ribosome occupancy quartile",y="escape score (SD)",subtitle="mRNA abundance FC > 1.5")+
   coord_cartesian(ylim=c(-4.3,4.3))+
   scale_y_continuous(breaks=c(-3,0,3))+
