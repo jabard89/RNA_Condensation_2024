@@ -3,7 +3,7 @@ library(here)
 
 github_dir <- here()
 source(file.path(github_dir,"scripts_plotting/main_stylesheet_230605.R"))
-gene_labels <- gene_labels <- read_tsv(file.path(github_dir,"src/annotations/labeled_genes_scer.tsv")) %>%
+gene_labels <- read_tsv(file.path(github_dir,"src/annotations/labeled_genes_scer.tsv")) %>%
   dplyr::mutate(label=case_when(label=="RiBi"~"ribosome biogenesis",
                                 label=="translation factors"~"other",
                                 label=="RP"~"other",
@@ -79,7 +79,9 @@ df_Zsup_Poly_minfilt <- df_Zsup_mean  %>%
   summarise(TPM.SedSeq = exp(mean(log(Total.TPM.mean))),
             SP.mean  = exp(mean(log(SP.mean))),
             pSup.mean = SP.mean/(1+SP.mean),
-            Zsup.mean = mean(Zsup.mean)) %>%
+            Zsup.mean = mean(Zsup.mean),
+            esc.mean = mean(esc.mean),
+            sed.mean = mean(sed.mean)) %>%
   group_by(ORF,Stress,Stress_group) %>%
   filter(length(ORF[Control==TRUE])==1) %>%
   mutate(SP.FC = SP.mean/SP.mean[Control==TRUE],

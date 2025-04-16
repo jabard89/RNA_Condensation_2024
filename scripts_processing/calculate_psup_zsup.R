@@ -10,6 +10,7 @@ conflicts_prefer(dplyr::filter)
 conflicts_prefer(dplyr::rename)
 
 github_dir <- here()
+source(file.path(github_dir,"scripts_processing/utilityFunctions.R"))
 gene_labels <- read_tsv(file.path(github_dir,"src/annotations/labeled_genes_scer.tsv")) 
 read_kallisto <- function(file) {
   kallisto_coltypes <- list(ORF="c",length="i",eff_length="n",est_counts="n",TPM="n")
@@ -37,6 +38,8 @@ ratios_join <- mixing_ratios %>% filter(Term=="x50",Variable!="phi",Variable!="l
   mutate(Fraction=str_extract(Variable,"(?<=mixing_).*")) %>%
   rename("Mixing_ratio"="Value") %>%
   select(Dataset,Lysate_sample,Fraction,Mixing_ratio)
+
+
 
 df_Zsup <- df_samples %>%
   left_join(ratios_join,by=c("Dataset","Lysate_sample","Fraction")) %>%
@@ -67,17 +70,8 @@ df_Zsup <- df_samples %>%
       select(ORF,Total.TPM,pSup,SP,est_counts.Total,est_counts.Sup,est_counts.Pellet,
              Mixing_ratio.Sup,counts_adj.Sup,Mixing_ratio.Pellet,counts_adj.Pellet)
 
-    # calcualte Zsup
+    # calculate Zsup
 
-    odds <- function(p) {
-      p/(1-p)
-    }
-    logodds <- function(x) {
-      # log odds, a shortcut
-      res <- log(odds(x))
-      res[!is.finite(res)] <- NA
-      res
-    }
     rollup <- function(x, flds, name, ...) {
       y <- zoo(x[,flds])
       res <- as.data.frame(rollapply(zoo(x[,flds]),...))
@@ -113,7 +107,53 @@ df_Zsup <- df_samples %>%
   unnest(data) %>%
   left_join(df_samples_byLysate,by="Lysate_sample")
 
-write_tsv(df_Zsup,file.path(github_dir,"data_processed","sedseq_out.tsv.gz"))
+# Plan:
+# 1. Manually identify "control" lysate
+# 2. Calculate rolling mean using windowfunction
+# 3. calculate sed and esc per rep
+df_Zsup_filt <- df_Zsup %>% ungroup %>%
+  left_join(gene_labels %>% select(ORF,gene,LengthTxEst,classification),by="ORF") %>%
+  filter(classification=="Verified") %>%
+  group_by(Lysate_sample) %>%
+  mutate(Total.TPM = Total.TPM/sum(Total.TPM,na.rm=T)*1e6) %>%
+  filter(Total.TPM>1) %>% ungroup
+
+lengths = sort(unique(as.integer((df_Zsup_filt %>% pull(LengthTxEst)))))
+df_pSup_windowmean <- df_Zsup_filt %>%
+  group_by(Lysate_sample) %>%
+  nest %>%
+  mutate(data = map(data, function(df) {
+    windowfunction(df,"pSup", "LengthTxEst", "Treatment",
+                   n=lengths, minwidth_fraction=0.05, logx=TRUE, minn=1, na.rm=T) %>%
+      rename("pSup.lysate.windowmean" = "pSup") %>% select(LengthTxEst,pSup.lysate.windowmean)
+    })) %>%
+  unnest(c(data))
+
+df_ctrl <- df_Zsup_filt %>% ungroup %>%
+  left_join(df_pSup_windowmean, by = c("Lysate_sample", "LengthTxEst")) %>%
+  group_by(Treatment_group,ORF) %>%
+  mutate(pSup.ctrl.mean = mean(pSup[Control == TRUE]),
+         pSup.ctrl.windowmean.mean = mean(pSup.lysate.windowmean[Control == TRUE])) %>%
+  group_by(Treatment_group) %>%
+  mutate(pSup.ctrl.sd = sd(logodds(pSup.ctrl.mean) - logodds(pSup.ctrl.windowmean.mean), na.rm=T)) %>%
+  select(ORF,Treatment_group,pSup.ctrl.mean,pSup.ctrl.windowmean.mean,pSup.ctrl.sd) %>%
+  unique()
+
+df_Zsup_sed_esc <- df_Zsup %>% ungroup %>%
+  left_join(gene_labels %>% select(ORF,gene,LengthTxEst,classification),by="ORF") %>%
+  left_join(df_pSup_windowmean, by = c("Lysate_sample", "LengthTxEst")) %>%
+  left_join(df_ctrl, by = c("ORF","Treatment_group")) %>%
+  group_by(Lysate_sample) %>%
+  mutate(pSup.lysate.sd = sd(logodds(pSup) - logodds(pSup.lysate.windowmean), na.rm=T)) %>%
+  ungroup %>%
+  mutate(sed = (logodds(pSup.ctrl.mean) - logodds(pSup)) / pSup.ctrl.sd,
+         esc = ((logodds(pSup) - logodds(pSup.lysate.windowmean)) - (logodds(pSup.ctrl.mean) - logodds(pSup.ctrl.windowmean.mean))) / pSup.ctrl.sd,
+         RelSed = (logodds(pSup) - logodds(pSup.lysate.windowmean)) / pSup.lysate.sd,
+         pSup.ctrl.window.mean=pSup.ctrl.windowmean.mean,
+         pSup.treatment.window.mean=pSup.lysate.windowmean)
+
+
+write_tsv(df_Zsup_sed_esc,file.path(github_dir,"data_processed","sedseq_out.tsv.gz"))
 
 df_pSup_pombe <- df_samples %>%
   filter(Treatment_group=="spombe_spikeIn") %>%
@@ -143,8 +183,7 @@ df_pSup_pombe <- df_samples %>%
   })) %>% unnest(data) %>%
   write_tsv(file.path(github_dir,"data_processed","pSup_spombe_spikeIn.tsv.gz"))
 
-df_Zsup_filt <- df_Zsup %>%
-  left_join(gene_labels,by="ORF") %>%
+df_Zsup_sed_esc_filt_mean <- df_Zsup_sed_esc %>%
   filter(classification=="Verified") %>%
   group_by(Lysate_sample) %>%
   mutate(Total.TPM = Total.TPM/sum(Total.TPM,na.rm=T)*1e6) %>%
@@ -156,7 +195,14 @@ df_Zsup_filt <- df_Zsup %>%
   summarise(Total.TPM.mean = exp(mean(log(Total.TPM))),
             pSup.mean = mean(pSup),
             SP.mean = exp(mean(log(SP))),
-            Zsup.mean = mean(Zsup)) %>%
+            Zsup.mean = mean(Zsup),
+            sed.mean = mean(sed),
+            esc.mean = mean(esc),
+            RelSed.mean = mean(RelSed),
+            pSup.ctrl.window.mean.mean=mean(pSup.ctrl.windowmean.mean),
+            pSup.treatment.window.mean.mean=mean(pSup.lysate.windowmean)
+) %>%
   write_tsv(file.path(github_dir,"data_processed","sedseq_filt_mean.tsv.gz"))
+
 
 
