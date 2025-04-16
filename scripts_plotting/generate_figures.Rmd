@@ -2692,14 +2692,14 @@ names(stress.cols)[names(stress.cols) == "DTT.reddishpurple"] <- "DTT"
 p_dtt <- ggplot(df,
                 aes(x=lab,y=esc.mean)) +
   ggrastr::rasterize(dpi = 600, geom_point(data=df%>%filter(gene!="HAC1"),aes(y=esc_compress),
-             position=position_jitter(width=0.1),alpha=0.3,shape=16,
-             size = 0.5, color = "grey50"))+
-  geom_violin(alpha=1,aes(fill = lab))+
+             position=position_jitter(width=0.4),alpha=0.1,shape=16,
+             size = 0.2, color = "grey50"))+
+  geom_violin(alpha=1,aes(fill = lab, width = 1))+
   scale_fill_manual(values = c("42°C" = stress.cols[["42C"]],
                     "46°C" = stress.cols[["46C"]],
                     "DTT" = stress.cols[["DTT"]])) +
-  geom_violin(draw_quantiles=c(0.5),fill=NA, color ="black")+
-  coord_cartesian(ylim=c(min,max),expand=F)+
+  geom_violin(draw_quantiles=c(0.5),fill=NA, color ="black", width = 1)+
+  coord_cartesian(ylim=c(-4.5,4.5))+
   scale_y_continuous(breaks=c(-4,0,4))+
   theme(axis.ticks.x=element_blank())+
   geom_point(data=df%>%filter(gene=="HAC1"),size=2,shape=21,fill="red3",alpha=1, color = "black", stroke = 0.5) +
