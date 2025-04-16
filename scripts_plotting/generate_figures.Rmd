@@ -1474,7 +1474,7 @@ df_combined_plot <- df %>%
 
 df_combined_short <- df_combined_plot %>% ungroup() %>% select(Probe,Temperature, Reporter_age, Biorep,SP.FC) %>% filter(Reporter_age != "native")
 
-write_csv(file"df_combined_short.csv", df_combined_short)
+write_csv(file="df_combined_short.csv", df_combined_short)
          
 native_rep_comb_plot <- ggplot(df_combined_plot,  # Set the order of Reporter_age),
        aes(x = Temperature, y = log10(SP.FC)), color = Reporter_age) +
@@ -2397,25 +2397,27 @@ p_Occ_RelSed <- ggplot(df,
        aes(x=Occ.odds.mean,y=RelSed.mean))+
   geom_hline(yintercept=0,linetype="dotted")+
   geom_vline(xintercept=median(df$Occ.odds.mean,na.rm=T),linetype="dotted")+
-  ggrastr::rasterize(dpi = 600, geom_point(data=df%>%filter(EnergyBin=="other"),alpha=0.5, shape = 16, size = 0.8, color = "grey")) +
-  ggrastr::rasterize(dpi = 600, geom_point(data=df%>%filter(EnergyBin!="other"),alpha=0.75,aes(color=EnergyBin), shape = 16, size = 0.8)) +
+  ggrastr::rasterize(dpi = 600, geom_point(data=df%>%filter(EnergyBin=="other"),alpha=0.5, shape = 16, size = 0.5, color = "grey")) +
+  ggrastr::rasterize(dpi = 600, geom_point(data=df%>%filter(EnergyBin!="other"),alpha=0.75,aes(color=EnergyBin), shape = 16, size = 0.5)) +
   scale_color_manual(values=energy_color_scale)+
   #scale_x_log10nice()+#coord_cartesian(xlim=c(0.2,50))+
   scale_x_log10nice()+
   geom_text(data=df_corr %>% filter(term=="Occ.odds.mean"),
              aes(label=paste0("r = ",round(RelSed.mean,digits=2)),
-                 x=1,y=2.8),
+                 x=1,y=2.5),
             size=10*0.35)+
   geom_smooth(method="lm",se=F,color="black")+
   #geom_point(data=df %>% filter(gene%in%genes_to_label),size=2,color="red")+
   #geom_label_repel(data=df %>% filter(gene%in%genes_to_label),size=4.2,aes(label=gene))+
   labs(x="",y="")+
-  theme(legend.position="none")
+  theme(legend.position="none")+
+  scale_y_continuous(breaks = c(-2, 0, 2))+
+  coord_cartesian(ylim = c(-3, 3))
 p_Occ_RelSed
 p_RelSed_box <- ggplot(df %>% filter(!is.na(EnergyBin)),
          aes(x=EnergyBin,y=RelSed.mean,fill=EnergyBin))+
     ggrastr::rasterize(dpi = 600, geom_point(position=position_jitterdodge(jitter.width=1.5),
-               aes(color=EnergyBin,alpha=EnergyBin), shape =16, size = 0.75)) +
+               aes(color=EnergyBin,alpha=EnergyBin), shape =16, size = 0.5)) +
   scale_color_manual(values=energy_color_scale)+
     scale_alpha_manual(values=c("least" = 0.6, "other" = 0.1, "most" = 0.6)) +
   geom_violin(fill=NA,draw_quantiles = c(0.5),size=0.5,color="black")+
@@ -2430,7 +2432,10 @@ p_RelSed_box <- ggplot(df %>% filter(!is.na(EnergyBin)),
                 c("other","most")
               ))+
   labs(x="",y="")+
-  theme(axis.text.x = element_text(angle=45,hjust=1))
+  theme(axis.text.x = element_text(hjust=1, angle=45))+
+  scale_y_continuous(breaks = c(-2, 0, 2)) +
+  coord_cartesian(ylim = c(-3, 3))
+  
 p_RelSed_box
 ggsave("../figures/Figure5/RelSed_Occ_left.pdf",
        egg::set_panel_size(p=p_Occ_RelSed,width=unit(30,"mm"),height=unit(30,"mm")),
@@ -2602,10 +2607,10 @@ df <- read_tsv(file.path(github_dir,"data_processed/sedseq_out.tsv.gz")) %>%
 
 strain_tibble <- tribble(~"Strain",~"Desc",~"color",~"shape",
                          "yHG010","unstructured","black",1,
-                         "yHG005","weakest",RColorBrewer::brewer.pal(10,"Purples")[4],16,
-                         "yHG006","weak",RColorBrewer::brewer.pal(10,"Purples")[5],16,
-                         "yHG007","medium",RColorBrewer::brewer.pal(10,"Purples")[7],16,
-                         "yHG008","strong",RColorBrewer::brewer.pal(12,"Purples")[9],16,
+                         "yHG005","weakest","#AC97D0",16,
+                         "yHG006","weak","#9668D5",16,
+                         "yHG007","medium","#6B41AA",16,
+                         "yHG008","strong","#411C80",16,
                          "yHG026","uORF",RColorBrewer::brewer.pal(8,"Dark2")[4],15,
                         #"yHG027","uORF_control",RColorBrewer::brewer.pal(8,"Dark2")[4],0)
                         "yHG027","uORF_control","black",0)
@@ -2632,10 +2637,10 @@ p_dens <- ggplot(df_dist,aes(x=RelSed.mean))+
   coord_flip(xlim=c(ylims[1],ylims[2]))
 p_reps + p_dens+ plot_layout(widths = c(2, 1))
 ggsave(file.path(github_dir,"figures/Figure5/TE_hairpins_RelSed.pdf"),
-       egg::set_panel_size(p=p_reps+labs(x="",y=""),width=unit(35,"mm"),height=unit(35,"mm")),
+       egg::set_panel_size(p=p_reps+labs(x="",y=""),width=unit(30,"mm"),height=unit(30,"mm")),
        width=75,height=75,units="mm",bg="transparent")
 ggsave(file.path(github_dir,"figures/Figure5/TE_dens_hairpins_RelSed.pdf"),
-       egg::set_panel_size(p=p_dens,width=unit(10,"mm"),height=unit(35,"mm")),
+       egg::set_panel_size(p=p_dens,width=unit(8,"mm"),height=unit(30,"mm")),
        width=75,height=75,units="mm",bg="transparent")
 ```
 ## hac1 gel
@@ -2650,9 +2655,9 @@ df <- read_csv(file.path(github_dir,"data_processed","20200903_hac1splicingstatu
   arrange(Treatment,Fraction) %>% ungroup()
 p_gel <- ggplot(df,
        aes(x=Treatment,y=`Fraction Spliced`))+
- scale_color_manual(values=c("Sup"=RColorBrewer::brewer.pal(12,"Paired")[4],
+ scale_color_manual(values=c("Sup"= "red3",
                               "Pel"="grey60"))+
-  scale_fill_manual(values=c("Sup"=RColorBrewer::brewer.pal(12,"Paired")[4],
+  scale_fill_manual(values=c("Sup"="red3",
                               "Pel"="grey60"))+
   ##geom_errorbar(aes(y=frac_spliced.mean,ymin=frac_spliced.mean,ymax=frac_spliced.mean))+
   geom_col(aes(x = Treatment, y=frac_spliced.mean, fill = Fraction, color = Fraction), position = position_dodge(), alpha = 0.5, size = 0.2, color = "black")+
@@ -2681,27 +2686,28 @@ df <- df_Zsup_mean %>%
   mutate(lab = factor(Stress_label,
                       levels=c("42C","46C","DTT 10mM"),
                       labels=c("42°C","46°C","DTT")))
+
+names(stress.cols)[names(stress.cols) == "DTT.reddishpurple"] <- "DTT"
+
 p_dtt <- ggplot(df,
-                aes(x=lab,y=esc.mean))+
-  theme_half_open(font_size = 6) +
+                aes(x=lab,y=esc.mean)) +
   ggrastr::rasterize(dpi = 600, geom_point(data=df%>%filter(gene!="HAC1"),aes(y=esc_compress),
              position=position_jitter(width=0.1),alpha=0.3,shape=16,
              size = 0.5, color = "grey50"))+
-  geom_violin(alpha=0.5,aes(fill = lab), linewidth = 0)+
+  geom_violin(alpha=1,aes(fill = lab))+
   scale_fill_manual(values = c("42°C" = stress.cols[["42C"]],
                     "46°C" = stress.cols[["46C"]],
                     "DTT" = stress.cols[["DTT"]])) +
-  geom_violin(draw_quantiles=c(0.25,0.5,0.75),fill=NA,
-              linewidth = 0.25)+
+  geom_violin(draw_quantiles=c(0.5),fill=NA, color ="black")+
   coord_cartesian(ylim=c(min,max),expand=F)+
   scale_y_continuous(breaks=c(-4,0,4))+
   theme(axis.ticks.x=element_blank())+
-  geom_point(data=df%>%filter(gene=="HAC1"),size=2,shape=16,color=redcol,alpha=1) +
+  geom_point(data=df%>%filter(gene=="HAC1"),size=2,shape=21,fill="red3",alpha=1, color = "black", stroke = 0.5) +
   no.legend
 p_dtt
 ggsave(file.path(github_dir,"figures","Figure5","DTT_esc.pdf"),
                  p_dtt+labs(x="",y=""),
-       width=30,height=30,units="mm",bg="transparent")
+       width=42.5,height=42.5,units="mm",bg="transparent")
 ```
 
 
