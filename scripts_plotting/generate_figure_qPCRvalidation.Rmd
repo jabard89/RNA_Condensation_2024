@@ -1,0 +1,385 @@
+---
+title: "Generating Paper Figures for Glauninger, Bard, Wong Hickernell et al. Validation of qPCR SedSeq"
+author: "Hendrik Glauninger"
+output: html_document
+---
+
+# Setup
+## libraries, colors, labels and functions
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE,message = FALSE, warning = FALSE)
+knitr::asis_output("\U0394  \U2192")
+library(tidyverse)
+library(conflicted)
+library(corrr)
+library(cowplot)
+library(readxl)
+library(egg)
+library(ggsignif)
+library(ggrepel)
+library(devtools)
+#install_github("jabard89/cat.extras")
+library(cat.extras) #has nicely formatted log scales
+library(flextable)
+library(patchwork)
+library(zoo)
+library(here)
+`%!in%` = Negate(`%in%`)
+conflicts_prefer(dplyr::filter)
+github_dir <- here::here()
+
+# set theme
+
+theme_sedseq <- function(base_size=10) {
+  theme_grey(base_size=base_size, base_family = "") %+replace%
+    theme(panel.grid=element_blank(),
+          axis.text = element_text(size = base_size),
+          strip.text.x = element_text(size = base_size, margin = margin(t = 10)),
+          strip.text.y = element_text(size = base_size, margin = margin(r = 10)),
+          panel.background=element_blank(),
+          axis.ticks=element_line(colour="grey20"),
+          panel.border=element_rect(fill=NA),
+          legend.background = element_blank(),
+          legend.key.height = unit(3, "mm"),
+          legend.key = element_blank(),
+          strip.background = element_blank(),
+          legend.box.spacing = unit(1, "mm"))
+}
+theme_set(theme_sedseq(base_size=10))
+
+graycol <- "#333333cc"
+orangecol <- "#cc5500cc"
+bluecol <- "#0000aacc"
+greencol <- "#22cc00cc"
+purplecol <- "#cc22cccc"
+cyancol <- "#2aa198cc"
+redcol <- "#dc322fcc"
+violetcol <- "#6c71c4cc"
+blackcol <- "#000000cc"
+
+okabe_ito_colors <- palette.colors(n = NULL, palette = "Okabe-Ito", recycle = FALSE) |> substr(1, 7)
+okabe_ito_colors <- palette.colors(n = NULL, palette = "Okabe-Ito", recycle = FALSE) |> substr(1, 7)
+
+stress.cols <-  c("30C"="#7F7F7F",
+                  "42C"=RColorBrewer::brewer.pal(n=7,"Oranges")[4],
+                  "46C"=RColorBrewer::brewer.pal(n=7,"Oranges")[6],
+                  "mock"="#7F7F7F",
+                  "Azide 0.5%"=RColorBrewer::brewer.pal(n=5,"Greens")[3],
+                  "Azide 0.8%"=RColorBrewer::brewer.pal(n=5,"Greens")[5],
+                  "Ethanol 5%"=RColorBrewer::brewer.pal(n=7,"Purples")[3],
+                  "Ethanol 7.5%"=RColorBrewer::brewer.pal(n=7,"Purples")[5],
+                  "Ethanol 10%"=RColorBrewer::brewer.pal(n=7,"Purples")[6],
+                  "Ethanol 15%"=RColorBrewer::brewer.pal(n=7,"Purples")[7],
+                  "DTT" = okabe_ito_colors["reddishpurple"])
+
+stress.cols.darker <- c("30C"="#7F7F7F",
+                  "42C"=RColorBrewer::brewer.pal(n=7,"Oranges")[4],
+                  "46C"="red")
+species.cols <- c("Scerevisiae"="#7F7F7F",
+                  "Spombe"=purplecol)
+
+induction.cols <- c("New"=purplecol,
+                "Old"="grey20")
+
+cat.cols <- c("down" = RColorBrewer::brewer.pal(12,"Paired")[10],
+              "up" = RColorBrewer::brewer.pal(12,"Paired")[4])
+
+target.cols <- c("HSF1 targets"= "#DDAA33",
+                 "MSN2/4 targets"="#BB5566" )
+
+
+stress_labs <- c("30C"="30°C","42C"="42°C","46C"="46°C","mock"="mock",
+                 "Azide 0.5%"="0.5% Azide","Azide 0.8%"="0.8% Azide",
+                 "Ethanol 5%"="5% EtOH","Ethanol 7.5%"="7.5% EtOH","Ethanol 10%"="10% EtOH","Ethanol 15%"="15% EtOH")
+
+
+sg_enrichment_colors = c('enriched'=orangecol, 'depleted'=violetcol, 'neither'=graycol)
+all_cols <- c(stress.cols,sg_enrichment_colors,graycol,orangecol,bluecol,greencol,purplecol,
+              cyancol,redcol,violetcol,blackcol)
+
+# Shape and alpha for points
+shap = 16
+alph = 0.3
+
+geom_cross <- function(data = NULL, grouping= NULL,
+                       x = NULL, y = NULL, qmin = 0.25, qmax = 0.75, color = "black", ...){
+  label <- sym(grouping)
+  # Ensure x and y are specified
+  if(is.null(x) | is.null(y)) {
+    stop("Please specify x and y variables.")
+  }
+  
+  # Calculate the cross data for each label group
+  df_label_sum <- data %>% 
+    group_by(!!label) %>% 
+    summarise(
+      x_med = median(!!sym(x), na.rm = TRUE),
+      x_min = quantile(!!sym(x), qmin, na.rm = TRUE),
+      x_max = quantile(!!sym(x), qmax, na.rm = TRUE),
+      y_med = median(!!sym(y), na.rm = TRUE),
+      y_min = quantile(!!sym(y), qmin, na.rm = TRUE),
+      y_max = quantile(!!sym(y), qmax, na.rm = TRUE)
+    )
+  geoms <- list()
+  
+  for (label_val in unique(df_label_sum %>% pull(!!label))) {
+    df_subset <- df_label_sum %>% filter(!!label == label_val)
+    if (is.null(color)) {
+      geoms <- append(geoms, list(
+        geom_errorbar(inherit.aes = FALSE, data = df_subset,
+                      aes(x = x_med, ymin = y_min, ymax = y_max,color=!!label),
+                      width=0,
+                      size = 1),
+        geom_errorbar(inherit.aes = FALSE, data = df_subset,
+                      aes(y = y_med, xmin = x_min, xmax = x_max,color=!!label),
+                      width=0,
+                      size = 1)
+      ))
+    }
+    else {
+      geoms <- append(geoms, list(
+        geom_errorbar(inherit.aes = FALSE, data = df_subset,
+                      aes(x = x_med, ymin = y_min, ymax = y_max),
+                      color=color,
+                      width=0,
+                      size = 1),
+        geom_errorbar(inherit.aes = FALSE, data = df_subset,
+                      aes(y = y_med, xmin = x_min, xmax = x_max),
+                      color=color,
+                      width=0,
+                      size = 1)
+      ))
+    }
+  }
+  return(geoms)
+}
+
+plot_density_x <- function(df,var,scale,min,max,cols,alph=0.5,siz=0.25,fill="top100"){
+  X <- sym(var)
+  fil <- sym(fill)
+  if (scale%in%c("log2","log10")){
+    p <- ggplot(df,aes(x=log10(!!X),fill=!!fil))+
+      geom_density(alpha=alph,size=siz)+
+      scale_fill_manual(values=cols)+
+      theme_void()+
+      guides(fill="none")+
+      scale_x_continuous(limits=c(log10(min)-1,log10(max)+1))+
+      coord_cartesian(xlim=c(log10(min),log10(max)),expand=F)
+  } else{
+    p <- ggplot(df,aes(x=!!X,fill=!!fil))+
+      geom_density(alpha=alph,size=siz)+
+      scale_fill_manual(values=cols)+
+      theme_void()+
+      guides(fill="none")+
+      scale_x_continuous(limits=c(min-1,max+1))+
+      coord_cartesian(xlim=c(min,max),expand=F)
+  }
+  return(p)
+}
+
+plot_density_y <- function(df,var,scale,min,max,cols,alph=0.5,siz=0.25,fill="top100"){
+  X <- sym(var)
+  fil <- sym(fill)
+  if (scale%in%c("log2","log10")){
+    p <- ggplot(df,aes(x=log10(!!X),fill=!!fil))+
+      geom_density(alpha=alph,size=siz)+
+      scale_fill_manual(values=cols)+
+      scale_x_continuous(limits=c(log10(min)-1,log10(max)+1))+
+      theme_void()+
+      guides(fill="none")+
+      coord_flip(xlim=c(log10(min),log10(max)))
+  } else{
+    p <- ggplot(df,aes(x=!!X,fill=!!fil))+
+      geom_density(alpha=alph,size=siz)+
+      scale_fill_manual(values=cols)+
+      theme_void()+
+      guides(fill="none")+
+      scale_x_continuous(limits=c(min-1,max+1))+
+      coord_flip(xlim=c(min,max))
+  }
+  return(p)
+}
+
+# annotations
+
+# annotations are built by src/annotations/label_genes.Rmd
+
+gene_labels <- read_tsv(file.path(github_dir,"src/annotations/labeled_genes_scer.tsv")) %>%
+  dplyr::mutate(length.trans = LengthTxEst) %>%
+  select(ORF,gene,classification,label,LengthTxEst,length.protein)
+
+## load data
+
+df_Zsup_Poly_minfilt <- read_tsv(file.path(github_dir,"data_processed/df_Zsup_Poly_minfilt.tsv.gz"))
+
+df_samples_byLysate <- read_tsv(file.path(github_dir,"data_raw","RNAseq_samples_byLysate.tsv"))
+
+df_stress_samples <- read_csv(file.path(github_dir,"data_raw/stress_labels.csv")) %>%
+  mutate(Stress=factor(Stress,levels=c("none","Heat Shock","Azide","Ethanol","DTT")),
+         Stress_label=factor(Stress_label,levels=c("none","30C","42C","46C",
+                                                   "mock","Azide 0.5%","Azide 0.8%",
+                                                   "Ethanol 5%","Ethanol 7.5%","Ethanol 10%","Ethanol 15%",
+                                                   "DTT 10mM")))
+
+df_Zsup_mean <- read_tsv(file.path(github_dir,
+                                   "data_processed/sedseq_filt_mean.tsv.gz")) %>%
+  left_join(df_samples_byLysate %>% select(Treatment_group,Treatment,Temperature,Time) %>% unique,by=c("Treatment","Treatment_group","Temperature"))
+
+```
+
+#Get SedSeq data
+
+```{r}
+df_psup_rnaseq <- df_Zsup_mean %>%
+  filter(Treatment_group == "EW_TSPP") %>%
+  select(ORF, Temperature, pSup_RNAseq = pSup.mean) 
+```
+
+#Get qPCR data
+
+Goal is to calculate the absolute pSup between a set of different genes at different stress conditions. I am using a clover spike in added immediatley following fractionation before mRNA extraction (trizol column purification kit). Spin condition was 20k g, 10 min. Took samples of total, supernatant, and pellet. Only extracted supernatant and pellet samples (total sitting in trizol ls reagent in -80C). Before adding trizol, added 0.3 ng spike in in each sample. *Remember: Pellet is 3x so divide its amount by 3 before calculating pSup.*
+
+The point of this is to calculate absolute pSup. Have previously had success with with same uncapped clover mRNA spike in:
+
+pSup = S/(S+P) = S/P / (S/P + 1).
+
+Can get S/P ratio by dividing the relative abundance of Sup/spike in by Pel/ spike in (after correcting for the 3x conc of Pel). Because same amount of spike in added to both!!
+
+I have 3 technical replicates for each so calculate average. Use sd function.
+
+Look at raw Cq values. NoRT samples look good!
+Tech var is pretty good. Only 14/60 have sd > 0.4
+```{r}
+df_qpcr_raw <- read_tsv(file.path(github_dir,
+                                   "data_raw/20200226_qPCR_TSP_validation.txt"))
+
+data_cq <- df_qpcr_raw %>%
+  group_by(gene, probe, strain, temp, drug, biorep, nort, fraction) %>%
+  filter(nort == 'no') %>%
+  mutate(aveCq = mean(Cq), sdCq = sd(Cq)) %>%
+  filter(techrep == 1) %>% #get rid of duplicates.
+  ungroup()
+
+#need to set clover as reference
+data_norm <- data_cq %>%
+  group_by(strain, temp, drug, biorep, fraction, nort) %>%
+  filter(gene == "clover") %>%
+  mutate(aveCq_clover = aveCq, sdCq_clover = sdCq) %>%
+  select(strain, temp, drug, biorep, fraction, nort, aveCq_clover, sdCq_clover) %>%
+  full_join(.,data_cq %>% filter(techrep == 1) %>% select(-Cq,-techrep,-nort), by = c("strain","temp","drug","biorep","fraction"))
+
+#now calculate the ∆Cq within RT in reference to clover
+data_deltaCq <- data_norm %>%
+  mutate(deltaCq = aveCq - aveCq_clover,
+         sd_deltaCq = (sdCq^2 + sdCq_clover^2)^(1/2)) %>%
+  select(-aveCq,-sdCq,-aveCq_clover,-sdCq_clover)
+
+#now calculate the abundance difference between gene X and clover reference. Note pellet 3x so divide abundance of pellet by 3.
+data_deltaAbundance <- data_deltaCq %>%
+  mutate(deltaAbundance = 2^(-deltaCq),
+         sd_deltaAbundance = sd_deltaCq*log(2)*deltaAbundance) %>%
+  select(-deltaCq,-sd_deltaCq)
+
+#Normalize pellet!!!
+data_deltaAbundance_norm <- data_deltaAbundance
+
+data_deltaAbundance_norm$deltaAbundance[data_deltaAbundance_norm$fraction == "pellet"] <- data_deltaAbundance_norm$deltaAbundance[data_deltaAbundance_norm$fraction == "pellet"] / 3
+
+data_deltaAbundance_norm$sd_deltaAbundance[data_deltaAbundance_norm$fraction == "pellet"] <- data_deltaAbundance_norm$sd_deltaAbundance[data_deltaAbundance_norm$fraction == "pellet"] / 3
+
+#now calculate the S/P ratio for each sample/gene.
+
+#start by separating sup and pel so we can join them back together
+data_sup <-data_deltaAbundance_norm %>% filter(fraction == "supernatant") %>%
+  mutate(deltaAbundance_sup = deltaAbundance,
+         sd_deltaAbundance_sup = sd_deltaAbundance) %>%
+  ungroup() %>%
+  select(-fraction,-deltaAbundance,-sd_deltaAbundance)
+data_pel <-data_deltaAbundance_norm %>% filter(fraction == "pellet") %>%
+  mutate(deltaAbundance_pel = deltaAbundance,
+         sd_deltaAbundance_pel = sd_deltaAbundance) %>%
+  ungroup() %>%
+  select(-fraction,-deltaAbundance,-sd_deltaAbundance)
+
+#join them
+data_sp <- data_sup %>%
+  full_join(., data_pel, by = c("strain","temp","drug","biorep","nort","gene","probe"))
+
+#calculate s/p ratio
+data_sp <- data_sp %>%
+  mutate(sp_enrichment = deltaAbundance_sup/deltaAbundance_pel,
+         sd_rel_sp_enrichment = ((sd_deltaAbundance_sup/deltaAbundance_sup)^2+(sd_deltaAbundance_pel/deltaAbundance_pel)^2)^.5) %>%
+  select(-deltaAbundance_sup,-deltaAbundance_pel,-sd_deltaAbundance_sup,-sd_deltaAbundance_pel)
+
+#calculate psup
+data_psup <- data_sp %>%
+  mutate(psup = sp_enrichment/(sp_enrichment +1),
+         sd_abs_Psup = sd_rel_sp_enrichment * psup) %>%
+  select(-sp_enrichment,-sd_rel_sp_enrichment) %>%
+  filter(gene %in% c("pgk1","bem2","gcn4","hac1","hsp26"))
+
+df_psup_qpcr <- data_psup %>%
+  select(-sd_abs_Psup) %>%
+  group_by(strain,temp,drug,nort,gene,probe) %>%
+  mutate(ave_pSup = mean(psup),
+         max_pSup = max(psup),
+         min_pSup = min(psup),
+         spread_pSup = 1/2*(max_pSup-min_pSup)) %>%
+  filter(biorep == 1, drug == 'vehicle')#clean up so don't have all data points, don't care about CHX data
+
+#add in ORF
+df_psup_qpcr$ORF <- NA
+df_psup_qpcr$ORF[which(df_psup_qpcr$gene == 'pgk1')] <- 'YCR012W'
+df_psup_qpcr$ORF[which(df_psup_qpcr$gene == 'bem2')] <- 'YER155C'
+df_psup_qpcr$ORF[which(df_psup_qpcr$gene == 'hsp26')] <- 'YBR072W'
+df_psup_qpcr$ORF[which(df_psup_qpcr$gene == 'hac1')] <- 'YFL031W'
+df_psup_qpcr$ORF[which(df_psup_qpcr$gene == 'gcn4')] <- 'YEL009C'
+
+#rename temperature to match those in RNASeq data
+df_psup_qpcr$temp[which(df_psup_qpcr$temp == '30')] <- '30C'
+df_psup_qpcr$temp[which(df_psup_qpcr$temp == '42')] <- '42C'
+df_psup_qpcr$temp[which(df_psup_qpcr$temp == '46')] <- '46C'
+
+#rename categories to match those in RNA seq data
+df_psup_qpcr <- df_psup_qpcr %>%
+  ungroup() %>%
+  transmute(ORF=ORF,
+            Temperature = temp,
+            pSup_qPCR = ave_pSup,
+            spread_pSup_qPCR = spread_pSup)
+```
+
+#Plot
+
+```{r}
+#combine data frames for comparison
+df_psup_compare <- left_join(df_psup_qpcr, df_psup_rnaseq, by = c('ORF','Temperature'))
+
+#levels
+df_psup_compare$ORF <- factor(df_psup_compare$ORF, levels = c("YCR012W", "YER155C", "YFL031W","YEL009C","YBR072W"))
+
+#plot
+p_psup_compare <- ggplot(data = df_psup_compare,
+                           aes(x = pSup_qPCR, y = pSup_RNAseq, color = as.factor(Temperature), shape = ORF)) +
+  geom_point(size = 5) +
+  geom_abline(intercept = 0, slope = 1) +
+  ylim(0,1) +
+  xlim(0,1) +
+  ylab("Proportion in supernatant (RNA-Seq)") +
+  xlab("Proportion in supernatant (qRT-PCR)") +
+  #ggtitle("Sequencing and qPCR-Derived pSup's Agree.") +
+  scale_shape_discrete(labels = c("clover" = "Clover",
+                              "YBR072W" = "HSP26",
+                              "YEL009C" = "GCN4",
+                              "YFL031W" = "HAC1",
+                              "YCR012W" = "PGK1",
+                              "YER155C" = "BEM2")) +
+  guides(color=guide_legend(title="Treatment (\u00b0C):"),
+         shape = guide_legend(title="Gene:")) +
+  scale_color_manual(values = stress.cols) +
+  theme_minimal() +
+  coord_equal()
+p_psup_compare
+
+ggsave( file.path(github_dir,"figures/pSup_qpcr_rnaseq_comparison.pdf"), p_psup_compare, width =4.5, height = 4.5)
+```
