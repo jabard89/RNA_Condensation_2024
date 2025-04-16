@@ -244,7 +244,7 @@ no.legend = theme(legend.position="none")
 # gene_labels <- read_tsv(file.path(github_dir,"src/annotations/labeled_genes_scer.tsv")) %>%
 #   dplyr::mutate(length.trans = LengthTxEst) %>%
 #   select(ORF,gene,classification,label,LengthTxEst,length.protein)
-gene_labels <- gene_labels <- read_tsv(file.path(github_dir,"src/annotations/labeled_genes_scer.tsv")) %>%
+gene_labels <- read_tsv(file.path(github_dir,"src/annotations/labeled_genes_scer.tsv")) %>%
   dplyr::mutate(label=case_when(label=="RiBi"~"ribosome biogenesis",
                                 label=="translation factors"~"other",
                                 label=="RP"~"other",
@@ -1470,7 +1470,11 @@ df_combined_plot <- df %>%
          Reporter_age = case_when(
            Group == "native" ~ "native",
            TRUE ~ Reporter_age))%>%
-  mutate(Reporter_age = factor(Reporter_age, levels = c("native", "Old", "New"))) %>% mutate(UTR5 = factor(UTR5, levels = c("PMU1", "HSP26", "YONL")))
+  mutate(Reporter_age = factor(Reporter_age, levels = c("native", "Old", "New"))) %>% mutate(UTR5 = factor(UTR5, levels = c("PMU1", "HSP26", "YONL"))) 
+
+df_combined_short <- df_combined_plot %>% ungroup() %>% select(Probe,Temperature, Reporter_age, Biorep,SP.FC) %>% filter(Reporter_age != "native")
+
+write_csv(file"df_combined_short.csv", df_combined_short)
          
 native_rep_comb_plot <- ggplot(df_combined_plot,  # Set the order of Reporter_age),
        aes(x = Temperature, y = log10(SP.FC)), color = Reporter_age) +
@@ -1499,7 +1503,6 @@ native_rep_comb_plot <- ggplot(df_combined_plot,  # Set the order of Reporter_ag
   labs(x="",y="")+
   coord_cartesian(ylim=SP.FC.ylims)+
   scale_y_continuous(breaks=SP.FC.breaks,labels=SP.FC.labels)
-
 native_rep_comb_plot 
 
   
@@ -1581,7 +1584,7 @@ p_rep_occ <- ggplot(df %>% filter(Group!="native",Probe=="YONL", Temperature %in
   
   geom_col(data = df_sum  %>% filter(Group!="native",Probe=="YONL", Temperature %in% c("42C"),
                                          Experiment_group=="42C"),aes(x = Reporter_age, y = Occ_odds.mean, fill = Reporter_age), position = "dodge", alpha = 0.5)+
-  geom_point(size=1, alpha = 0.8, shape = 16, color= "black")+
+  geom_point(size=1.5, alpha = 0.8, shape = 16, color= "black")+
   geom_hline(yintercept = 1, linetype = "dashed")+
   scale_color_manual (values = c("darkblue", "magenta3"))+
   scale_fill_manual (values = c("darkblue", "magenta3"))+
@@ -1597,7 +1600,7 @@ p_native_occ <-ggplot(df %>% filter(Group=="native",Temperature %in%c("42C"), Ex
        aes(x = Probe, y = Occ_odds, color = Probe))+
   geom_col(data = df_sum_native %>% filter(Group=="native",Temperature %in%c("42C"),
                                          Experiment_group=="42C") %>% filter(Probe == "PMU1" | Probe == "HSP26") %>% mutate(Probe = factor(Probe, levels = c("PMU1", "HSP26"))),aes(x = Probe, y = Occ_odds.mean, fill = Probe), position = "dodge", alpha = 0.5)+
-    geom_point(size=1, shape = 16, color = "black")+
+    geom_point(size=1.5, shape = 16, color = "black")+
   geom_hline(yintercept = 1, linetype = "dashed")+
   scale_fill_manual(values=c("PMU1"="green4","HSP26"="orange2"))+
   scale_color_manual(values=c("PMU1"="green4","HSP26"="orange2"))+
@@ -1608,11 +1611,11 @@ p_native_occ <-ggplot(df %>% filter(Group=="native",Temperature %in%c("42C"), Ex
   p_native_occ
 
 ggsave(file.path(github_dir,"figures","Figure4/reporters_Occ.pdf"),
-       egg::set_panel_size(p=p_rep_occ+theme( axis.text.y = element_blank(), axis.ticks.y = element_blank()),width=unit(30,"mm"),height=unit(30,"mm")),
+       egg::set_panel_size(p=p_rep_occ+theme( axis.text.y = element_blank(), axis.ticks.y = element_blank()),width=unit(25,"mm"),height=unit(25,"mm")),
        width=100,height=100,units="mm",bg="transparent")
 ggsave(file.path(github_dir,"figures","Figure4/native_Occ.pdf"),
        egg::set_panel_size(p=p_native_occ+theme(),
-                           width=unit(30,"mm"),height=unit(30,"mm")),
+                           width=unit(25,"mm"),height=unit(25,"mm")),
        width=100,height=100,units="mm",bg="transparent")
 
 ```
@@ -2180,12 +2183,15 @@ p_esc_byTPMbyTE_up <- ggplot(df %>% filter(TPM_cat == "up"),
                outlier.shape=NA,alpha=0.5,position=position_dodge(width=dge_wid),linewidth=0)+
   geom_boxplot(fill=NA,outlier.shape=NA,position=position_dodge(width=dge_wid),size=0.25)+
   # Use the original stress colors
-  facet_grid(.~Stress_label,
-             labeller=labeller(Stress_label=stress_labs))+
+  # facet_grid(.~Stress_label,
+  #            labeller=labeller(Stress_label=stress_labs))+
+  facet_wrap(~Stress_label,
+           labeller = labeller(Stress_label = stress_labs),
+           ncol = 1)+
   # Use a sequential color palette for TE quartiles
   scale_fill_manual(values = c("42C" = stress.cols[["42C"]],
-                               "Azide 0.8%" = stress.cols[["Azide\n0.8%"]],
-                               "Ethanol 7.5%" = stress.cols[["Ethanol\n7.5%"]])) +
+                               "Azide 0.8%" = stress.cols[["Azide 0.8%"]],
+                               "Ethanol 7.5%" = stress.cols[["Ethanol 7.5%"]])) +
   labs(x="Ribosome occupancy quartile",y="escape score (SD)",subtitle="mRNA abundance FC > 1.5")+
   coord_cartesian(ylim=c(-4.3,4.3))+
   scale_y_continuous(breaks=c(-3,0,3))+
@@ -2196,12 +2202,16 @@ p_esc_byTPMbyTE_up <- ggplot(df %>% filter(TPM_cat == "up"),
               textsize = 8 * 0.35,
               comparisons=list(
                 c("0-\n25%","75-\n100%")
-              )) +
+              ))+
+  theme(
+    strip.text = element_blank(),
+    strip.background = element_blank(),
+    strip.placement = "outside")+
   no.legend
 p_esc_byTPMbyTE_up
 ggsave(file.path(github_dir,"figures","Figure4/esc_byTE_TPMup_HS_EtOH.pdf"),
        egg::set_panel_size(p=p_esc_byTPMbyTE_up,
-                           width=unit(45,"mm"),height=unit(35,"mm")),bg="transparent")
+                           width=unit(35,"mm"),height=unit(35,"mm")),bg="transparent")
 ```
 
 # Figure 5
@@ -2976,9 +2986,40 @@ p_deplete_sedscore <- ggplot(df,
   geom_text_repel(aes(label=gene_lab),size=8*0.35,min.segment.length = 0,color="black", max.overlaps = 10000) +
   geom_point(data = df %>% filter(gene_lab != ""), shape = 16)
 p_deplete_sedscore_panel <- egg::set_panel_size(p=p_deplete_sedscore,
-                                          width=unit(30,"mm"),height=unit(30,"mm"))
+                                          width=unit(50,"mm"),height=unit(50,"mm"))
 plot(p_deplete_sedscore_panel)
 ggsave(file.path(github_dir,"figures/Figure6/3b_4e_deplete_sedscore.pdf"),p_deplete_sedscore_panel,bg="transparent")
+
+##Comparing rSed scores from 
+
+# df_wide <- df %>%
+#   select(ORF, gene, Temperature,Treatment, sed.mean.compMock, label) %>%
+#   pivot_wider(
+#     names_from = Treatment,
+#     values_from = sed.mean.compMock
+#   ) %>%
+#   group_by(ORF, gene, Temperature, label) %>%
+#   summarize(across(where(is.numeric), ~ max(.x, na.rm = TRUE)), .groups = "drop")
+# 
+# ggplot(data = df_wide, aes(y = eIF3b_deplete, x = eIF4E_deplete))+
+#   geom_hline(yintercept = 0, linetype = "dashed", size = 0.5, color = "grey40")+
+#   geom_vline(xintercept = 0, linetype = "dashed", size = 0.5, color = "grey40")+
+#   geom_point(alpha = 0.4, color = "grey", size = 0.5)+
+#   geom_point(data = df_wide %>% filter(label != "other"), aes(color = label), alpha = 0.8, size = 0.7)+ 
+#   geom_smooth(method='lm', formula= y~x, color = "grey20", linetype = "dashed")+
+#  
+#   #geom_abline(slope = 0.35, linetype = "dashed")+
+#   scale_color_manual(values = c("turquoise", "purple4", "darkorange", "darkgreen"))+
+#   geom_label_repel(data = df_wide %>% filter(gene == "SSA4" | gene == "SSB1"| gene == "PGK1" | gene == "HAC1"), aes(label = gene),min.segment.length = 0)+
+#   geom_point(data = df_wide %>% filter(gene == "SSA4" | gene == "SSB1"| gene == "PGK1" | gene == "HAC1"), aes(color = label),size =1.5)+
+#   xlim(-2, 3.5)+
+#   ylim(-1,5)+
+#   scale_y_reverse(
+#     breaks = c(4, 2, 0),  
+#     limits = c(5, -1),       
+#     oob = scales::oob_keep   
+#   ) +xlab("eIF4E deplete \nrelative sedimentation (30°C)")+
+#   ylab("eIF3b deplete \nrelative sedimentation (30°C)")
 ```
 
 ```{r}
@@ -4537,7 +4578,172 @@ ggsave("../figures/Supplemental/Sucrose_native_Occ.pdf",
                             width=unit(30,"mm"),height=unit(30,"mm")),
        width=100,height=100,units="mm",bg = "transparent",dpi=600)
 ```
+```{r}
 
+### reporter supp figures
+set_label_size = theme(
+  axis.title.x = element_text(size = 10),
+  axis.text.x = element_text(size = 8),
+  axis.title.y = element_text(size = 10),
+  axis.text.y = element_text(size = 8))
+
+df_pSup <- df_pSup <- read_tsv(file.path(github_dir,"data_processed/230329-reporters-42C-20min.tsv")) %>%
+  mutate(Experiment_group="42C") %>%
+  mutate(Group=case_when(Probe!="YONL"~"native",
+                         UTR5=="PMU1"&Reporter_age=="New"~"PMU1_New",
+                         UTR5=="PMU1"&Reporter_age=="Old"~"PMU1_Old",
+                         UTR5=="HSP26"&Reporter_age=="New"~"HSP26_New",
+                         UTR5=="HSP26"&Reporter_age=="Old"~"HSP26_Old")) %>%
+  mutate(Group = factor(Group,levels=c("native","HSP26_Old","HSP26_New","PMU1_Old","PMU1_New"))) %>%
+  mutate(Skip=if_else(Probe=="PMU1"&UTR5=="PMU1",TRUE,FALSE)) %>%
+  filter(Skip!=TRUE) %>%
+  pivot_longer(cols=c(EDTA.FALSE,EDTA.TRUE),names_to="EDTA",values_to="pSup",names_prefix = "EDTA.") %>%
+  mutate(SP = pSup/(1-pSup)) %>%
+  mutate(Reporter_age = factor(Reporter_age, levels = c("Old", "New")),
+         EDTA =factor(EDTA, levels = c(FALSE, TRUE)),
+         Desc = factor(Desc, levels = c("PMU1", "HSP26")),
+         Probe = factor(Probe, levels = c("PMU1", "HSP26", "YONL", "TUB2")))
+
+df_Occ <- read_tsv(file.path(github_dir,"data_processed/230329-reporters-42C-20min.tsv")) %>% 
+  mutate(Experiment_group="42C") %>%
+  mutate(Group=case_when(Probe!="YONL"~"native",
+                         UTR5=="PMU1"&Reporter_age=="New"~"PMU1_New",
+                         UTR5=="PMU1"&Reporter_age=="Old"~"PMU1_Old",
+                         UTR5=="HSP26"&Reporter_age=="New"~"HSP26_New",
+                         UTR5=="HSP26"&Reporter_age=="Old"~"HSP26_Old")) %>%
+  mutate(Group = factor(Group,levels=c("native","HSP26_Old","HSP26_New","PMU1_Old","PMU1_New"))) %>%
+  mutate(Skip=if_else(Probe=="PMU1"&UTR5=="PMU1",TRUE,FALSE)) %>%
+  filter(Skip!=TRUE)%>% 
+  mutate(Reporter_age = factor(Reporter_age, levels = c("Old", "New")),
+         Probe = factor(Probe, levels = c("PMU1", "HSP26", "YONL", "TUB2")))
+
+df_pSup_mean <- df_pSup %>%
+  group_by(Experiment_group,Group,Probe,Temperature,EDTA, Desc) %>%
+  summarise(SP.mean = exp(mean(log(SP),na.rm=T)),
+            pSup.mean = mean(pSup)) %>%
+  separate(Group,into=c("UTR5","Reporter_age"),remove=F)
+
+df_pSup_mean_native <- df_pSup %>%
+  group_by(Experiment_group,Group,Probe,Temperature,EDTA) %>%
+  summarise(SP.mean = exp(mean(log(SP),na.rm=T)),
+            pSup.mean = mean(pSup)) %>%
+  separate(Group,into=c("UTR5","Reporter_age"),remove=F)
+
+df_Occ_mean <- df_Occ %>%
+  group_by(Experiment_group,Group,Probe,Temperature, Desc) %>%
+  summarise(Occ.mean = mean(Occupancy_corr)) %>%
+  separate(Group,into=c("UTR5","Reporter_age"),remove=F) %>% mutate(Reporter_age = factor(Reporter_age, levels = c("Old", "New")))
+
+df_Occ_mean_native <- df_Occ %>%
+  group_by(Experiment_group,Group,Probe,Temperature) %>%
+  summarise(Occ.mean = mean(Occupancy_corr)) %>%
+  separate(Group,into=c("UTR5","Reporter_age"),remove=F) %>% mutate(Reporter_age = factor(Reporter_age, levels = c("Old", "New")))
+
+p_native_pSup <- ggplot(df_pSup %>% filter(Group=="native") %>% filter(Probe != "TUB2"),
+                        aes(x=EDTA,y=1-pSup,color=Probe))+
+   geom_col(data=df_pSup_mean_native %>% filter(Group == "native") %>% filter(Probe != "TUB2") ,
+                aes(y=1-pSup.mean,ymin=1-pSup.mean,ymax=1-pSup.mean, fill = Probe, color = Probe), position = "dodge", alpha = 0.25)+
+  geom_point(color = "black")+
+  scale_fill_manual(values = c("green4", "orange2"))+
+  scale_color_manual(values = c("green4", "orange2"))+
+  facet_grid(Temperature~Probe)+
+  scale_shape_manual(values=c("PMU1"=16,"HSP26"=2))+
+  coord_cartesian(ylim=c(0,1))+
+  theme(aspect.ratio =1)
+p_native_pSup
+
+
+
+ggsave("paper_figures/Supplemental/Sucrose_native_pPel.pdf",
+        egg::set_panel_size(p=p_native_pSup+labs(x="",y="")+set_label_size+
+                              theme(legend.position="none",
+                                    strip.text.x = element_blank()),
+                            width=unit(30,"mm"),height=unit(30,"mm")),
+       width=100,height=100,units="mm",bg = "transparent",dpi=600)
+p_native_Occ <- ggplot(df_Occ %>% filter(Group=="native") %>% filter(Probe != "TUB2"),
+                        aes(x=Probe,y=Occupancy_corr,color=Probe))+
+  geom_col(data=df_Occ_mean_native %>% filter(Group == "native") %>% filter(Probe != "TUB2"),
+                aes(y=Occ.mean,ymin=Occ.mean,ymax=Occ.mean, fill = Probe), position = "dodge", alpha = 0.25)+
+  geom_point(color = "black")+
+    scale_fill_manual(values = c("green4", "orange2"))+
+  scale_color_manual(values = c("green4", "orange2"))+
+  coord_cartesian(ylim=c(0,1))+
+  facet_grid(Temperature ~.)+
+  theme(aspect.ratio =1)
+p_native_Occ
+
+ggsave("paper_figures/Supplemental/Sucrose_native_Occ.pdf",
+        egg::set_panel_size(p=p_native_Occ+labs(x="",y="")+set_label_size+
+                              theme(legend.position="none",
+                                    strip.text.x = element_blank()),
+                            width=unit(30,"mm"),height=unit(30,"mm")),
+       width=100,height=100,units="mm",bg = "transparent",dpi=600)
+
+p_Rep_pSup <- ggplot(df_pSup %>% filter(Group!="native") ,
+                        aes(x=Reporter_age,y=1-pSup,color=Reporter_age, group = EDTA, color = Reporter_age))+
+  geom_col(data=df_pSup_mean %>% filter(Group != "native"),
+                  aes(y=1-pSup.mean,ymin=1-pSup.mean,ymax=1-pSup.mean, fill = Reporter_age, color = Reporter_age, alpha = EDTA), position = "dodge",alpha = 0.25)+
+  geom_point(color= "black", position = position_dodge(width = .9))+
+  #scale_color_manual(values=induction.cols)+
+  #scale_shape_manual(values=c("PMU1"=16,"HSP26"=2))+
+  #scale_fill_manual(values = stress.cols)+
+  #facet_grid(Temperature~Desc +EDTA)+
+  facet_grid(Temperature~Desc)+
+  coord_cartesian(ylim=c(0,1))+
+  scale_color_manual(values = c("darkblue", "magenta3"))+
+  scale_fill_manual(values = c("darkblue", "magenta3"))+
+  scale_alpha_manual(values = c(0.9, 0.9))+
+  theme(aspect.ratio =1)
+
+p_Rep_pSup
+
+ggsave("paper_figures/Supplemental/Sucrose_rep_pPel.pdf",
+        egg::set_panel_size(p=p_Rep_pSup+labs(x="",y="")+set_label_size+
+                              theme(legend.position="none",
+                                    axis.text.x = element_blank(),
+                                    strip.text.x = element_blank()),
+                            width=unit(30,"mm"),height=unit(30,"mm")),
+       width=100,height=100,units="mm",bg = "transparent",dpi=600)
+
+p_Rep_Occ <- ggplot(df_Occ %>% filter(Group!="native"),
+                        aes(x=Reporter_age,y=Occupancy_corr,color = Reporter_age))+
+  geom_col(data=df_Occ_mean %>% filter(Group != "native"),
+                 aes(y=Occ.mean,ymin=Occ.mean,ymax=Occ.mean, fill = Reporter_age), position = "dodge", alpha = 0.25)+
+  geom_point(position = position_dodge(width = .9), color = "black")+
+  scale_color_manual(values = c("darkblue", "magenta3"))+
+  scale_fill_manual(values = c("darkblue", "magenta3"))+
+  scale_shape_manual(values=c("PMU1"=16,"HSP26"=2))+
+  coord_cartesian(ylim=c(0,1))+
+  facet_grid(Temperature ~Desc)+
+  theme(aspect.ratio =1)
+p_Rep_Occ
+
+ggsave("paper_figures/Supplemental/Sucrose_rep_Occ.pdf",
+        egg::set_panel_size(p=p_Rep_Occ+labs(x="",y="")+set_label_size+
+                              theme(legend.position="none",
+                                    axis.text.x = element_blank(),
+                                    strip.text.x = element_blank()),
+                            width=unit(30,"mm"),height=unit(30,"mm")),
+       width=100,height=100,units="mm",bg = "transparent",dpi=600)
+
+ggplot(df_Occ %>% filter(Group!="native"),
+                        aes(x=Reporter_age,y=Occupancy_corr,color = Reporter_age, group = Temperature))+
+  geom_col(data=df_Occ_mean %>% filter(Group != "native"),
+                 aes(y=Occ.mean,ymin=Occ.mean,ymax=Occ.mean, fill = Reporter_age, group = Temperature), position = "dodge", alpha = 0.25)+
+  geom_point(position = position_dodge(width = .9), color = "black", aes(group = Temperature))+
+  scale_color_manual(values = c("darkblue", "magenta3"))+
+  scale_fill_manual(values = c("darkblue", "magenta3"))+
+  scale_shape_manual(values=c("PMU1"=16,"HSP26"=2))+
+  coord_cartesian(ylim=c(0,1))+
+  #facet_grid(Temperature ~Desc)+
+  facet_grid(Desc ~.)+
+  theme(aspect.ratio =1)
+
+
+
+
+
+```
 
 ```{r}
 genes_to_label <- c("HAC1","GCN4")
