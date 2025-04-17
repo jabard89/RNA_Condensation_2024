@@ -2458,7 +2458,7 @@ p_TPM_TE
 
 p_RelSed_box <- ggplot(df,
                   aes(x=1,y=RelSed.mean))+
-  ggrastr::rasterize(dpi = 600, geom_point(data=df%>%filter(gene%!in%genes_to_label),position=position_jitter(width=0.43),alpha=0.02, size = 0.3)) +
+  ggrastr::rasterize(dpi = 600, geom_point(data=df%>%filter(gene%!in%genes_to_label),position=position_jitter(width=0.43),alpha=0.03, size = 0.09)) +
   #geom_boxplot(fill=NA,outlier.shape=NA)+
   geom_violin(fill="grey70", alpha = 0.6, draw_quantiles = c(0.5))+
   ggrastr::rasterize(dpi = 600, geom_point(data=df%>%filter(gene%in%genes_to_label),alpha=1,color="red",size=1)) +
