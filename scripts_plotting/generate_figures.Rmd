@@ -292,12 +292,15 @@ df_Weinberg <- read_tsv(file.path(github_dir,"src/Weinberg_2016/weinberg_shah_sy
 
 muhl = read_tsv(file.path(github_dir,"src/Muhlhofer_2019/Muhlhofer_2019_rnaseq.tsv"), comment='#') |> pivot_wider(values_from = TPM, names_from=sample, names_prefix = 'tpm.')
 
+#normalized protein (not yet normalized by RNA to get TE)
 df_hairpin_reporters <- read_csv(file.path(github_dir,"data_processed/df_hairpin_DAD.csv")) %>%
   mutate(Strain = paste0("y", Strain)) %>%
   group_by(Strain,mfe) %>%
-  summarise("TE"=exp(mean(log(correctedGreenRedRatio)))) %>%
-  select(Strain,mfe,TE)
+  summarise("Clover"=mean(normalizedClover),
+            "mCherry"=mean(normalizedmCherry)) %>% 
+  select(Strain,mfe,Clover,mCherry)
 
+#normalized protein (not yet normalized by RNA to get TE)
 df_uorfs <- read_delim(file.path(github_dir,"data_processed/20201206_dataAnalyzedExport.txt"),delim=" ") %>% 
   separate(Sample,into=c("Strain","Biorep","Tech"),sep="_") %>%
   mutate(
@@ -305,9 +308,10 @@ df_uorfs <- read_delim(file.path(github_dir,"data_processed/20201206_dataAnalyze
                     ifelse(Strain == "yHG010", "A", Biorep)),
     Tech = ifelse(Strain == "BY4742", 1, 
                   ifelse(Strain == "yHG010", 1, Tech))) %>% 
-  group_by(Strain,Biorep) %>%
+  filter(Strain %in% c('yHG010','yHG026','yHG027')) %>%
+  group_by(Strain) %>%
   summarise(Clover=mean(Clover_corrected),
-            mCherry=mean(mCherry_corrected))
+            mCherry = mean(mCherry_corrected))
 
 df_agg = read_tsv(file.path(github_dir,"src/scer_aggregation_psup.txt"), comment='#') |> rename(ORF=orf) |> rowwise() |>
   mutate(pSup.30C=mean(c(psup_30C.rep1,psup_30C.rep2,psup_30C.rep3), na.rm=T)) |>
@@ -2480,6 +2484,13 @@ ggsave("../figures/Figure5/TPM_TE_RelSed_right.pdf",egg::set_panel_size(p=p_RelS
 
 ## hairpins
 ```{r}
+df_hairpins <- df_Zsup_mean %>% filter(Treatment_group=="hairpinReporters") %>%
+  group_by(ORF,gene,Temperature,LengthTxEst) %>%
+  summarise(SP.mean = exp(mean(log(SP.mean))),
+            pSup.mean = mean(pSup.mean),
+            TPM.mean = exp(mean(log(Total.TPM.mean))),
+            RelSed.mean = mean(RelSed.mean),
+            Zsup.mean = mean(Zsup.mean))
 
 df_uorf_rna <- df_Zsup_mean %>% filter(Strain%in%c("yHG026","yHG027","yHG010")) %>%
   filter(ORF%in%c("strong_Clover","mCherry")) %>%
@@ -2489,14 +2500,19 @@ df_uorf_rna <- df_Zsup_mean %>% filter(Strain%in%c("yHG026","yHG027","yHG010")) 
 df_uorf_TE <- df_uorfs %>%  filter(Strain%in%c("yHG026","yHG027","yHG010")) %>%
   pivot_longer(cols=c("mCherry","Clover"),names_to="Reporter",values_to="Protein") %>%
   group_by(Strain,Reporter) %>%
-  summarise(Protein.mean = mean(Protein),
+  summarise(Protein.mean = mean(Protein), #df_uorfs is already calculating mean
             Protein.se = sd(Protein)/sqrt(length(Protein))) %>%
   left_join(df_uorf_rna,by=c("Strain","Reporter")) %>%
-  mutate(TE=Protein.mean) %>%
+  mutate(TE=Protein.mean/Total.TPM.mean) %>%
   ungroup %>%
   mutate(TE_norm = TE/TE[Strain=="yHG010"])
 df_reporter_TE <- df_hairpin_reporters %>%
   ungroup %>%
+  pivot_longer(cols=c("mCherry","Clover"),names_to="Reporter",values_to="Protein") %>%
+  group_by(Strain,Reporter) %>%
+  summarise(Protein.mean = mean(Protein), #df_uorfs is already calculating mean
+            Protein.se = sd(Protein)/sqrt(length(Protein))) %>%
+  left_join()
   mutate(TE_norm = TE/TE[Strain=="yHG010"]) %>%
   mutate(Experiment="hairpins") %>%
   select(Strain,TE_norm,Experiment,mfe) %>%
@@ -2563,6 +2579,14 @@ ggsave(file.path(github_dir,"figures/Figure5/TE_dens_hairpins.pdf"),
 
 ## hairpins RelSed
 ```{r}
+df_hairpins <- df_Zsup_mean %>% filter(Treatment_group=="hairpinReporters") %>%
+  group_by(ORF,gene,Temperature,LengthTxEst) %>%
+  summarise(SP.mean = exp(mean(log(SP.mean))),
+            pSup.mean = mean(pSup.mean),
+            TPM.mean = exp(mean(log(Total.TPM.mean))),
+            RelSed.mean = mean(RelSed.mean),
+            Zsup.mean = mean(Zsup.mean))
+
 df_uorf_rna <- df_Zsup_mean %>% filter(Strain%in%c("yHG026","yHG027","yHG010")) %>%
   filter(ORF%in%c("strong_Clover","mCherry")) %>%
   mutate(Reporter=case_when(ORF=="strong_Clover"~"Clover",
@@ -2574,16 +2598,31 @@ df_uorf_TE <- df_uorfs %>%  filter(Strain%in%c("yHG026","yHG027","yHG010")) %>%
   summarise(Protein.mean = mean(Protein),
             Protein.se = sd(Protein)/sqrt(length(Protein))) %>%
   left_join(df_uorf_rna,by=c("Strain","Reporter")) %>%
-  mutate(TE=Protein.mean) %>%
+  mutate(TE=Protein.mean/Total.TPM.mean) %>%
   ungroup %>%
   mutate(TE_norm = TE/TE[Strain=="yHG010"])
-df_reporter_TE <- df_hairpin_reporters %>%
+df_hairpin_rna <- df_Zsup_mean %>% filter(Strain%in%c("yHG010","yHG005","yHG006","yHG007","yHG008")) %>%
+  filter(ORF%in%c("strong_Clover","mCherry")) %>%
+  mutate(Reporter=case_when(ORF=="strong_Clover"~"Clover",
+                            ORF=="mCherry"~"mCherry")) %>%
+  select(Strain,Reporter,Total.TPM.mean)
+df_hairpin_TE <- df_hairpin_reporters %>%
+  filter(Strain%in%c("yHG010","yHG005","yHG006","yHG007","yHG008")) %>%
+  pivot_longer(cols=c("mCherry","Clover"),names_to="Reporter",values_to="Protein") %>%
+  group_by(Strain,Reporter) %>%
+  summarise(Protein.mean = mean(Protein),
+            Protein.se = sd(Protein)/sqrt(length(Protein))) %>%
+  left_join(df_hairpin_rna,by=c("Strain","Reporter")) %>%
+  mutate(TE=Protein.mean/Total.TPM.mean) %>%
   ungroup %>%
-  mutate(TE_norm = TE/TE[Strain=="yHG010"]) %>%
-  mutate(Experiment="hairpins") %>%
-  select(Strain,TE_norm,Experiment,mfe) %>%
-  bind_rows(df_uorf_TE %>% filter(Reporter=="Clover") %>% select(Strain,TE_norm) %>%
-              mutate(Experiment="uORFs"))
+  mutate(TE_norm = TE/TE[Strain=="yHG010"])
+#combine hairpin and uORF data frames
+df_reporter_TE <-  rbind(df_hairpin_TE,df_uorf_TE) %>%
+  select(Strain,Reporter,TE_norm) %>%
+  unique() %>% #get rid of extra yHG010 (normalized to 1,1 in both), bc/ used in both hairpin and uORF experiment as reference
+  pivot_wider(names_from = Reporter, values_from = TE_norm) %>%
+  mutate(TE_norm = Clover/mCherry) #this now normalizes the TE (which has already been calculated as protein/mRNA normalized to that of yHG010) to that of mCherry in each strain
+
 df_dist <- df_Zsup_mean %>%
   left_join(df_samples_byLysate %>% select(Treatment_group,Treatment,Temperature,Time) %>% unique,by=c("Treatment","Treatment_group","Temperature")) %>%
   filter(Strain%in%df_reporter_TE$Strain,Treated==FALSE,Temperature=="30C") %>%
