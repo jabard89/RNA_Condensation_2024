@@ -61,7 +61,7 @@ purplecol <- "#cc22cccc"
 cyancol <- "#2aa198cc"
 redcol <- "#dc322fcc"
 violetcol <- "#6c71c4cc"
-blackcol <- "#000000cc"
+blackcol <- "#000000ff"
 
 okabe_ito_colors <- palette.colors(n = NULL, palette = "Okabe-Ito", recycle = FALSE)
 
