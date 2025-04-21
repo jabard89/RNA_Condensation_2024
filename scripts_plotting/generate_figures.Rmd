@@ -2548,97 +2548,97 @@ ggsave("../figures/Figure5/TPM_TE_RelSed_right.pdf",egg::set_panel_size(p=p_RelS
 
 ## hairpins
 ```{r}
-df_hairpins <- df_Zsup_mean %>% filter(Treatment_group=="hairpinReporters") %>%
-  group_by(ORF,gene,Temperature,LengthTxEst) %>%
-  summarise(SP.mean = exp(mean(log(SP.mean))),
-            pSup.mean = mean(pSup.mean),
-            TPM.mean = exp(mean(log(Total.TPM.mean))),
-            RelSed.mean = mean(RelSed.mean),
-            Zsup.mean = mean(Zsup.mean))
-
-df_uorf_rna <- df_Zsup_mean %>% filter(Strain%in%c("yHG026","yHG027","yHG010")) %>%
-  filter(ORF%in%c("strong_Clover","mCherry")) %>%
-  mutate(Reporter=case_when(ORF=="strong_Clover"~"Clover",
-                            ORF=="mCherry"~"mCherry")) %>%
-  select(Strain,Reporter,Total.TPM.mean)
-df_uorf_TE <- df_uorfs %>%  filter(Strain%in%c("yHG026","yHG027","yHG010")) %>%
-  pivot_longer(cols=c("mCherry","Clover"),names_to="Reporter",values_to="Protein") %>%
-  group_by(Strain,Reporter) %>%
-  summarise(Protein.mean = mean(Protein), #df_uorfs is already calculating mean
-            Protein.se = sd(Protein)/sqrt(length(Protein))) %>%
-  left_join(df_uorf_rna,by=c("Strain","Reporter")) %>%
-  mutate(TE=Protein.mean/Total.TPM.mean) %>%
-  ungroup %>%
-  mutate(TE_norm = TE/TE[Strain=="yHG010"])
-df_reporter_TE <- df_hairpin_reporters %>%
-  ungroup %>%
-  pivot_longer(cols=c("mCherry","Clover"),names_to="Reporter",values_to="Protein") %>%
-  group_by(Strain,Reporter) %>%
-  summarise(Protein.mean = mean(Protein), #df_uorfs is already calculating mean
-            Protein.se = sd(Protein)/sqrt(length(Protein))) %>%
-  left_join()
-  mutate(TE_norm = TE/TE[Strain=="yHG010"]) %>%
-  mutate(Experiment="hairpins") %>%
-  select(Strain,TE_norm,Experiment,mfe) %>%
-  bind_rows(df_uorf_TE %>% filter(Reporter=="Clover") %>% select(Strain,TE_norm) %>%
-              mutate(Experiment="uORFs"))
-df_dist <- df_Zsup_mean %>%
-  left_join(df_samples_byLysate %>% select(Treatment_group,Treatment,Temperature,Time) %>% unique,by=c("Treatment","Treatment_group","Temperature")) %>%
-  filter(Strain%in%df_reporter_TE$Strain,Treated==FALSE,Temperature=="30C") %>%
-  group_by(ORF) %>%
-  summarise(SP.mean = exp(mean(log(SP.mean)))) %>%
-  mutate(pSup.mean = SP.mean/(1+SP.mean)) %>%
-  left_join(gene_labels,by="ORF") %>% filter(classification=="Verified")
-df <- df_Zsup_mean %>%
-  left_join(df_samples_byLysate %>% select(Treatment_group,Treatment,Temperature,Time) %>% unique,by=c("Treatment","Treatment_group","Temperature")) %>%
-  filter(Strain%in%df_reporter_TE$Strain,Treated==FALSE,Temperature=="30C") %>%
-  filter(ORF=="strong_Clover") %>%
-  select(ORF,Strain,Treatment_group,Treatment,Treated,Temperature,Total.TPM.mean,pSup.mean,SP.mean,Zsup.mean) %>%
-  group_by(ORF,Strain) %>%
-  summarise(Total.TPM.mean=exp(mean(log(Total.TPM.mean))),
-            pSup.mean = mean(pSup.mean),
-            pSup.se = sd(pSup.mean)/sqrt(length(pSup.mean))) %>%
-  left_join(df_reporter_TE,by="Strain") %>%
-  mutate(Strain=factor(Strain,levels=c("yHG010","yHG005","yHG006","yHG007","yHG008","yHG027","yHG026"))) %>%
-  arrange(Strain)
-
-strain_tibble <- tribble(~"Strain",~"Desc",~"color",~"shape",
-                         "yHG010","unstructured","black",1,
-                         "yHG005","weakest",RColorBrewer::brewer.pal(10,"Purples")[4],16,
-                         "yHG006","weak",RColorBrewer::brewer.pal(10,"Purples")[5],16,
-                         "yHG007","medium",RColorBrewer::brewer.pal(10,"Purples")[7],16,
-                         "yHG008","strong",RColorBrewer::brewer.pal(12,"Purples")[9],16,
-                         "yHG026","uORF",RColorBrewer::brewer.pal(8,"Dark2")[4],15,
-                        #"yHG027","uORF_control",RColorBrewer::brewer.pal(8,"Dark2")[4],0)
-                        "yHG027","uORF_control","black",0)
-strain_colors <- setNames(strain_tibble$color,strain_tibble$Strain)
-strain_shapes <- setNames(strain_tibble$shape,strain_tibble$Strain)
-p_reps <- ggplot(df %>%arrange(desc(TE_norm)),
-       aes(x=TE_norm,y=pSup.mean))+
-  geom_errorbar(aes(x=TE_norm,ymin=pSup.mean-pSup.se,ymax=pSup.mean+pSup.se),width=0.5,size=0.5)+
-  ggrastr::rasterize(dpi = 600, geom_point(aes(color=Strain,shape=Strain),size=3.1)) +
-  scale_y_continuous(breaks=c(0.5,0.75,1.0))+
-  scale_color_manual(values=strain_colors)+
-  scale_shape_manual(values=strain_shapes)+
-  scale_x_log10nice()+
-  coord_cartesian(ylim=c(0.5,1),xlim=c(0.001,1.6))+
-  theme(legend.position="none")+
-  labs(x="TE (norm. to unstructured)",y="pSup")
-
-ylims <- ggplot_build(p_reps)$layout$panel_params[[1]]$y.range
-
-p_dens <- ggplot(df_dist,aes(x=pSup.mean))+
-  geom_density(fill = "grey80")+
-  theme_void()+
-  scale_x_continuous(limits = c(ylims[1]-1, ylims[2]+1))+
-  coord_flip(xlim=c(ylims[1],ylims[2]))
-p_reps + p_dens+ plot_layout(widths = c(2, 1))
-ggsave(file.path(github_dir,"figures/Figure5/TE_hairpins.pdf"),
-       egg::set_panel_size(p=p_reps+labs(x="",y=""),width=unit(35,"mm"),height=unit(35,"mm")),
-       width=75,height=75,units="mm",bg="transparent")
-ggsave(file.path(github_dir,"figures/Figure5/TE_dens_hairpins.pdf"),
-       egg::set_panel_size(p=p_dens,width=unit(10,"mm"),height=unit(35,"mm")),
-       width=75,height=75,units="mm",bg="transparent")
+# df_hairpins <- df_Zsup_mean %>% filter(Treatment_group=="hairpinReporters") %>%
+#   group_by(ORF,gene,Temperature,LengthTxEst) %>%
+#   summarise(SP.mean = exp(mean(log(SP.mean))),
+#             pSup.mean = mean(pSup.mean),
+#             TPM.mean = exp(mean(log(Total.TPM.mean))),
+#             RelSed.mean = mean(RelSed.mean),
+#             Zsup.mean = mean(Zsup.mean))
+# 
+# df_uorf_rna <- df_Zsup_mean %>% filter(Strain%in%c("yHG026","yHG027","yHG010")) %>%
+#   filter(ORF%in%c("strong_Clover","mCherry")) %>%
+#   mutate(Reporter=case_when(ORF=="strong_Clover"~"Clover",
+#                             ORF=="mCherry"~"mCherry")) %>%
+#   select(Strain,Reporter,Total.TPM.mean)
+# df_uorf_TE <- df_uorfs %>%  filter(Strain%in%c("yHG026","yHG027","yHG010")) %>%
+#   pivot_longer(cols=c("mCherry","Clover"),names_to="Reporter",values_to="Protein") %>%
+#   group_by(Strain,Reporter) %>%
+#   summarise(Protein.mean = mean(Protein), #df_uorfs is already calculating mean
+#             Protein.se = sd(Protein)/sqrt(length(Protein))) %>%
+#   left_join(df_uorf_rna,by=c("Strain","Reporter")) %>%
+#   mutate(TE=Protein.mean/Total.TPM.mean) %>%
+#   ungroup %>%
+#   mutate(TE_norm = TE/TE[Strain=="yHG010"])
+# df_reporter_TE <- df_hairpin_reporters %>%
+#   ungroup %>%
+#   pivot_longer(cols=c("mCherry","Clover"),names_to="Reporter",values_to="Protein") %>%
+#   group_by(Strain,Reporter) %>%
+#   summarise(Protein.mean = mean(Protein), #df_uorfs is already calculating mean
+#             Protein.se = sd(Protein)/sqrt(length(Protein))) #%>%
+#   left_join() %>%
+#   mutate(TE_norm = TE/TE[Strain=="yHG010"]) %>%
+#   mutate(Experiment="hairpins") %>%
+#   select(Strain,TE_norm,Experiment,mfe) %>%
+#   bind_rows(df_uorf_TE %>% filter(Reporter=="Clover") %>% select(Strain,TE_norm) %>%
+#               mutate(Experiment="uORFs"))
+# df_dist <- df_Zsup_mean %>%
+#   left_join(df_samples_byLysate %>% select(Treatment_group,Treatment,Temperature,Time) %>% unique,by=c("Treatment","Treatment_group","Temperature")) %>%
+#   filter(Strain%in%df_reporter_TE$Strain,Treated==FALSE,Temperature=="30C") %>%
+#   group_by(ORF) %>%
+#   summarise(SP.mean = exp(mean(log(SP.mean)))) %>%
+#   mutate(pSup.mean = SP.mean/(1+SP.mean)) %>%
+#   left_join(gene_labels,by="ORF") %>% filter(classification=="Verified")
+# df <- df_Zsup_mean %>%
+#   left_join(df_samples_byLysate %>% select(Treatment_group,Treatment,Temperature,Time) %>% unique,by=c("Treatment","Treatment_group","Temperature")) %>%
+#   filter(Strain%in%df_reporter_TE$Strain,Treated==FALSE,Temperature=="30C") %>%
+#   filter(ORF=="strong_Clover") %>%
+#   select(ORF,Strain,Treatment_group,Treatment,Treated,Temperature,Total.TPM.mean,pSup.mean,SP.mean,Zsup.mean) %>%
+#   group_by(ORF,Strain) %>%
+#   summarise(Total.TPM.mean=exp(mean(log(Total.TPM.mean))),
+#             pSup.mean = mean(pSup.mean),
+#             pSup.se = sd(pSup.mean)/sqrt(length(pSup.mean))) %>%
+#   left_join(df_reporter_TE,by="Strain") %>%
+#   mutate(Strain=factor(Strain,levels=c("yHG010","yHG005","yHG006","yHG007","yHG008","yHG027","yHG026"))) %>%
+#   arrange(Strain)
+# 
+# strain_tibble <- tribble(~"Strain",~"Desc",~"color",~"shape",
+#                          "yHG010","unstructured","black",1,
+#                          "yHG005","weakest",RColorBrewer::brewer.pal(10,"Purples")[4],16,
+#                          "yHG006","weak",RColorBrewer::brewer.pal(10,"Purples")[5],16,
+#                          "yHG007","medium",RColorBrewer::brewer.pal(10,"Purples")[7],16,
+#                          "yHG008","strong",RColorBrewer::brewer.pal(12,"Purples")[9],16,
+#                          "yHG026","uORF",RColorBrewer::brewer.pal(8,"Dark2")[4],15,
+#                         #"yHG027","uORF_control",RColorBrewer::brewer.pal(8,"Dark2")[4],0)
+#                         "yHG027","uORF_control","black",0)
+# strain_colors <- setNames(strain_tibble$color,strain_tibble$Strain)
+# strain_shapes <- setNames(strain_tibble$shape,strain_tibble$Strain)
+# p_reps <- ggplot(df %>%arrange(desc(TE_norm)),
+#        aes(x=TE_norm,y=pSup.mean))+
+#   geom_errorbar(aes(x=TE_norm,ymin=pSup.mean-pSup.se,ymax=pSup.mean+pSup.se),width=0.5,size=0.5)+
+#   ggrastr::rasterize(dpi = 600, geom_point(aes(color=Strain,shape=Strain),size=3.1)) +
+#   scale_y_continuous(breaks=c(0.5,0.75,1.0))+
+#   scale_color_manual(values=strain_colors)+
+#   scale_shape_manual(values=strain_shapes)+
+#   scale_x_log10nice()+
+#   coord_cartesian(ylim=c(0.5,1),xlim=c(0.001,1.6))+
+#   theme(legend.position="none")+
+#   labs(x="TE (norm. to unstructured)",y="pSup")
+# 
+# ylims <- ggplot_build(p_reps)$layout$panel_params[[1]]$y.range
+# 
+# p_dens <- ggplot(df_dist,aes(x=pSup.mean))+
+#   geom_density(fill = "grey80")+
+#   theme_void()+
+#   scale_x_continuous(limits = c(ylims[1]-1, ylims[2]+1))+
+#   coord_flip(xlim=c(ylims[1],ylims[2]))
+# p_reps + p_dens+ plot_layout(widths = c(2, 1))
+# ggsave(file.path(github_dir,"figures/Figure5/TE_hairpins.pdf"),
+#        egg::set_panel_size(p=p_reps+labs(x="",y=""),width=unit(35,"mm"),height=unit(35,"mm")),
+#        width=75,height=75,units="mm",bg="transparent")
+# ggsave(file.path(github_dir,"figures/Figure5/TE_dens_hairpins.pdf"),
+#        egg::set_panel_size(p=p_dens,width=unit(10,"mm"),height=unit(35,"mm")),
+#        width=75,height=75,units="mm",bg="transparent")
 ```
 
 ## hairpins RelSed
@@ -3879,6 +3879,107 @@ ggsave("../figures/Supplemental/hairpin_30C_error.pdf",
        width=75,height=75,units="mm",bg = "transparent",dpi=600)
 ```
 
+## noise relsed hairpin replicates
+```{r}
+df <- df_Zsup_mean %>%
+  filter(Treatment_group == "hairpinReporters",
+         pSup.mean>0,SP.mean>0,!is.infinite(pSup.mean),!is.infinite(SP.mean)) %>%
+  filter(classification=="Verified") %>%
+  group_by(ORF,gene,LengthTxEst) %>%
+  summarise(pSup.mean = mean(pSup.mean),
+            SP.mean.all = exp(mean(log(SP.mean))),
+            SP.sem.all  = exp(sd(log(SP.mean))/sqrt(n())),
+            pSup.windowmean = mean(pSup.treatment.window.mean.mean),
+            odds.pSup.windowmean = odds(pSup.windowmean),
+            RelSed.mean = mean(RelSed.mean)) %>%
+  ungroup %>%
+  mutate(lo.pSup.hairpin.sd = sd(logodds(pSup.mean) - logodds(pSup.windowmean), na.rm=T))
+# not bad set.seed(1)
+set.seed(1)
+which_genes <- df_Zsup_mean %>%
+  filter(Treatment_group == "hairpinReporters",
+         pSup.mean>0,SP.mean>0,!is.infinite(pSup.mean),!is.infinite(SP.mean)) %>%
+  group_by(ORF) %>%
+  summarise(Total.TPM = exp(mean(log(Total.TPM.mean))),
+            RelSed.mean = mean(RelSed.mean)) %>%
+  left_join(gene_labels,by="ORF") %>%
+  filter(!is.na(gene),classification=="Verified",
+         LengthTxEst < 6e3,LengthTxEst > 300) %>%
+  ungroup %>%
+  mutate(RelSed_group = if_else(RelSed.mean>=0,"RelSed.up","RelSed.down")) %>%
+  mutate(length_bin = cut_interval(log(LengthTxEst),n=6)) %>%
+  group_by(length_bin,RelSed_group) %>%
+  nest %>%
+  mutate(sampled = map(data,function(df) {
+    return(tibble(sampled_genes = sample(df$gene,size=1)))
+  })) %>%
+  select(-data) %>%
+  unnest(sampled)
+
+genes_to_highlight <- which_genes$sampled_genes
+genes_to_label <- c("GCN4","HAC1")
+
+
+set_label_size = theme(
+  axis.title.x = element_text(size = 10),
+  axis.text.x = element_text(size = 10),
+  axis.title.y = element_text(size = 10),
+  axis.text.y = element_text(size = 10))
+p <- ggplot(df,
+            aes(x=LengthTxEst,y=SP.mean.all))+
+  ggrastr::rasterize(dpi = 600, geom_point(alpha=0.3,shape=16,size=0.5,color="grey60")) +
+  geom_line(aes(y=odds.pSup.windowmean),color="black",size=0.5,alpha=0.5,linetype=1,linewidth=0.5)+
+  geom_line(aes(y=(odds.pSup.windowmean-exp(lo.pSup.hairpin.sd))),color=okabe_ito_colors[4],size=1,linewidth=0.5, linetype=1)+
+  geom_line(aes(y=(odds.pSup.windowmean+exp(lo.pSup.hairpin.sd))),color=okabe_ito_colors[4],size=1, linewidth=0.5, linetype=1)+
+  scale_x_log10nice()+ scale_y_log10nice()+
+  coord_cartesian(ylim=c(0.5,40))+
+  geom_point(data=df %>% filter(gene %in% c(genes_to_highlight)),
+             size=1.5,shape=16)+
+  geom_errorbar(data=df %>% filter(gene %in% c(genes_to_highlight)),
+             aes(y=SP.mean.all,
+                 ymin=SP.mean.all-SP.sem.all,
+                 ymax=SP.mean.all+SP.sem.all),
+             width=0,linewidth=1)+
+  geom_point(data=df %>% filter(gene=="GCN4"),
+             size=1.5,shape=16,
+                  color=okabe_ito_colors[7])+
+  geom_errorbar(data=df %>% filter(gene=="GCN4"),
+             aes(y=SP.mean.all,
+                 ymin=SP.mean.all-SP.sem.all,
+                 ymax=SP.mean.all+SP.sem.all),
+             width=0,linewidth=1,
+                  color=okabe_ito_colors[7])+
+  geom_point(data=df %>% filter(gene=="HAC1"),
+             size=1.5,shape=16,
+                  color=stress.cols[["DTT"]])+
+  geom_errorbar(data=df %>% filter(gene=="HAC1"),
+             aes(y=SP.mean.all,
+                 ymin=SP.mean.all-SP.sem.all,
+                 ymax=SP.mean.all+SP.sem.all),
+             width=0,linewidth=1,
+                  color=stress.cols[["DTT"]])+
+  geom_label_repel(data=df%>%filter(gene=="HAC1"),
+                  aes(label=gene),
+                  size=0.35*8,
+                  nudge_x = -0.4, nudge_y = -0.4,
+                  linewidth=0.25,
+                  color=stress.cols[["DTT"]])+
+  geom_label_repel(data=df%>%filter(gene=="GCN4"),
+                  aes(label=gene),
+                  size=0.35*8,
+                  nudge_x = 0.4, nudge_y = 0.4,
+                  linewidth=0.25,
+                  color=okabe_ito_colors[7])+
+  set_label_size+
+  labs(x="mRNA length (nucleotides)", y="Odds in supernatant")
+p
+
+ggsave("../figures/Supplemental/hairpin_relsed_30C_error.pdf",
+        egg::set_panel_size(p=p,
+                            width=unit(50,"mm"),height=unit(50,"mm")),
+       width=75,height=75,units="mm",bg = "transparent",dpi=600)
+```
+
 ## hac1 equiv
 ```{r}
 rollup <- function(x, flds, name, ...) {
@@ -3908,24 +4009,33 @@ hac1_30C_equiv_length <- df %>%
   arrange(diff) %>% 
   slice(1) %>% pull(LengthTxEst)
 hac1_length <- gene_labels %>% filter(ORF=="YFL031W") %>% pull(LengthTxEst)
+
+segment1 <- data.frame(
+  x = hac1_length,
+  y = hac1_30C_SP,
+  xend = hac1_30C_equiv_length,
+  yend = hac1_30C_SP
+)
+
 p_SP <- ggplot(df %>% filter(!is.infinite(SP.mean),SP.mean>0),
             aes(x=LengthTxEst,y=SP.mean))+
   ggrastr::rasterize(dpi = 600, geom_point(alpha=0.2,shape=16, size= 0.3,color="grey50")) +
   geom_line(aes(y=mean.SP.mean,group=Temperature),color="black",size=0.5)+
   scale_x_log10nice()+scale_y_log10nice()+
   coord_cartesian(ylim=c(0.05,80))+
-  geom_segment(aes(x=hac1_length,y=hac1_30C_SP,xend=hac1_30C_equiv_length,yend=hac1_30C_SP),
-               linetype="dotted",color="black")+
-  geom_segment(aes(x=hac1_30C_equiv_length,y=1e-10,xend=hac1_30C_equiv_length,yend=hac1_30C_SP),
-               linetype="dotted",color="black")+
+  geom_segment(data = data.frame(x = hac1_length, y = hac1_30C_SP, xend = hac1_30C_equiv_length, yend = hac1_30C_SP),
+               aes(x=x,y=y,xend=xend,yend=yend),
+               linetype="dotted",color="black") +
+  geom_segment(data = data.frame(x = hac1_30C_equiv_length, y = 1e-10, xend = hac1_30C_equiv_length, yend = hac1_30C_SP),
+               aes(x=x,y=y,xend=xend,yend=yend),
+               linetype="dotted",color="black") +
   geom_point(data=df%>%filter(ORF=="YFL031W"),color=stress.cols[["DTT"]],size=2)+
   labs(x="",y="")+
   theme(legend.position="none")
 p_SP
 ggsave("../figures/Supplemental/HAC1_equiv_length.pdf",
        egg::set_panel_size(p=p_SP,
-                           width=unit(40,"mm"),height=unit(40,"mm")),
-       width=75,height=75,units="mm",bg = "transparent",dpi=600)
+                           width=unit(40,"mm"),height=unit(40,"mm")),units="mm",bg = "transparent")
 ```
 
 ## zsup 30 vs 42 hsf1
@@ -4763,7 +4873,7 @@ p_native_pSup
 
 
 
-ggsave("paper_figures/Supplemental/Sucrose_native_pPel.pdf",
+ggsave("../figures/Supplemental/Sucrose_native_pPel.pdf",
         egg::set_panel_size(p=p_native_pSup+labs(x="",y="")+set_label_size+
                               theme(legend.position="none",
                                     strip.text.x = element_blank()),
@@ -4781,7 +4891,7 @@ p_native_Occ <- ggplot(df_Occ %>% filter(Group=="native") %>% filter(Probe != "T
   theme(aspect.ratio =1)
 p_native_Occ
 
-ggsave("paper_figures/Supplemental/Sucrose_native_Occ.pdf",
+ggsave("../figures/Supplemental/Sucrose_native_Occ.pdf",
         egg::set_panel_size(p=p_native_Occ+labs(x="",y="")+set_label_size+
                               theme(legend.position="none",
                                     strip.text.x = element_blank()),
@@ -4806,7 +4916,7 @@ p_Rep_pSup <- ggplot(df_pSup %>% filter(Group!="native") ,
 
 p_Rep_pSup
 
-ggsave("paper_figures/Supplemental/Sucrose_rep_pPel.pdf",
+ggsave("../figures/Supplemental/Sucrose_rep_pPel.pdf",
         egg::set_panel_size(p=p_Rep_pSup+labs(x="",y="")+set_label_size+
                               theme(legend.position="none",
                                     axis.text.x = element_blank(),
@@ -4827,7 +4937,7 @@ p_Rep_Occ <- ggplot(df_Occ %>% filter(Group!="native"),
   theme(aspect.ratio =1)
 p_Rep_Occ
 
-ggsave("paper_figures/Supplemental/Sucrose_rep_Occ.pdf",
+ggsave("../figures/Supplemental/Sucrose_rep_Occ.pdf",
         egg::set_panel_size(p=p_Rep_Occ+labs(x="",y="")+set_label_size+
                               theme(legend.position="none",
                                     axis.text.x = element_blank(),
@@ -4876,7 +4986,7 @@ p_TPM_Occ <- ggplot(df,
   scale_x_log10nice()+
   scale_y_log10nice()+
   coord_cartesian(xlim=c(1,1e4),ylim=c(0.1,50))+
-  ggrastr::rasterize(dpi = 600, geom_point(alpha=0.2, size = 0.3)) +
+  ggrastr::rasterize(dpi = 600, geom_point(alpha=0.2, size = 0.3, shape = 16)) +
   geom_point(data=df %>% filter(gene%in%genes_to_label),size=2,color="red")+
   geom_text_repel(data=df,size=4.2,aes(label=gene_label),max.overlaps = 10000,min.segment.length = 0)+
   labs(x="mRNA Abundance",y="Rib. Occ.\n(odds)")
@@ -4900,8 +5010,7 @@ p_Z_box <- ggplot(df,
 p_Z_box
 p_3B_occ <- plot_grid(p_TPM_Occ,p_Z_box,align="hv",rel_widths=c(1,0.7 ))
 p_3B_occ
-ggsave("../figures/Supplemental/HAC1_GCN4_Occupancy.pdf",egg::set_panel_size(p=p_TPM_Occ+labs(x="",y=""),width=unit(30,"mm"),height=unit(30,"mm")),
-       width=50,height=50,units="mm",bg="transparent",dpi=600)
+ggsave("../figures/Supplemental/HAC1_GCN4_Occupancy.pdf",egg::set_panel_size(p=p_TPM_Occ+labs(x="",y=""),width=unit(50,"mm"),height=unit(50,"mm")),bg="transparent",dpi=600)
 ```
 
 #Figure S2A
