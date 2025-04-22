@@ -1384,6 +1384,217 @@ p_esc_PolyFC <- gtable_rbind(p_42C_esc_PolyFC_panel,p_N3_esc_PolyFC_panel,p_EtOH
 ggsave("../figures/Figure3/esc_PolyFC.pdf",p_esc_PolyFC,bg="transparent")
 ```
 
+# Figure 3F: stress-specific escape of transcripts in stresses it is induced in: heat shock vs etoh.
+
+Using escape scores (eSed).
+
+```{r}
+num_most_induced_genes <- 50 #number of most induced genes to use in analysis
+
+df_azide_08_delta <- df_Zsup_mean %>% filter(Treatment_group %in% c('azide3')) %>%
+  select(ORF,gene, LengthTxEst,Strain,Treatment_group,Treatment, Temperature, Total.TPM.mean,Zsup.mean) %>%
+  pivot_wider(names_from = c(Treatment,Temperature), values_from = c(Total.TPM.mean,Zsup.mean)) %>%
+  mutate(tpm_fc_azide_08 = as.numeric(`Total.TPM.mean_Azide_0.8%_pH6.8_30C`) / as.numeric(Total.TPM.mean_mock_30C),
+         Zsup_delta_azide_08 = as.numeric(`Zsup.mean_Azide_0.8%_pH6.8_30C`) - as.numeric(Zsup.mean_mock_30C))
+
+# #import 0.8%
+# df_azide_08_delta <- df_data %>% filter(Treatment_group %in% c('azide3')) %>%
+#   select(-Treated,-SP.mean,-pSup.mean) %>%
+#   pivot_wider(names_from = Treatment, values_from = c(Total.TPM.mean,Zsup.mean)) %>%
+#   mutate(tpm_fc_azide_08 = as.numeric(`Total.TPM.mean_Azide_0.8%_pH6.8`) / as.numeric(Total.TPM.mean_mock),
+#          Zsup_delta_azide_08 = as.numeric(`Zsup.mean_Azide_0.8%_pH6.8`) - as.numeric(Zsup.mean_mock))
+# #combine
+# df_azide_cum <- rbind(df_azide_05_delta %>%
+#                         select(ORF,LengthTxEst,tpm_fc_azide_05,Zsup_delta_azide_05) %>%
+#                         mutate(Treatment = 'Azide_05') %>%
+#                         dplyr::rename(tpm_fc = tpm_fc_azide_05, Zsup_delta = Zsup_delta_azide_05),
+#                       df_azide_08_delta %>%
+#                         select(ORF,LengthTxEst,tpm_fc_azide_08,Zsup_delta_azide_08) %>%
+#                         mutate(Treatment = 'Azide_08') %>%
+#                         dplyr::rename(tpm_fc = tpm_fc_azide_08, Zsup_delta = Zsup_delta_azide_08))
+#ethanol
+#import 7.5%
+
+df_etoh_75_delta <- df_Zsup_mean %>% filter(Treatment_group %in% c('milderEtOH2')) %>%
+  select(ORF,gene, LengthTxEst,Strain,Treatment_group,Treatment, Temperature, Total.TPM.mean,Zsup.mean) %>%
+  pivot_wider(names_from = c(Treatment,Temperature), values_from = c(Total.TPM.mean,Zsup.mean)) %>%
+  mutate(tpm_fc_etoh_75 = as.numeric(`Total.TPM.mean_EtOH_7.5%_30C`) / as.numeric(Total.TPM.mean_mock_30C),
+         Zsup_delta_etoh_75 = as.numeric(`Zsup.mean_EtOH_7.5%_30C`) - as.numeric(Zsup.mean_mock_30C))
+
+# #import 10%
+# df_etoh_10_delta <- df_data %>% filter(Treatment_group %in% c('milderEtOH1') & !(Treatment %in% c('EtOH_5%'))) %>%
+#   select(-Treated,-SP.mean,-pSup.mean) %>%
+#   pivot_wider(names_from = Treatment, values_from = c(Total.TPM.mean,Zsup.mean)) %>%
+#   mutate(tpm_fc_ethanol_10 = as.numeric(`Total.TPM.mean_EtOH_10%`) / as.numeric(Total.TPM.mean_mock),
+#          Zsup_delta_ethanol_10 = as.numeric(`Zsup.mean_EtOH_10%`) - as.numeric(Zsup.mean_mock))
+# #combine
+# df_ethanol_cum <- rbind(df_etoh_75_delta %>%
+#                         select(ORF,LengthTxEst,tpm_fc_ethanol_75,Zsup_delta_ethanol_75) %>%
+#                         mutate(Treatment = 'Ethanol_7.5') %>%
+#                         dplyr::rename(tpm_fc = tpm_fc_ethanol_75, Zsup_delta = Zsup_delta_ethanol_75),
+#                       df_etoh_10_delta %>%
+#                         select(ORF,LengthTxEst,tpm_fc_ethanol_10,Zsup_delta_ethanol_10) %>%
+#                         mutate(Treatment = 'Ethanol_10') %>%
+#                         dplyr::rename(tpm_fc = tpm_fc_ethanol_10, Zsup_delta = Zsup_delta_ethanol_10))
+
+#temperature
+#import 42C and 46C
+df_temp_42_delta <- df_Zsup_mean %>% filter(Treatment_group %in% c('EW_TSPP') & Temperature %in% c('30C','42C')) %>%
+  select(ORF,gene, LengthTxEst,Strain,Treatment_group,Treatment, Temperature, Total.TPM.mean,Zsup.mean) %>%
+  pivot_wider(names_from = c(Treatment,Temperature), values_from = c(Total.TPM.mean,Zsup.mean)) %>%
+  mutate(tpm_fc_temp_42 = as.numeric(`Total.TPM.mean_none_42C`) / as.numeric(`Total.TPM.mean_none_30C`),
+         Zsup_delta_temp_42 = as.numeric(`Zsup.mean_none_42C`) - as.numeric(Zsup.mean_none_30C))
+
+# df_temp_46_delta <- df_data %>% filter(Treatment_group %in% c('EW_TSPP') & Temperature %in% c('30C','46C')) %>%
+#   select(-Treated,-SP.mean,-pSup.mean) %>%
+#   pivot_wider(names_from = Temperature, values_from = c(Total.TPM.mean,Zsup.mean)) %>%
+#   mutate(tpm_fc_temp_46 = as.numeric(Total.TPM.mean_46C) / as.numeric(Total.TPM.mean_30C),
+#          Zsup_delta_temp_46 = as.numeric(Zsup.mean_46C) - as.numeric(Zsup.mean_30C))
+# #combine
+# df_temp_cum <- rbind(df_temp_42_delta %>%
+#                         select(ORF,LengthTxEst,tpm_fc_temp_42,Zsup_delta_temp_42) %>%
+#                         mutate(Treatment = 'Temp_42C') %>%
+#                         dplyr::rename(tpm_fc = tpm_fc_temp_42, Zsup_delta = Zsup_delta_temp_42),
+#                       df_temp_46_delta %>%
+#                         select(ORF,LengthTxEst,tpm_fc_temp_46,Zsup_delta_temp_46) %>%
+#                         mutate(Treatment = 'Temp_46C') %>%
+#                         dplyr::rename(tpm_fc = tpm_fc_temp_46, Zsup_delta = Zsup_delta_temp_46))
+
+#standardize naming for rbind
+df_temp_42_delta <- df_temp_42_delta %>%
+  select(ORF,LengthTxEst,tpm_fc_temp_42,Zsup_delta_temp_42) %>%
+  mutate(Treatment = 'Temp_42C') %>%
+  dplyr::rename(tpm_fc = tpm_fc_temp_42, Zsup_delta = Zsup_delta_temp_42)
+
+df_azide_08_delta <- df_azide_08_delta %>%
+  select(ORF,LengthTxEst,tpm_fc_azide_08,Zsup_delta_azide_08) %>%
+  mutate(Treatment = 'Azide_08') %>%
+  dplyr::rename(tpm_fc = tpm_fc_azide_08, Zsup_delta = Zsup_delta_azide_08)
+
+df_etoh_75_delta <- df_etoh_75_delta %>%
+  select(ORF,LengthTxEst,tpm_fc_etoh_75,Zsup_delta_etoh_75) %>%
+  mutate(Treatment = 'Ethanol_75') %>%
+  dplyr::rename(tpm_fc = tpm_fc_etoh_75, Zsup_delta = Zsup_delta_etoh_75)
+
+#now rbind all of these
+df_combineStress_cum <- rbind(df_azide_08_delta, df_etoh_75_delta) %>%
+  rbind(.,df_temp_42_delta)
+
+#compare delta Zsup's
+df_combineStress_wide <- df_combineStress_cum %>% pivot_wider(data = ., names_from = c(Treatment), values_from = c(tpm_fc,Zsup_delta))
+#get top X transcripts induced each stress (X set by variable num_most_induced_genes at top)
+df_topInduced <- df_combineStress_cum %>% arrange(desc(tpm_fc)) %>%
+  group_by(Treatment) %>%
+  slice(1:num_most_induced_genes)
+etoh_topInduced <- df_topInduced %>% filter(Treatment %in% c('Ethanol_75')) %>% ungroup() %>% select(ORF)
+temp_topInduced <- df_topInduced %>% filter(Treatment %in% c('Temp_42C')) %>% ungroup() %>% select(ORF)
+azide_topInduced <- df_topInduced %>% filter(Treatment %in% c('Azide_08')) %>% ungroup() %>% select(ORF)
+etoh_topInduced <- etoh_topInduced$ORF
+temp_topInduced <- temp_topInduced$ORF
+azide_topInduced <- azide_topInduced$ORF
+df_combineStress_wide <- df_combineStress_wide %>%
+  mutate(temp_induced = NA,
+         etoh_induced = NA,
+         azide_induced = NA,
+         inducedCategory = NA)
+
+df_combineStress_wide$temp_induced[which(df_combineStress_wide$ORF %in% temp_topInduced)] <- 'induced'
+df_combineStress_wide$temp_induced[which(!(df_combineStress_wide$ORF %in% temp_topInduced))] <- 'other'
+df_combineStress_wide$etoh_induced[which(df_combineStress_wide$ORF %in% etoh_topInduced)] <- 'induced'
+df_combineStress_wide$etoh_induced[which(!(df_combineStress_wide$ORF %in% etoh_topInduced))] <- 'other'
+df_combineStress_wide$azide_induced[which(df_combineStress_wide$ORF %in% azide_topInduced)] <- 'induced'
+df_combineStress_wide$azide_induced[which(!(df_combineStress_wide$ORF %in% azide_topInduced))] <- 'other'
+
+#now just focus on heat and ethanol
+df_heatEtOHStress_wide <- df_combineStress_wide
+#redo labels for just heat and etoh (rather than all 3) -> need to use wide to do
+#now do overall induced category
+df_heatEtOHStress_wide$inducedCategory[which(df_heatEtOHStress_wide$temp_induced %in% c('induced') &
+                                              df_heatEtOHStress_wide$etoh_induced %in% c('induced'))] <- 'temp,etoh'
+df_heatEtOHStress_wide$inducedCategory[which(df_heatEtOHStress_wide$temp_induced %in% c('induced') &
+                                              df_heatEtOHStress_wide$etoh_induced %in% c('other'))] <- 'temp'
+df_heatEtOHStress_wide$inducedCategory[which(df_heatEtOHStress_wide$temp_induced %in% c('other') &
+                                              df_heatEtOHStress_wide$etoh_induced %in% c('induced'))] <- 'etoh'
+df_heatEtOHStress_wide$inducedCategory[which(df_heatEtOHStress_wide$temp_induced %in% c('other') &
+                                              df_heatEtOHStress_wide$etoh_induced %in% c('other'))] <- 'other'
+
+#make long:
+df_heatEtOHStress_long <- df_heatEtOHStress_wide %>%
+  select(ORF,Zsup_delta_Azide_08,Zsup_delta_Ethanol_75,Zsup_delta_Temp_42C,inducedCategory) %>%
+  pivot_longer(., cols = c("Zsup_delta_Azide_08","Zsup_delta_Ethanol_75","Zsup_delta_Temp_42C"), names_to = "Stress", values_to = "Zsup_delta")
+
+df_heatEtOHStress_long$Stress[which(df_heatEtOHStress_long$Stress == "Zsup_delta_Azide_08")] <- "0.8% Azide"
+df_heatEtOHStress_long$Stress[which(df_heatEtOHStress_long$Stress == "Zsup_delta_Temp_42C")] <- "42°C"
+df_heatEtOHStress_long$Stress[which(df_heatEtOHStress_long$Stress == "Zsup_delta_Ethanol_75")] <- "7.5% Ethanol"
+df_heatEtOHStress_long$Stress <- factor(df_heatEtOHStress_long$Stress, levels = c("42°C","7.5% Ethanol","0.8% Azide"))
+
+#factoring
+df_heatEtOHStress_long$inducedCategory <- factor(df_heatEtOHStress_long$inducedCategory,
+                                                    levels = c("other", "temp", "etoh", "azide",
+                                                               "temp,etoh", "temp,azide", "etoh,azide", "temp,etoh,azide"))
+
+#column plot with sd
+#bar graph version where bar graph doesn't start at 0, involves arbitrarily resetting the 0 and then relabeling axes
+p_stressSpecificEscape_heatEtOH <- ggplot(data = df_heatEtOHStress_long %>% filter(Stress %in% c('42°C','7.5% Ethanol')),
+       aes(y = Zsup_delta + 4, x = inducedCategory, fill = inducedCategory)) +
+  geom_jitter(shape=16,height = 0, alpha = 0.3) +
+  geom_hline(yintercept = 4, linetype = 'dashed') +
+  stat_summary(fun.data = mean_se, color = 'black',
+               geom = "bar",
+               alpha = .8) +
+  stat_summary(fun.y = mean,
+               fun.ymin = function(x) mean(x) - sd(x),
+               fun.ymax = function(x) mean(x) + sd(x),
+               geom = "linerange",
+               alpha = .8) +
+  scale_x_discrete(name = 'Induction Category',
+                   labels = c('other' = 'Neither',
+                              'temp' = 'Temp',
+                              'etoh' = 'Ethanol',
+                              'azide' = 'Azide',
+                              'temp,etoh' = 'Both',
+                              'temp,azide' = 'Temp Azide',
+                              'etoh,azide' = 'Ethanol Azide',
+                              'temp,etoh,azide' = 'Temp Ethanol Azide')) +
+  scale_y_continuous(name = '∆Zsup (stress)', limits = c(0,8),
+                     labels=seq(0,8,2) - 4, expand = c(0,0)) +
+  scale_fill_manual(values = c('grey','orange','#A155B9','purple')) +
+  facet_grid(cols = vars(Stress)) +
+  theme(legend.position = 'none')
+p_stressSpecificEscape_heatEtOH
+
+p_stressSpecificEscape_heatEtOH2 <- ggplot(data = df_heatEtOHStress_long %>% filter(Stress %in% c('42°C','7.5% Ethanol')),
+       aes(y = Zsup_delta, x = inducedCategory, fill = inducedCategory)) +
+  geom_jitter(shape=16, height = 0, alpha = 0.03) +
+  geom_hline(yintercept = 0, linetype = 'dashed') +
+  stat_summary(fun.data = mean_se, color = 'black',
+               geom = "bar",
+               alpha = .8) +
+  stat_summary(fun.y = mean,
+               fun.ymin = function(x) mean(x) - sd(x),
+               fun.ymax = function(x) mean(x) + sd(x),
+               geom = "linerange",
+               alpha = .8) +
+  scale_x_discrete(name = 'Induction Category',
+                   labels = c('other' = 'Neither',
+                              'temp' = 'Temp',
+                              'etoh' = 'Ethanol',
+                              'azide' = 'Azide',
+                              'temp,etoh' = 'Both',
+                              'temp,azide' = 'Temp Azide',
+                              'etoh,azide' = 'Ethanol Azide',
+                              'temp,etoh,azide' = 'Temp Ethanol Azide')) +
+  scale_y_continuous(name = '∆Zsup (stress)',
+                     limits = c(-4,4)) +
+  scale_fill_manual(values = c('grey','orange','#A155B9','purple')) +
+  facet_grid(cols = vars(Stress)) +
+  theme(legend.position = 'none')
+p_stressSpecificEscape_heatEtOH2
+
+ggsave(file.path(github_dir,"figures","Figure3/stressSpecificEscape_heatEtoh.pdf"),
+       p_stressSpecificEscape_heatEtOH2,
+       width=150,height=100,units="mm",bg="transparent", device = cairo_pdf)
+```
 
 
 # Figure 4
@@ -1432,13 +1643,39 @@ df_sum <- df %>%
                                 if_else(str_detect(Group,"Old"),"Old",
                                         "native"))) %>% 
   mutate(Reporter_age = factor(Reporter_age, levels = c("Old", "New"))) %>% mutate(Probe =factor(Probe, levels = c("PMU1", "HSP26", "YONL", "BEM2", "PGK1")))
-
+df_stats_SPFC_native <- df %>%
+  filter(Skip == FALSE) %>% select(-Skip) %>%
+  ungroup %>%
+  pivot_longer(cols = c(SP.FC,Occ_odds,SP,Occ_odds.FC,Occupancy_corr),
+               names_to = "key", values_to = "value") %>%
+  filter(key == "SP.FC") %>%
+  filter(Probe %in% c("HSP26","PMU1")) %>%
+  group_by(Temperature,key) %>%
+  nest %>%
+  mutate(t_test = map(data, function(df){
+    t.test(df$value ~ df$Probe, 
+           alternative = "two.sided"
+    ) %>% broom::tidy()
+  })) %>%
+  select(-data) %>%
+  unnest(t_test) %>%
+  select(Temperature, key, p.value) %>%
+  mutate(p.format = if_else(p.value < 0.01, formatC(p.value, format = "e", digits = 1),
+                            format(p.value, digits = 2)))
+p_native_SPFC_stats <- df_stats_SPFC_native %>%
+  filter(Temperature != "30C") %>%
+  mutate(xmin = case_when(Temperature == "42C" ~ 1.75,
+                          Temperature == "46C" ~ 2.75),
+         xmax = case_when(Temperature == "42C" ~ 2.25,
+                          Temperature == "46C" ~ 3.25),
+         y_position = case_when(Temperature == "42C" ~ (-0.75),
+                          Temperature == "46C" ~ (-2))
+  )
 dodge_wid <- 0.9
 SP.FC.breaks <- c(-2,0)
 SP.FC.labels <- c(expression(10^{-2}),
                   expression(10^{0}))
 SP.FC.ylims <- c(-2.75,0.4)
-
 
 p_native_SPFC <- ggplot(df %>% filter(Probe!="YONL",Probe%in%c("HSP26","PMU1")),
                    aes(x=Temperature,y=log10(SP.FC), color = Probe))+
@@ -1461,7 +1698,17 @@ p_native_SPFC <- ggplot(df %>% filter(Probe!="YONL",Probe%in%c("HSP26","PMU1")),
   scale_x_discrete(labels=c("30C"="30°C",
                             "42C"="42°C",
                             "46C"="46°C"))+
-  scale_y_continuous(breaks=SP.FC.breaks,labels=SP.FC.labels)
+  scale_y_continuous(breaks=SP.FC.breaks,labels=SP.FC.labels)  #+
+  # geom_signif(
+  #   data = p_native_SPFC_stats,
+  #   aes(xmin = xmin, xmax = xmax, y_position = y_position, annotations = p.format),
+  #   textsize = 6*0.35,
+  #   size = 0.5,
+  #   color = "black",
+  #   tip_length = (-0.02),
+  #   vjust = 2,
+  #   manual = TRUE
+  # )
 
 p_native_SPFC
 
@@ -1518,6 +1765,34 @@ ggsave(file.path(github_dir,"figures","Figure4/native_SPFC.pdf"),
        egg::set_panel_size(p=p_native_SPFC,width=unit(30,"mm"),height=unit(30,"mm")),
        width=100,height=100,units="mm",bg="transparent")
 ```
+## reporter stats
+```{r}
+df <- df_reporter_pSup %>%
+  left_join(df_occ,by=c("Reporter_age","Biorep","Temperature","Probe","UTR5","Experiment_group")) %>%
+  mutate(Group=case_when(Probe!="YONL"~"native",
+                         UTR5=="PMU1"&Reporter_age=="New"~"PMU1_New",
+                         UTR5=="PMU1"&Reporter_age=="Old"~"PMU1_Old",
+                         UTR5=="HSP26"&Reporter_age=="New"~"HSP26_New",
+                         UTR5=="HSP26"&Reporter_age=="Old"~"HSP26_Old")) %>%
+  mutate(Skip=if_else(Probe=="PMU1"&UTR5=="PMU1",TRUE,FALSE)) %>%
+  filter(Skip!=TRUE) %>%
+  group_by(Group,Probe,Experiment_group) %>%
+  mutate(SP.FC = SP/exp(mean(log(SP[Temperature=="30C"]),na.rm=T)),
+         Occ_odds = Occupancy_corr/(1-Occupancy_corr),
+         Occ_odds.FC = Occ_odds/exp(mean(log(Occ_odds[Temperature=="30C"]),na.rm=T)))  %>% 
+  mutate(Reporter_age = factor(Reporter_age, levels = c("Old", "New"))) %>% mutate(Probe =factor(Probe, levels = c("PMU1", "HSP26", "YONL", "BEM2", "PGK1")))
+
+# anova
+df_YONL <- df %>%
+  filter(Probe == "YONL", Temperature != "30C")
+full_model_SPFC <- aov(SP.FC ~ Temperature * Reporter_age * UTR5, data = df_YONL)
+summary(full_model_SPFC)
+full_model_Occ <- aov(Occ_odds ~ Reporter_age * UTR5,
+                      data = df_YONL %>% filter(Temperature == "42C"))
+summary(full_model_Occ)
+
+```
+
 Figure 4 reporter translation figures
 ```{r}
 
@@ -2484,97 +2759,97 @@ ggsave("../figures/Figure5/TPM_TE_RelSed_right.pdf",egg::set_panel_size(p=p_RelS
 
 ## hairpins
 ```{r}
-df_hairpins <- df_Zsup_mean %>% filter(Treatment_group=="hairpinReporters") %>%
-  group_by(ORF,gene,Temperature,LengthTxEst) %>%
-  summarise(SP.mean = exp(mean(log(SP.mean))),
-            pSup.mean = mean(pSup.mean),
-            TPM.mean = exp(mean(log(Total.TPM.mean))),
-            RelSed.mean = mean(RelSed.mean),
-            Zsup.mean = mean(Zsup.mean))
-
-df_uorf_rna <- df_Zsup_mean %>% filter(Strain%in%c("yHG026","yHG027","yHG010")) %>%
-  filter(ORF%in%c("strong_Clover","mCherry")) %>%
-  mutate(Reporter=case_when(ORF=="strong_Clover"~"Clover",
-                            ORF=="mCherry"~"mCherry")) %>%
-  select(Strain,Reporter,Total.TPM.mean)
-df_uorf_TE <- df_uorfs %>%  filter(Strain%in%c("yHG026","yHG027","yHG010")) %>%
-  pivot_longer(cols=c("mCherry","Clover"),names_to="Reporter",values_to="Protein") %>%
-  group_by(Strain,Reporter) %>%
-  summarise(Protein.mean = mean(Protein), #df_uorfs is already calculating mean
-            Protein.se = sd(Protein)/sqrt(length(Protein))) %>%
-  left_join(df_uorf_rna,by=c("Strain","Reporter")) %>%
-  mutate(TE=Protein.mean/Total.TPM.mean) %>%
-  ungroup %>%
-  mutate(TE_norm = TE/TE[Strain=="yHG010"])
-df_reporter_TE <- df_hairpin_reporters %>%
-  ungroup %>%
-  pivot_longer(cols=c("mCherry","Clover"),names_to="Reporter",values_to="Protein") %>%
-  group_by(Strain,Reporter) %>%
-  summarise(Protein.mean = mean(Protein), #df_uorfs is already calculating mean
-            Protein.se = sd(Protein)/sqrt(length(Protein))) %>%
-  left_join()
-  mutate(TE_norm = TE/TE[Strain=="yHG010"]) %>%
-  mutate(Experiment="hairpins") %>%
-  select(Strain,TE_norm,Experiment,mfe) %>%
-  bind_rows(df_uorf_TE %>% filter(Reporter=="Clover") %>% select(Strain,TE_norm) %>%
-              mutate(Experiment="uORFs"))
-df_dist <- df_Zsup_mean %>%
-  left_join(df_samples_byLysate %>% select(Treatment_group,Treatment,Temperature,Time) %>% unique,by=c("Treatment","Treatment_group","Temperature")) %>%
-  filter(Strain%in%df_reporter_TE$Strain,Treated==FALSE,Temperature=="30C") %>%
-  group_by(ORF) %>%
-  summarise(SP.mean = exp(mean(log(SP.mean)))) %>%
-  mutate(pSup.mean = SP.mean/(1+SP.mean)) %>%
-  left_join(gene_labels,by="ORF") %>% filter(classification=="Verified")
-df <- df_Zsup_mean %>%
-  left_join(df_samples_byLysate %>% select(Treatment_group,Treatment,Temperature,Time) %>% unique,by=c("Treatment","Treatment_group","Temperature")) %>%
-  filter(Strain%in%df_reporter_TE$Strain,Treated==FALSE,Temperature=="30C") %>%
-  filter(ORF=="strong_Clover") %>%
-  select(ORF,Strain,Treatment_group,Treatment,Treated,Temperature,Total.TPM.mean,pSup.mean,SP.mean,Zsup.mean) %>%
-  group_by(ORF,Strain) %>%
-  summarise(Total.TPM.mean=exp(mean(log(Total.TPM.mean))),
-            pSup.mean = mean(pSup.mean),
-            pSup.se = sd(pSup.mean)/sqrt(length(pSup.mean))) %>%
-  left_join(df_reporter_TE,by="Strain") %>%
-  mutate(Strain=factor(Strain,levels=c("yHG010","yHG005","yHG006","yHG007","yHG008","yHG027","yHG026"))) %>%
-  arrange(Strain)
-
-strain_tibble <- tribble(~"Strain",~"Desc",~"color",~"shape",
-                         "yHG010","unstructured","black",1,
-                         "yHG005","weakest",RColorBrewer::brewer.pal(10,"Purples")[4],16,
-                         "yHG006","weak",RColorBrewer::brewer.pal(10,"Purples")[5],16,
-                         "yHG007","medium",RColorBrewer::brewer.pal(10,"Purples")[7],16,
-                         "yHG008","strong",RColorBrewer::brewer.pal(12,"Purples")[9],16,
-                         "yHG026","uORF",RColorBrewer::brewer.pal(8,"Dark2")[4],15,
-                        #"yHG027","uORF_control",RColorBrewer::brewer.pal(8,"Dark2")[4],0)
-                        "yHG027","uORF_control","black",0)
-strain_colors <- setNames(strain_tibble$color,strain_tibble$Strain)
-strain_shapes <- setNames(strain_tibble$shape,strain_tibble$Strain)
-p_reps <- ggplot(df %>%arrange(desc(TE_norm)),
-       aes(x=TE_norm,y=pSup.mean))+
-  geom_errorbar(aes(x=TE_norm,ymin=pSup.mean-pSup.se,ymax=pSup.mean+pSup.se),width=0.5,size=0.5)+
-  ggrastr::rasterize(dpi = 600, geom_point(aes(color=Strain,shape=Strain),size=3.1)) +
-  scale_y_continuous(breaks=c(0.5,0.75,1.0))+
-  scale_color_manual(values=strain_colors)+
-  scale_shape_manual(values=strain_shapes)+
-  scale_x_log10nice()+
-  coord_cartesian(ylim=c(0.5,1),xlim=c(0.001,1.6))+
-  theme(legend.position="none")+
-  labs(x="TE (norm. to unstructured)",y="pSup")
-
-ylims <- ggplot_build(p_reps)$layout$panel_params[[1]]$y.range
-
-p_dens <- ggplot(df_dist,aes(x=pSup.mean))+
-  geom_density(fill = "grey80")+
-  theme_void()+
-  scale_x_continuous(limits = c(ylims[1]-1, ylims[2]+1))+
-  coord_flip(xlim=c(ylims[1],ylims[2]))
-p_reps + p_dens+ plot_layout(widths = c(2, 1))
-ggsave(file.path(github_dir,"figures/Figure5/TE_hairpins.pdf"),
-       egg::set_panel_size(p=p_reps+labs(x="",y=""),width=unit(35,"mm"),height=unit(35,"mm")),
-       width=75,height=75,units="mm",bg="transparent")
-ggsave(file.path(github_dir,"figures/Figure5/TE_dens_hairpins.pdf"),
-       egg::set_panel_size(p=p_dens,width=unit(10,"mm"),height=unit(35,"mm")),
-       width=75,height=75,units="mm",bg="transparent")
+# df_hairpins <- df_Zsup_mean %>% filter(Treatment_group=="hairpinReporters") %>%
+#   group_by(ORF,gene,Temperature,LengthTxEst) %>%
+#   summarise(SP.mean = exp(mean(log(SP.mean))),
+#             pSup.mean = mean(pSup.mean),
+#             TPM.mean = exp(mean(log(Total.TPM.mean))),
+#             RelSed.mean = mean(RelSed.mean),
+#             Zsup.mean = mean(Zsup.mean))
+# 
+# df_uorf_rna <- df_Zsup_mean %>% filter(Strain%in%c("yHG026","yHG027","yHG010")) %>%
+#   filter(ORF%in%c("strong_Clover","mCherry")) %>%
+#   mutate(Reporter=case_when(ORF=="strong_Clover"~"Clover",
+#                             ORF=="mCherry"~"mCherry")) %>%
+#   select(Strain,Reporter,Total.TPM.mean)
+# df_uorf_TE <- df_uorfs %>%  filter(Strain%in%c("yHG026","yHG027","yHG010")) %>%
+#   pivot_longer(cols=c("mCherry","Clover"),names_to="Reporter",values_to="Protein") %>%
+#   group_by(Strain,Reporter) %>%
+#   summarise(Protein.mean = mean(Protein), #df_uorfs is already calculating mean
+#             Protein.se = sd(Protein)/sqrt(length(Protein))) %>%
+#   left_join(df_uorf_rna,by=c("Strain","Reporter")) %>%
+#   mutate(TE=Protein.mean/Total.TPM.mean) %>%
+#   ungroup %>%
+#   mutate(TE_norm = TE/TE[Strain=="yHG010"])
+# df_reporter_TE <- df_hairpin_reporters %>%
+#   ungroup %>%
+#   pivot_longer(cols=c("mCherry","Clover"),names_to="Reporter",values_to="Protein") %>%
+#   group_by(Strain,Reporter) %>%
+#   summarise(Protein.mean = mean(Protein), #df_uorfs is already calculating mean
+#             Protein.se = sd(Protein)/sqrt(length(Protein))) #%>%
+#   left_join() %>%
+#   mutate(TE_norm = TE/TE[Strain=="yHG010"]) %>%
+#   mutate(Experiment="hairpins") %>%
+#   select(Strain,TE_norm,Experiment,mfe) %>%
+#   bind_rows(df_uorf_TE %>% filter(Reporter=="Clover") %>% select(Strain,TE_norm) %>%
+#               mutate(Experiment="uORFs"))
+# df_dist <- df_Zsup_mean %>%
+#   left_join(df_samples_byLysate %>% select(Treatment_group,Treatment,Temperature,Time) %>% unique,by=c("Treatment","Treatment_group","Temperature")) %>%
+#   filter(Strain%in%df_reporter_TE$Strain,Treated==FALSE,Temperature=="30C") %>%
+#   group_by(ORF) %>%
+#   summarise(SP.mean = exp(mean(log(SP.mean)))) %>%
+#   mutate(pSup.mean = SP.mean/(1+SP.mean)) %>%
+#   left_join(gene_labels,by="ORF") %>% filter(classification=="Verified")
+# df <- df_Zsup_mean %>%
+#   left_join(df_samples_byLysate %>% select(Treatment_group,Treatment,Temperature,Time) %>% unique,by=c("Treatment","Treatment_group","Temperature")) %>%
+#   filter(Strain%in%df_reporter_TE$Strain,Treated==FALSE,Temperature=="30C") %>%
+#   filter(ORF=="strong_Clover") %>%
+#   select(ORF,Strain,Treatment_group,Treatment,Treated,Temperature,Total.TPM.mean,pSup.mean,SP.mean,Zsup.mean) %>%
+#   group_by(ORF,Strain) %>%
+#   summarise(Total.TPM.mean=exp(mean(log(Total.TPM.mean))),
+#             pSup.mean = mean(pSup.mean),
+#             pSup.se = sd(pSup.mean)/sqrt(length(pSup.mean))) %>%
+#   left_join(df_reporter_TE,by="Strain") %>%
+#   mutate(Strain=factor(Strain,levels=c("yHG010","yHG005","yHG006","yHG007","yHG008","yHG027","yHG026"))) %>%
+#   arrange(Strain)
+# 
+# strain_tibble <- tribble(~"Strain",~"Desc",~"color",~"shape",
+#                          "yHG010","unstructured","black",1,
+#                          "yHG005","weakest",RColorBrewer::brewer.pal(10,"Purples")[4],16,
+#                          "yHG006","weak",RColorBrewer::brewer.pal(10,"Purples")[5],16,
+#                          "yHG007","medium",RColorBrewer::brewer.pal(10,"Purples")[7],16,
+#                          "yHG008","strong",RColorBrewer::brewer.pal(12,"Purples")[9],16,
+#                          "yHG026","uORF",RColorBrewer::brewer.pal(8,"Dark2")[4],15,
+#                         #"yHG027","uORF_control",RColorBrewer::brewer.pal(8,"Dark2")[4],0)
+#                         "yHG027","uORF_control","black",0)
+# strain_colors <- setNames(strain_tibble$color,strain_tibble$Strain)
+# strain_shapes <- setNames(strain_tibble$shape,strain_tibble$Strain)
+# p_reps <- ggplot(df %>%arrange(desc(TE_norm)),
+#        aes(x=TE_norm,y=pSup.mean))+
+#   geom_errorbar(aes(x=TE_norm,ymin=pSup.mean-pSup.se,ymax=pSup.mean+pSup.se),width=0.5,size=0.5)+
+#   ggrastr::rasterize(dpi = 600, geom_point(aes(color=Strain,shape=Strain),size=3.1)) +
+#   scale_y_continuous(breaks=c(0.5,0.75,1.0))+
+#   scale_color_manual(values=strain_colors)+
+#   scale_shape_manual(values=strain_shapes)+
+#   scale_x_log10nice()+
+#   coord_cartesian(ylim=c(0.5,1),xlim=c(0.001,1.6))+
+#   theme(legend.position="none")+
+#   labs(x="TE (norm. to unstructured)",y="pSup")
+# 
+# ylims <- ggplot_build(p_reps)$layout$panel_params[[1]]$y.range
+# 
+# p_dens <- ggplot(df_dist,aes(x=pSup.mean))+
+#   geom_density(fill = "grey80")+
+#   theme_void()+
+#   scale_x_continuous(limits = c(ylims[1]-1, ylims[2]+1))+
+#   coord_flip(xlim=c(ylims[1],ylims[2]))
+# p_reps + p_dens+ plot_layout(widths = c(2, 1))
+# ggsave(file.path(github_dir,"figures/Figure5/TE_hairpins.pdf"),
+#        egg::set_panel_size(p=p_reps+labs(x="",y=""),width=unit(35,"mm"),height=unit(35,"mm")),
+#        width=75,height=75,units="mm",bg="transparent")
+# ggsave(file.path(github_dir,"figures/Figure5/TE_dens_hairpins.pdf"),
+#        egg::set_panel_size(p=p_dens,width=unit(10,"mm"),height=unit(35,"mm")),
+#        width=75,height=75,units="mm",bg="transparent")
 ```
 
 ## hairpins RelSed
@@ -3815,6 +4090,107 @@ ggsave("../figures/Supplemental/hairpin_30C_error.pdf",
        width=75,height=75,units="mm",bg = "transparent",dpi=600)
 ```
 
+## noise relsed hairpin replicates
+```{r}
+df <- df_Zsup_mean %>%
+  filter(Treatment_group == "hairpinReporters",
+         pSup.mean>0,SP.mean>0,!is.infinite(pSup.mean),!is.infinite(SP.mean)) %>%
+  filter(classification=="Verified") %>%
+  group_by(ORF,gene,LengthTxEst) %>%
+  summarise(pSup.mean = mean(pSup.mean),
+            SP.mean.all = exp(mean(log(SP.mean))),
+            SP.sem.all  = exp(sd(log(SP.mean))/sqrt(n())),
+            pSup.windowmean = mean(pSup.treatment.window.mean.mean),
+            odds.pSup.windowmean = odds(pSup.windowmean),
+            RelSed.mean = mean(RelSed.mean)) %>%
+  ungroup %>%
+  mutate(lo.pSup.hairpin.sd = sd(logodds(pSup.mean) - logodds(pSup.windowmean), na.rm=T))
+# not bad set.seed(1)
+set.seed(1)
+which_genes <- df_Zsup_mean %>%
+  filter(Treatment_group == "hairpinReporters",
+         pSup.mean>0,SP.mean>0,!is.infinite(pSup.mean),!is.infinite(SP.mean)) %>%
+  group_by(ORF) %>%
+  summarise(Total.TPM = exp(mean(log(Total.TPM.mean))),
+            RelSed.mean = mean(RelSed.mean)) %>%
+  left_join(gene_labels,by="ORF") %>%
+  filter(!is.na(gene),classification=="Verified",
+         LengthTxEst < 6e3,LengthTxEst > 300) %>%
+  ungroup %>%
+  mutate(RelSed_group = if_else(RelSed.mean>=0,"RelSed.up","RelSed.down")) %>%
+  mutate(length_bin = cut_interval(log(LengthTxEst),n=6)) %>%
+  group_by(length_bin,RelSed_group) %>%
+  nest %>%
+  mutate(sampled = map(data,function(df) {
+    return(tibble(sampled_genes = sample(df$gene,size=1)))
+  })) %>%
+  select(-data) %>%
+  unnest(sampled)
+
+genes_to_highlight <- which_genes$sampled_genes
+genes_to_label <- c("GCN4","HAC1")
+
+
+set_label_size = theme(
+  axis.title.x = element_text(size = 10),
+  axis.text.x = element_text(size = 10),
+  axis.title.y = element_text(size = 10),
+  axis.text.y = element_text(size = 10))
+p <- ggplot(df,
+            aes(x=LengthTxEst,y=SP.mean.all))+
+  ggrastr::rasterize(dpi = 600, geom_point(alpha=0.3,shape=16,size=0.5,color="grey60")) +
+  geom_line(aes(y=odds.pSup.windowmean),color="black",size=0.5,alpha=0.5,linetype=1,linewidth=0.5)+
+  geom_line(aes(y=(odds.pSup.windowmean-exp(lo.pSup.hairpin.sd))),color=okabe_ito_colors[4],size=1,linewidth=0.5, linetype=1)+
+  geom_line(aes(y=(odds.pSup.windowmean+exp(lo.pSup.hairpin.sd))),color=okabe_ito_colors[4],size=1, linewidth=0.5, linetype=1)+
+  scale_x_log10nice()+ scale_y_log10nice()+
+  coord_cartesian(ylim=c(0.5,40))+
+  geom_point(data=df %>% filter(gene %in% c(genes_to_highlight)),
+             size=1.5,shape=16)+
+  geom_errorbar(data=df %>% filter(gene %in% c(genes_to_highlight)),
+             aes(y=SP.mean.all,
+                 ymin=SP.mean.all-SP.sem.all,
+                 ymax=SP.mean.all+SP.sem.all),
+             width=0,linewidth=1)+
+  geom_point(data=df %>% filter(gene=="GCN4"),
+             size=1.5,shape=16,
+                  color=okabe_ito_colors[7])+
+  geom_errorbar(data=df %>% filter(gene=="GCN4"),
+             aes(y=SP.mean.all,
+                 ymin=SP.mean.all-SP.sem.all,
+                 ymax=SP.mean.all+SP.sem.all),
+             width=0,linewidth=1,
+                  color=okabe_ito_colors[7])+
+  geom_point(data=df %>% filter(gene=="HAC1"),
+             size=1.5,shape=16,
+                  color=stress.cols[["DTT"]])+
+  geom_errorbar(data=df %>% filter(gene=="HAC1"),
+             aes(y=SP.mean.all,
+                 ymin=SP.mean.all-SP.sem.all,
+                 ymax=SP.mean.all+SP.sem.all),
+             width=0,linewidth=1,
+                  color=stress.cols[["DTT"]])+
+  geom_label_repel(data=df%>%filter(gene=="HAC1"),
+                  aes(label=gene),
+                  size=0.35*8,
+                  nudge_x = -0.4, nudge_y = -0.4,
+                  linewidth=0.25,
+                  color=stress.cols[["DTT"]])+
+  geom_label_repel(data=df%>%filter(gene=="GCN4"),
+                  aes(label=gene),
+                  size=0.35*8,
+                  nudge_x = 0.4, nudge_y = 0.4,
+                  linewidth=0.25,
+                  color=okabe_ito_colors[7])+
+  set_label_size+
+  labs(x="mRNA length (nucleotides)", y="Odds in supernatant")
+p
+
+ggsave("../figures/Supplemental/hairpin_relsed_30C_error.pdf",
+        egg::set_panel_size(p=p,
+                            width=unit(50,"mm"),height=unit(50,"mm")),
+       width=75,height=75,units="mm",bg = "transparent",dpi=600)
+```
+
 ## hac1 equiv
 ```{r}
 rollup <- function(x, flds, name, ...) {
@@ -3844,24 +4220,33 @@ hac1_30C_equiv_length <- df %>%
   arrange(diff) %>% 
   slice(1) %>% pull(LengthTxEst)
 hac1_length <- gene_labels %>% filter(ORF=="YFL031W") %>% pull(LengthTxEst)
+
+segment1 <- data.frame(
+  x = hac1_length,
+  y = hac1_30C_SP,
+  xend = hac1_30C_equiv_length,
+  yend = hac1_30C_SP
+)
+
 p_SP <- ggplot(df %>% filter(!is.infinite(SP.mean),SP.mean>0),
             aes(x=LengthTxEst,y=SP.mean))+
   ggrastr::rasterize(dpi = 600, geom_point(alpha=0.2,shape=16, size= 0.3,color="grey50")) +
   geom_line(aes(y=mean.SP.mean,group=Temperature),color="black",size=0.5)+
   scale_x_log10nice()+scale_y_log10nice()+
   coord_cartesian(ylim=c(0.05,80))+
-  geom_segment(aes(x=hac1_length,y=hac1_30C_SP,xend=hac1_30C_equiv_length,yend=hac1_30C_SP),
-               linetype="dotted",color="black")+
-  geom_segment(aes(x=hac1_30C_equiv_length,y=1e-10,xend=hac1_30C_equiv_length,yend=hac1_30C_SP),
-               linetype="dotted",color="black")+
+  geom_segment(data = data.frame(x = hac1_length, y = hac1_30C_SP, xend = hac1_30C_equiv_length, yend = hac1_30C_SP),
+               aes(x=x,y=y,xend=xend,yend=yend),
+               linetype="dotted",color="black") +
+  geom_segment(data = data.frame(x = hac1_30C_equiv_length, y = 1e-10, xend = hac1_30C_equiv_length, yend = hac1_30C_SP),
+               aes(x=x,y=y,xend=xend,yend=yend),
+               linetype="dotted",color="black") +
   geom_point(data=df%>%filter(ORF=="YFL031W"),color=stress.cols[["DTT"]],size=2)+
   labs(x="",y="")+
   theme(legend.position="none")
 p_SP
 ggsave("../figures/Supplemental/HAC1_equiv_length.pdf",
        egg::set_panel_size(p=p_SP,
-                           width=unit(40,"mm"),height=unit(40,"mm")),
-       width=75,height=75,units="mm",bg = "transparent",dpi=600)
+                           width=unit(40,"mm"),height=unit(40,"mm")),units="mm",bg = "transparent")
 ```
 
 ## zsup 30 vs 42 hsf1
@@ -4699,7 +5084,7 @@ p_native_pSup
 
 
 
-ggsave("paper_figures/Supplemental/Sucrose_native_pPel.pdf",
+ggsave("../figures/Supplemental/Sucrose_native_pPel.pdf",
         egg::set_panel_size(p=p_native_pSup+labs(x="",y="")+set_label_size+
                               theme(legend.position="none",
                                     strip.text.x = element_blank()),
@@ -4717,7 +5102,7 @@ p_native_Occ <- ggplot(df_Occ %>% filter(Group=="native") %>% filter(Probe != "T
   theme(aspect.ratio =1)
 p_native_Occ
 
-ggsave("paper_figures/Supplemental/Sucrose_native_Occ.pdf",
+ggsave("../figures/Supplemental/Sucrose_native_Occ.pdf",
         egg::set_panel_size(p=p_native_Occ+labs(x="",y="")+set_label_size+
                               theme(legend.position="none",
                                     strip.text.x = element_blank()),
@@ -4742,7 +5127,7 @@ p_Rep_pSup <- ggplot(df_pSup %>% filter(Group!="native") ,
 
 p_Rep_pSup
 
-ggsave("paper_figures/Supplemental/Sucrose_rep_pPel.pdf",
+ggsave("../figures/Supplemental/Sucrose_rep_pPel.pdf",
         egg::set_panel_size(p=p_Rep_pSup+labs(x="",y="")+set_label_size+
                               theme(legend.position="none",
                                     axis.text.x = element_blank(),
@@ -4763,7 +5148,7 @@ p_Rep_Occ <- ggplot(df_Occ %>% filter(Group!="native"),
   theme(aspect.ratio =1)
 p_Rep_Occ
 
-ggsave("paper_figures/Supplemental/Sucrose_rep_Occ.pdf",
+ggsave("../figures/Supplemental/Sucrose_rep_Occ.pdf",
         egg::set_panel_size(p=p_Rep_Occ+labs(x="",y="")+set_label_size+
                               theme(legend.position="none",
                                     axis.text.x = element_blank(),
@@ -4812,7 +5197,7 @@ p_TPM_Occ <- ggplot(df,
   scale_x_log10nice()+
   scale_y_log10nice()+
   coord_cartesian(xlim=c(1,1e4),ylim=c(0.1,50))+
-  ggrastr::rasterize(dpi = 600, geom_point(alpha=0.2, size = 0.3)) +
+  ggrastr::rasterize(dpi = 600, geom_point(alpha=0.2, size = 0.3, shape = 16)) +
   geom_point(data=df %>% filter(gene%in%genes_to_label),size=2,color="red")+
   geom_text_repel(data=df,size=4.2,aes(label=gene_label),max.overlaps = 10000,min.segment.length = 0)+
   labs(x="mRNA Abundance",y="Rib. Occ.\n(odds)")
@@ -4836,8 +5221,7 @@ p_Z_box <- ggplot(df,
 p_Z_box
 p_3B_occ <- plot_grid(p_TPM_Occ,p_Z_box,align="hv",rel_widths=c(1,0.7 ))
 p_3B_occ
-ggsave("../figures/Supplemental/HAC1_GCN4_Occupancy.pdf",egg::set_panel_size(p=p_TPM_Occ+labs(x="",y=""),width=unit(30,"mm"),height=unit(30,"mm")),
-       width=50,height=50,units="mm",bg="transparent",dpi=600)
+ggsave("../figures/Supplemental/HAC1_GCN4_Occupancy.pdf",egg::set_panel_size(p=p_TPM_Occ+labs(x="",y=""),width=unit(50,"mm"),height=unit(50,"mm")),bg="transparent",dpi=600)
 ```
 
 #Figure S2A
