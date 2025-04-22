@@ -28,7 +28,8 @@ library(zoo)
 library(here)
 `%!in%` = Negate(`%in%`)
 conflicts_prefer(dplyr::filter)
-github_dir <- here()
+conflicts_prefer(dplyr::summarise)
+github_dir <- here::here()
 
 source(file.path(github_dir,"scripts_processing/utilityFunctions.R"))
 
@@ -494,8 +495,8 @@ gsed = ggplot(res, aes(x=length, y=sed.mean, fill=cat)) + theme(plot.margin=unit
   geom_text_repel(data=focal_label, aes(label=gene), colour=blackcol, fill='white', force=2) +
   #scale_colour_manual(values=list("other"=blackcol, "focal"="#ee7700cc", "control"=violetcol)) +
   scale_fill_manual(values=list("other"=blackcol, "focal"=orangecol, "control"=blackcol)) +
-  scale_x_log10nice("Transcript length (nt)") +
-  scale_y_reverse("Sedimentation score (SDs)", limits=c(7,-0.5)) + no.legend
+  scale_x_log10nice("mRNA length (nucleotides)") +
+  scale_y_reverse("Differential sedimentation (SDs)", limits=c(7,-0.5)) + no.legend
 gsed = add_marginal_x(gsed, "sed.mean", "cat", reverse=T)
 gesc = ggplot(res, aes(x=length, y=esc.mean, fill=cat)) + 
   theme(plot.margin=unit(c(1,0,1,1),'cm'), 
@@ -507,7 +508,7 @@ gesc = ggplot(res, aes(x=length, y=esc.mean, fill=cat)) +
   geom_point(data=focal_label, shape=21, stroke=0.25, size=3) +
   geom_text_repel(data=focal_label, aes(label=gene), colour=blackcol, fill="white", force=10, maxoverlaps=0) +
   scale_fill_manual(values=list("other"=blackcol, "focal"=orangecol, "control"=blackcol)) +
-  scale_x_log10nice("Transcript length (nt)") + 
+  scale_x_log10nice("mRNA length (nucleotides)") + 
   scale_y_continuous("Escape score (SDs)", limits=c(-2,4)) + no.legend
 gesc = add_marginal_x(gesc, "esc.mean", "cat") # = ggMarginal(gesc, margins="y", groupColour=T, type="density")
 gsedesc = gsed / gesc
@@ -528,140 +529,198 @@ ggsave(file.path(github_dir, "figures/Figure1/Fig1_sed_esc_hsf1.pdf"),
 
 ## Figure 1H (pSup with model comparison)
 ```{r fig_theory_psup, dependson='dependson="fig1_psup_vs_length"'}
-# logit = function(p) { log(p / (1 - p)) }
-# invlogit = function (x) { 1 / (1 + exp(-x)) }
-# 
-# fit_data = df |> filter(pSup.mean>0)
-# 
-# nls_fit_30C_noclust <- 
-#   nls(lopSup ~ logit(1 - beta_param * length^chi_param), 
-#       data = fit_data |> 
-#         filter(Temperature == '30C') |> 
-#         mutate(lopSup = logit(pSup.mean)),
-#       start = list(beta_param = 1e-5, chi_param = 1))
-# 
-# beta_fit <- coef(nls_fit_30C_noclust)["beta_param"]
-# chi_fit  <- coef(nls_fit_30C_noclust)["chi_param"]
-# 
-# #summary(nls_fit_30C_noclust)
-# 
-# nls_fit_42C <- 
-#   nls(lopSup ~ logit( (1 - beta_fit * length^chi_fit) * exp( - mu_param - nu_param * length) ), 
-#       data = fit_data |> 
-#         filter(Temperature == '42C') |> 
-#         mutate(lopSup = logit(pSup.mean)),
-#       start = list(mu_param = 1e-5, nu_param = 1e-5))
-# 
-# mu_fit_42C <- coef(nls_fit_42C)["mu_param"]
-# nu_fit_42C  <- coef(nls_fit_42C)["nu_param"]
-# 
-# #summary(nls_fit_42C)
-# 
-# 
-# nls_fit_46C <- 
-#   nls(lopSup ~ logit( (1 - beta_fit * length^chi_fit) * exp( - mu_param - nu_param * length) ), 
-#       data = fit_data |> 
-#         filter(Temperature == '46C') |> 
-#         mutate(lopSup = logit(pSup.mean)),
-#       start = list(mu_param = 1e-5, nu_param = 1e-5))
-# 
-# mu_fit_46C <- coef(nls_fit_46C)["mu_param"]
-# nu_fit_46C  <- coef(nls_fit_46C)["nu_param"]
-# 
-# #summary(nls_fit_46C)
-# 
-# 
-# nls_fitnuonly_42C <- 
-#   nls(lopSup ~ logit( (1 - beta_fit * length^chi_fit) * exp( - nu_param * length) ), 
-#       data = fit_data |> 
-#         filter(Temperature == '42C') |> 
-#         mutate(lopSup = logit(pSup.mean)),
-#       start = list(nu_param = 1e-5))
-# 
-# nuonly_fit_42C  <- coef(nls_fitnuonly_42C)["nu_param"]
-# 
-# #summary(nls_fitnuonly_42C)
-# 
-# nls_fitnuonly_46C <- 
-#   nls(lopSup ~ logit( (1 - beta_fit * length^chi_fit) * exp( - nu_param * length) ), 
-#       data = fit_data |> 
-#         filter(Temperature == '46C') |> 
-#         mutate(lopSup = logit(pSup.mean)),
-#       start = list(nu_param = 1e-5))
-# 
-# nuonly_fit_46C  <- coef(nls_fitnuonly_46C)["nu_param"]
-# 
-# #summary(nls_fitnuonly_46C)
-# 
-# # Theory
-# psup_curve = function(length, beta, chi, mu, nu, baseline=0.0) {
-#   res = sapply(length, function(L) {
-#     baseline + exp(-mu)*exp(-nu*L)*max(1-beta*L^chi,0)
-#   })
-#   res
-# }
-# 
-# s_nlsfit = 
-#   list('30C' =
-#          tibble(length=lengths, 
-#                 pSup.mean=psup_curve(length, beta = beta_fit, chi = chi_fit, mu = 0, nu = 0, baseline=0), 
-#                 Temperature='30C.line'), 
-#        '42C' = 
-#          tibble(length=lengths,                       
-#                 pSup.mean=psup_curve(length, beta = beta_fit, chi = chi_fit, mu = mu_fit_42C, nu = nu_fit_42C, baseline=0), 
-#                 Temperature='42C.line'),
-#        '46C' = 
-#          tibble(length=lengths,                       
-#                 pSup.mean=psup_curve(length, beta = beta_fit, chi = chi_fit, mu = mu_fit_46C, nu = nu_fit_46C, baseline=0), 
-#                 Temperature='46C.line') 
-#   )
-# sx_nlsfit = bind_rows(s_nlsfit)
-# 
-# s_nlsfit.nomu = 
-#     list('30C' =
-#          tibble(length=lengths, 
-#                 pSup.mean=psup_curve(length, beta = beta_fit, chi = chi_fit, mu = 0, nu = 0, baseline=0), 
-#                 Temperature='30C.line'), 
-#        '42C' = 
-#          tibble(length=lengths,                       
-#                 pSup.mean=psup_curve(length, beta = beta_fit, chi = chi_fit, mu = 0, nu = nuonly_fit_42C, baseline=0), 
-#                 Temperature='42C.line'),
-#        '46C' = 
-#          tibble(length=lengths,                       
-#                 pSup.mean=psup_curve(length, beta = beta_fit, chi = chi_fit, mu = 0, nu = nuonly_fit_46C, baseline=0), 
-#                 Temperature='46C.line') 
-#   )
-# sx_nlsfit.nomu = bind_rows(s_nlsfit.nomu)
-# 
-# ranklength = df |> filter(Temperature=='30C');
-# ranklength = ranklength |> mutate(rl=rank(length)/nrow(ranklength)) |> select(gene, length, rl)
-# lower_length = median(unlist(ranklength |> filter(rl>0.0099 & rl<0.011) |> select(length)),na.rm=T) # |(rl<0.99&rl>0.989)) |> arrange(desc(rl))
-# upper_length = median(unlist(ranklength |> filter(rl>0.989 & rl<0.991) |> select(length)),na.rm=T) # |(rl<0.99&rl>0.989)) |> arrange(desc(rl))
-# p_fit_vs_psup = ggplot(df, aes(x=length, y=pSup.mean, group=Temperature, colour=Temperature)) + 
-#   ggrastr::rasterize(geom_point(shape=shap, alpha=0.2*alph),dpi=600) + 
-#   #geom_point(shape=shap, alpha=0.2*alph) + 
-#   geom_vline(xintercept = upper_length, alpha=0.1) + geom_vline(xintercept = lower_length, alpha=0.1) +
-#   geom_line( aes(y=pSup.treatment.window.mean.mean, group=Temperature), linewidth=1, linetype=1, colour=blackcol, alpha=0.1) +
-#   geom_line(data=dat_hs |> filter(length>=lower_length, length<=upper_length), aes(y=pSup.treatment.window.mean.mean, group=Temperature), linewidth=1, linetype=1, colour=blackcol, alpha=0.5) +
-#   geom_line(data=sx_nlsfit, linewidth=1.3, lty=1, alpha=0.8) +
-#   geom_line(data=sx_nlsfit.nomu, linewidth=1.3, linetype='11', alpha=0.8) +
-#   scale_colour_manual(values=theory_colors) + no.legend +
-#   #geom_hline(yintercept=(mark_bounds), alpha=mark_alpha, colour=blackcol, linetype=2) +
-#   coord_cartesian(ylim=c(0,1)) +
-#   scale_y_continuous("Proportion in supernatant (pSup)", breaks=c(0,0.5,1)) +
-#   scale_x_log10nice("mRNA length (nucleotides)") + larger_labels
-# 
-# p_fit_vs_psup
-# 
-# fig.asp = 7/7
-# fig.width = 97
-# fig.vs.panel.ratio = 1/0.7
-# 
-# ggsave(file.path(github_dir, "figures/Figure1/Fig1_psup_vs_model.pdf"), 
-#        egg::set_panel_size(p_fit_vs_psup, width = unit(fig.width, "mm"), height = unit(fig.width*fig.asp, "mm")),
-#        width = fig.width*fig.vs.panel.ratio, 
-#        height = fig.width*fig.asp*fig.vs.panel.ratio, 
-#        units = "mm", bg = "transparent", create.dir=TRUE)
+logit = function(p) { log(p / (1 - p)) }
+invlogit = function (x) { 1 / (1 + exp(-x)) }
+
+fit_data = df |> filter(pSup.mean>0)
+
+nls_fit_30C_noclust <-
+  nls(lopSup ~ logit(1 - beta_param * length^chi_param),
+      data = fit_data |>
+        filter(Temperature == '30C') |>
+        mutate(lopSup = logit(pSup.mean)),
+      start = list(beta_param = 1e-5, chi_param = 1))
+
+beta_fit <- coef(nls_fit_30C_noclust)["beta_param"]
+chi_fit  <- coef(nls_fit_30C_noclust)["chi_param"]
+
+#summary(nls_fit_30C_noclust)
+
+nls_fit_42C <-
+  nls(lopSup ~ logit( (1 - beta_fit * length^chi_fit) * exp( - mu_param - nu_param * length) ),
+      data = fit_data |>
+        filter(Temperature == '42C') |>
+        mutate(lopSup = logit(pSup.mean)),
+      start = list(mu_param = 1e-5, nu_param = 1e-5))
+
+mu_fit_42C <- coef(nls_fit_42C)["mu_param"]
+nu_fit_42C  <- coef(nls_fit_42C)["nu_param"]
+
+#summary(nls_fit_42C)
+
+
+nls_fit_46C <-
+  nls(lopSup ~ logit( (1 - beta_fit * length^chi_fit) * exp( - mu_param - nu_param * length) ),
+      data = fit_data |>
+        filter(Temperature == '46C') |>
+        mutate(lopSup = logit(pSup.mean)),
+      start = list(mu_param = 1e-5, nu_param = 1e-5))
+
+mu_fit_46C <- coef(nls_fit_46C)["mu_param"]
+nu_fit_46C  <- coef(nls_fit_46C)["nu_param"]
+
+#summary(nls_fit_46C)
+
+
+nls_fitnuonly_42C <-
+  nls(lopSup ~ logit( (1 - beta_fit * length^chi_fit) * exp( - nu_param * length) ),
+      data = fit_data |>
+        filter(Temperature == '42C') |>
+        mutate(lopSup = logit(pSup.mean)),
+      start = list(nu_param = 1e-5))
+
+nuonly_fit_42C  <- coef(nls_fitnuonly_42C)["nu_param"]
+
+#summary(nls_fitnuonly_42C)
+
+nls_fitnuonly_46C <-
+  nls(lopSup ~ logit( (1 - beta_fit * length^chi_fit) * exp( - nu_param * length) ),
+      data = fit_data |>
+        filter(Temperature == '46C') |>
+        mutate(lopSup = logit(pSup.mean)),
+      start = list(nu_param = 1e-5))
+
+nuonly_fit_46C  <- coef(nls_fitnuonly_46C)["nu_param"]
+
+#summary(nls_fitnuonly_46C)
+
+# Theory
+psup_curve = function(length, beta, chi, mu, nu, baseline=0.0) {
+  res = sapply(length, function(L) {
+    baseline + exp(-mu)*exp(-nu*L)*max(1-beta*L^chi,0)
+  })
+  res
+}
+
+s_nlsfit =
+  list('30C' =
+         tibble(length=lengths,
+                pSup.mean=psup_curve(length, beta = beta_fit, chi = chi_fit, mu = 0, nu = 0, baseline=0),
+                Temperature='30C.line'),
+       '42C' =
+         tibble(length=lengths,
+                pSup.mean=psup_curve(length, beta = beta_fit, chi = chi_fit, mu = mu_fit_42C, nu = nu_fit_42C, baseline=0),
+                Temperature='42C.line'),
+       '46C' =
+         tibble(length=lengths,
+                pSup.mean=psup_curve(length, beta = beta_fit, chi = chi_fit, mu = mu_fit_46C, nu = nu_fit_46C, baseline=0),
+                Temperature='46C.line')
+  )
+sx_nlsfit = bind_rows(s_nlsfit)
+
+s_nlsfit.nomu =
+    list('30C' =
+         tibble(length=lengths,
+                pSup.mean=psup_curve(length, beta = beta_fit, chi = chi_fit, mu = 0, nu = 0, baseline=0),
+                Temperature='30C.line'),
+       '42C' =
+         tibble(length=lengths,
+                pSup.mean=psup_curve(length, beta = beta_fit, chi = chi_fit, mu = 0, nu = nuonly_fit_42C, baseline=0),
+                Temperature='42C.line'),
+       '46C' =
+         tibble(length=lengths,
+                pSup.mean=psup_curve(length, beta = beta_fit, chi = chi_fit, mu = 0, nu = nuonly_fit_46C, baseline=0),
+                Temperature='46C.line')
+  )
+sx_nlsfit.nomu = bind_rows(s_nlsfit.nomu)
+
+ranklength = df |> filter(Temperature=='30C');
+ranklength = ranklength |> mutate(rl=rank(length)/nrow(ranklength)) |> select(gene, length, rl)
+lower_length = median(unlist(ranklength |> filter(rl>0.0099 & rl<0.011) |> select(length)),na.rm=T) # |(rl<0.99&rl>0.989)) |> arrange(desc(rl))
+upper_length = median(unlist(ranklength |> filter(rl>0.989 & rl<0.991) |> select(length)),na.rm=T) # |(rl<0.99&rl>0.989)) |> arrange(desc(rl))
+p_fit_vs_psup = ggplot(df, aes(x=length, y=pSup.mean, group=Temperature, colour=Temperature)) +
+  ggrastr::rasterize(geom_point(shape=shap, alpha=0.2*alph),dpi=600) +
+  #geom_point(shape=shap, alpha=0.2*alph) +
+  geom_vline(xintercept = upper_length, alpha=0.1) + geom_vline(xintercept = lower_length, alpha=0.1) +
+  geom_line( aes(y=pSup.treatment.window.mean.mean, group=Temperature), linewidth=1, linetype=1, colour=blackcol, alpha=0.1) +
+  geom_line(data=dat_hs |> filter(length>=lower_length, length<=upper_length), aes(y=pSup.treatment.window.mean.mean, group=Temperature), linewidth=1, linetype=1, colour=blackcol, alpha=0.5) +
+  geom_line(data=sx_nlsfit, linewidth=1.3, lty=1, alpha=0.8) +
+  geom_line(data=sx_nlsfit.nomu, linewidth=1.3, linetype='11', alpha=0.8) +
+  scale_colour_manual(values=theory_colors) + no.legend +
+  #geom_hline(yintercept=(mark_bounds), alpha=mark_alpha, colour=blackcol, linetype=2) +
+  coord_cartesian(ylim=c(0,1)) +
+  scale_y_continuous("Proportion in supernatant (pSup)", breaks=c(0,0.5,1)) +
+  scale_x_log10nice("mRNA length (nucleotides)") + larger_labels
+
+p_fit_vs_psup
+
+fig.asp = 7/7
+fig.width = 97
+fig.vs.panel.ratio = 1/0.7
+
+ggsave(file.path(github_dir, "figures/Figure1/Fig1_psup_vs_model.pdf"),
+       egg::set_panel_size(p_fit_vs_psup, width = unit(fig.width, "mm"), height = unit(fig.width*fig.asp, "mm")),
+       width = fig.width*fig.vs.panel.ratio,
+       height = fig.width*fig.asp*fig.vs.panel.ratio,
+       units = "mm", bg = "transparent", create.dir=TRUE)
+```
+
+# Figure S1
+
+```{r khong_comparison, dependson="load_data", fig.asp=0.5, fig.width=8}
+# Khong et al. data (Parker lab)
+kho = read_tsv("../src/khong-parker-2017-yeast-sg-transcriptome-tableS2.txt", comment='#')
+
+#psw_hs = dat_hs |> select(ORF, gene, label, length, Temperature, pSup.mean, esc.mean, sed.mean) |> pivot_wider(id_cols=c(ORF,gene,label,length), values_from=c(pSup.mean, esc.mean, sed.mean), names_from=Temperature) #, names_prefix = c("pSup.")
+dat_azide = df_Zsup_mean |> filter(Treatment_group=='azide3') |> mutate(length=LengthTxEst)
+pskho = dat_azide |> filter(Treatment=='Azide_0.8%_pH6.8') |> select(ORF, length, pSup.mean, sed.mean, esc.mean) |> left_join(kho |> select(-gene, -length), by='ORF') # |> mutate(deltaSed=zSup.azide-zSup.mock)
+pskho_mock = dat_azide |> filter(Treatment=='mock') |> select(ORF, length, pSup.mean, sed.mean, esc.mean) |> left_join(kho |> select(-gene, -length), by='ORF') 
+#pskho_hs = psw |> left_join(kho |> select(-gene, -length), by='ORF')
+
+#pskho = psw_hs |> left_join(kho |> select(-gene), by='ORF')
+#pskho_sub = na.omit(pskho |> select(ORF, gene, pSup.46C, foldchange.sg.total, sg.classification) |> filter(pSup.46C>0 & #foldchange.sg.total>0))
+#ct = cor.test(logodds(pskho_sub$pSup.46C), log(pskho_sub$foldchange.sg.total), method='s')
+
+# gkhong_hs = ggplot(pskho_hs, aes(x=foldchange.sg.total, y=sed.mean, colour=sg.classification)) + 
+#   geom_point(shape=shap, alpha=alph) + 
+#   scale_y_continuous("Differential sedimentation (&#394sed)") + 
+#   scale_x_log2nice("Stress granule enrichment (Khong *et al.*)", limits=c(0.125,8)) +
+#   scale_colour_manual(values=sg_enrichment_colors) +
+#   guides(colour = guide_legend(override.aes = list(alpha = 1))) + no.legend + larger_labels +
+#   theme(axis.title.x = ggtext::element_markdown(), axis.title.y = ggtext::element_markdown())
+p_khong_vs_sed = ggplot(pskho, aes(x=foldchange.sg.total, y=sed.mean, colour=sg.classification)) + 
+  geom_point(shape=shap, alpha=alph) + 
+  scale_y_continuous("Differential sedimentation (Δsed)", limits=c(-2,6.5)) + 
+  scale_x_log2nice("Stress granule enrichment (Khong *et al.*)", limits=c(0.125,8)) +
+  scale_colour_manual(values=sg_enrichment_colors) +
+  guides(colour = guide_legend(override.aes = list(alpha = 1))) + no.legend + larger_labels +
+  theme(axis.title.x = ggtext::element_markdown())
+p_khong_vs_pSup_mock = ggplot(pskho_mock, aes(x=foldchange.sg.total, y=1-pSup.mean, colour=sg.classification)) + 
+  geom_point(shape=shap, alpha=alph) + 
+  scale_y_log2nice("Proportion in pellet (1-pSup),\nmock treatment", limits=2^c(-4.5,0)) + 
+  scale_x_log2nice("Stress granule enrichment (Khong *et al.*)", limits=c(0.125,8)) +
+  scale_colour_manual(values=sg_enrichment_colors) +
+  guides(colour = guide_legend(override.aes = list(alpha = 1))) + no.legend + larger_labels +
+  theme(axis.title.x = ggtext::element_markdown())
+
+
+
+#cor.test(exp(pskho_hs$sed.mean), pskho_hs$foldchange.sg.total, method='s')
+cor.test(pskho$sed.mean, pskho$foldchange.sg.total, method='s')
+cor.test(1-pskho_mock$pSup.mean, pskho_mock$foldchange.sg.total, method='s')
+p_khong = p_khong_vs_sed + p_khong_vs_pSup_mock
+print(p_khong)
+#save_plot("../figures/khong-comparison.pdf", pg, base_asp=2, base_height=4)
+
+fig.asp = 7/14
+fig.width = 200
+fig.vs.panel.ratio = 1/0.7
+
+ggsave(file.path(github_dir, "figures/FigureS1/FigS1_khong_comparison.pdf"),
+       p_khong,
+       width = fig.width*fig.vs.panel.ratio,
+       height = fig.width*fig.asp*fig.vs.panel.ratio,
+       units = "mm", bg = "transparent", create.dir=TRUE, device=cairo_pdf)
 ```
 
 
