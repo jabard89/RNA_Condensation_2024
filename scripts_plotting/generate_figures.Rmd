@@ -1448,99 +1448,54 @@ ggsave("../figures/Figure3/esc_PolyFC.pdf",p_esc_PolyFC,bg="transparent")
 Using escape scores (eSed).
 
 ```{r}
-num_most_induced_genes <- 50 #number of most induced genes to use in analysis
+num_most_induced_genes <- 100 #number of most induced genes to use in analysis
 
+#per JB, esc score is already calculated for the stress condition (ie ignore that in control - effectively noise)
+#azide 0.8%
 df_azide_08_delta <- df_Zsup_mean %>% filter(Treatment_group %in% c('azide3')) %>%
-  select(ORF,gene, LengthTxEst,Strain,Treatment_group,Treatment, Temperature, Total.TPM.mean,Zsup.mean) %>%
-  pivot_wider(names_from = c(Treatment,Temperature), values_from = c(Total.TPM.mean,Zsup.mean)) %>%
+  select(ORF,gene, LengthTxEst,Strain,Treatment_group,Treatment, Temperature, Total.TPM.mean,Zsup.mean,esc.mean) %>%
+  pivot_wider(names_from = c(Treatment,Temperature), values_from = c(Total.TPM.mean,Zsup.mean,esc.mean)) %>%
   mutate(tpm_fc_azide_08 = as.numeric(`Total.TPM.mean_Azide_0.8%_pH6.8_30C`) / as.numeric(Total.TPM.mean_mock_30C),
-         Zsup_delta_azide_08 = as.numeric(`Zsup.mean_Azide_0.8%_pH6.8_30C`) - as.numeric(Zsup.mean_mock_30C))
-
-# #import 0.8%
-# df_azide_08_delta <- df_data %>% filter(Treatment_group %in% c('azide3')) %>%
-#   select(-Treated,-SP.mean,-pSup.mean) %>%
-#   pivot_wider(names_from = Treatment, values_from = c(Total.TPM.mean,Zsup.mean)) %>%
-#   mutate(tpm_fc_azide_08 = as.numeric(`Total.TPM.mean_Azide_0.8%_pH6.8`) / as.numeric(Total.TPM.mean_mock),
-#          Zsup_delta_azide_08 = as.numeric(`Zsup.mean_Azide_0.8%_pH6.8`) - as.numeric(Zsup.mean_mock))
-# #combine
-# df_azide_cum <- rbind(df_azide_05_delta %>%
-#                         select(ORF,LengthTxEst,tpm_fc_azide_05,Zsup_delta_azide_05) %>%
-#                         mutate(Treatment = 'Azide_05') %>%
-#                         dplyr::rename(tpm_fc = tpm_fc_azide_05, Zsup_delta = Zsup_delta_azide_05),
-#                       df_azide_08_delta %>%
-#                         select(ORF,LengthTxEst,tpm_fc_azide_08,Zsup_delta_azide_08) %>%
-#                         mutate(Treatment = 'Azide_08') %>%
-#                         dplyr::rename(tpm_fc = tpm_fc_azide_08, Zsup_delta = Zsup_delta_azide_08))
-#ethanol
-#import 7.5%
-
+         Zsup_delta_azide_08 = as.numeric(`Zsup.mean_Azide_0.8%_pH6.8_30C`) - as.numeric(Zsup.mean_mock_30C),
+         esed_azide_08 = as.numeric(`esc.mean_Azide_0.8%_pH6.8_30C`))
+#etoh 7.5%
 df_etoh_75_delta <- df_Zsup_mean %>% filter(Treatment_group %in% c('milderEtOH2')) %>%
-  select(ORF,gene, LengthTxEst,Strain,Treatment_group,Treatment, Temperature, Total.TPM.mean,Zsup.mean) %>%
-  pivot_wider(names_from = c(Treatment,Temperature), values_from = c(Total.TPM.mean,Zsup.mean)) %>%
+  select(ORF,gene, LengthTxEst,Strain,Treatment_group,Treatment, Temperature, Total.TPM.mean,Zsup.mean,esc.mean) %>%
+  pivot_wider(names_from = c(Treatment,Temperature), values_from = c(Total.TPM.mean,Zsup.mean,esc.mean)) %>%
   mutate(tpm_fc_etoh_75 = as.numeric(`Total.TPM.mean_EtOH_7.5%_30C`) / as.numeric(Total.TPM.mean_mock_30C),
-         Zsup_delta_etoh_75 = as.numeric(`Zsup.mean_EtOH_7.5%_30C`) - as.numeric(Zsup.mean_mock_30C))
-
-# #import 10%
-# df_etoh_10_delta <- df_data %>% filter(Treatment_group %in% c('milderEtOH1') & !(Treatment %in% c('EtOH_5%'))) %>%
-#   select(-Treated,-SP.mean,-pSup.mean) %>%
-#   pivot_wider(names_from = Treatment, values_from = c(Total.TPM.mean,Zsup.mean)) %>%
-#   mutate(tpm_fc_ethanol_10 = as.numeric(`Total.TPM.mean_EtOH_10%`) / as.numeric(Total.TPM.mean_mock),
-#          Zsup_delta_ethanol_10 = as.numeric(`Zsup.mean_EtOH_10%`) - as.numeric(Zsup.mean_mock))
-# #combine
-# df_ethanol_cum <- rbind(df_etoh_75_delta %>%
-#                         select(ORF,LengthTxEst,tpm_fc_ethanol_75,Zsup_delta_ethanol_75) %>%
-#                         mutate(Treatment = 'Ethanol_7.5') %>%
-#                         dplyr::rename(tpm_fc = tpm_fc_ethanol_75, Zsup_delta = Zsup_delta_ethanol_75),
-#                       df_etoh_10_delta %>%
-#                         select(ORF,LengthTxEst,tpm_fc_ethanol_10,Zsup_delta_ethanol_10) %>%
-#                         mutate(Treatment = 'Ethanol_10') %>%
-#                         dplyr::rename(tpm_fc = tpm_fc_ethanol_10, Zsup_delta = Zsup_delta_ethanol_10))
-
-#temperature
-#import 42C and 46C
+         Zsup_delta_etoh_75 = as.numeric(`Zsup.mean_EtOH_7.5%_30C`) - as.numeric(Zsup.mean_mock_30C),
+         esed_etoh_75 = as.numeric(`esc.mean_EtOH_7.5%_30C`))
+#42C
 df_temp_42_delta <- df_Zsup_mean %>% filter(Treatment_group %in% c('EW_TSPP') & Temperature %in% c('30C','42C')) %>%
-  select(ORF,gene, LengthTxEst,Strain,Treatment_group,Treatment, Temperature, Total.TPM.mean,Zsup.mean) %>%
-  pivot_wider(names_from = c(Treatment,Temperature), values_from = c(Total.TPM.mean,Zsup.mean)) %>%
+  select(ORF,gene, LengthTxEst,Strain,Treatment_group,Treatment, Temperature, Total.TPM.mean,Zsup.mean,esc.mean) %>%
+  pivot_wider(names_from = c(Treatment,Temperature), values_from = c(Total.TPM.mean,Zsup.mean,esc.mean)) %>%
   mutate(tpm_fc_temp_42 = as.numeric(`Total.TPM.mean_none_42C`) / as.numeric(`Total.TPM.mean_none_30C`),
-         Zsup_delta_temp_42 = as.numeric(`Zsup.mean_none_42C`) - as.numeric(Zsup.mean_none_30C))
-
-# df_temp_46_delta <- df_data %>% filter(Treatment_group %in% c('EW_TSPP') & Temperature %in% c('30C','46C')) %>%
-#   select(-Treated,-SP.mean,-pSup.mean) %>%
-#   pivot_wider(names_from = Temperature, values_from = c(Total.TPM.mean,Zsup.mean)) %>%
-#   mutate(tpm_fc_temp_46 = as.numeric(Total.TPM.mean_46C) / as.numeric(Total.TPM.mean_30C),
-#          Zsup_delta_temp_46 = as.numeric(Zsup.mean_46C) - as.numeric(Zsup.mean_30C))
-# #combine
-# df_temp_cum <- rbind(df_temp_42_delta %>%
-#                         select(ORF,LengthTxEst,tpm_fc_temp_42,Zsup_delta_temp_42) %>%
-#                         mutate(Treatment = 'Temp_42C') %>%
-#                         dplyr::rename(tpm_fc = tpm_fc_temp_42, Zsup_delta = Zsup_delta_temp_42),
-#                       df_temp_46_delta %>%
-#                         select(ORF,LengthTxEst,tpm_fc_temp_46,Zsup_delta_temp_46) %>%
-#                         mutate(Treatment = 'Temp_46C') %>%
-#                         dplyr::rename(tpm_fc = tpm_fc_temp_46, Zsup_delta = Zsup_delta_temp_46))
+         Zsup_delta_temp_42 = as.numeric(`Zsup.mean_none_42C`) - as.numeric(Zsup.mean_none_30C),
+         esed_temp_42 = as.numeric(`esc.mean_none_42C`))
 
 #standardize naming for rbind
 df_temp_42_delta <- df_temp_42_delta %>%
-  select(ORF,LengthTxEst,tpm_fc_temp_42,Zsup_delta_temp_42) %>%
+  select(ORF,LengthTxEst,tpm_fc_temp_42,Zsup_delta_temp_42,esed_temp_42) %>%
   mutate(Treatment = 'Temp_42C') %>%
-  dplyr::rename(tpm_fc = tpm_fc_temp_42, Zsup_delta = Zsup_delta_temp_42)
+  dplyr::rename(tpm_fc = tpm_fc_temp_42, Zsup_delta = Zsup_delta_temp_42, esed = esed_temp_42)
 
 df_azide_08_delta <- df_azide_08_delta %>%
-  select(ORF,LengthTxEst,tpm_fc_azide_08,Zsup_delta_azide_08) %>%
+  select(ORF,LengthTxEst,tpm_fc_azide_08,Zsup_delta_azide_08,esed_azide_08) %>%
   mutate(Treatment = 'Azide_08') %>%
-  dplyr::rename(tpm_fc = tpm_fc_azide_08, Zsup_delta = Zsup_delta_azide_08)
+  dplyr::rename(tpm_fc = tpm_fc_azide_08, Zsup_delta = Zsup_delta_azide_08, esed = esed_azide_08)
 
 df_etoh_75_delta <- df_etoh_75_delta %>%
-  select(ORF,LengthTxEst,tpm_fc_etoh_75,Zsup_delta_etoh_75) %>%
+  select(ORF,LengthTxEst,tpm_fc_etoh_75,Zsup_delta_etoh_75, esed_etoh_75) %>%
   mutate(Treatment = 'Ethanol_75') %>%
-  dplyr::rename(tpm_fc = tpm_fc_etoh_75, Zsup_delta = Zsup_delta_etoh_75)
+  dplyr::rename(tpm_fc = tpm_fc_etoh_75, Zsup_delta = Zsup_delta_etoh_75, esed = esed_etoh_75)
 
 #now rbind all of these
 df_combineStress_cum <- rbind(df_azide_08_delta, df_etoh_75_delta) %>%
   rbind(.,df_temp_42_delta)
 
 #compare delta Zsup's
-df_combineStress_wide <- df_combineStress_cum %>% pivot_wider(data = ., names_from = c(Treatment), values_from = c(tpm_fc,Zsup_delta))
+df_combineStress_wide <- df_combineStress_cum %>% pivot_wider(data = ., names_from = c(Treatment), values_from = c(tpm_fc,Zsup_delta,esed))
+
 #get top X transcripts induced each stress (X set by variable num_most_induced_genes at top)
 df_topInduced <- df_combineStress_cum %>% arrange(desc(tpm_fc)) %>%
   group_by(Treatment) %>%
@@ -1579,12 +1534,13 @@ df_heatEtOHStress_wide$inducedCategory[which(df_heatEtOHStress_wide$temp_induced
 
 #make long:
 df_heatEtOHStress_long <- df_heatEtOHStress_wide %>%
-  select(ORF,Zsup_delta_Azide_08,Zsup_delta_Ethanol_75,Zsup_delta_Temp_42C,inducedCategory) %>%
-  pivot_longer(., cols = c("Zsup_delta_Azide_08","Zsup_delta_Ethanol_75","Zsup_delta_Temp_42C"), names_to = "Stress", values_to = "Zsup_delta")
+  select(ORF,esed_Azide_08,esed_Ethanol_75,esed_Temp_42C,inducedCategory) %>%
+  pivot_longer(., cols = c("esed_Azide_08","esed_Ethanol_75","esed_Temp_42C"), 
+               names_to = "Stress", values_to = "esed")
 
-df_heatEtOHStress_long$Stress[which(df_heatEtOHStress_long$Stress == "Zsup_delta_Azide_08")] <- "0.8% Azide"
-df_heatEtOHStress_long$Stress[which(df_heatEtOHStress_long$Stress == "Zsup_delta_Temp_42C")] <- "42°C"
-df_heatEtOHStress_long$Stress[which(df_heatEtOHStress_long$Stress == "Zsup_delta_Ethanol_75")] <- "7.5% Ethanol"
+df_heatEtOHStress_long$Stress[which(df_heatEtOHStress_long$Stress == "esed_Azide_08")] <- "0.8% Azide"
+df_heatEtOHStress_long$Stress[which(df_heatEtOHStress_long$Stress == "esed_Temp_42C")] <- "42°C"
+df_heatEtOHStress_long$Stress[which(df_heatEtOHStress_long$Stress == "esed_Ethanol_75")] <- "7.5% Ethanol"
 df_heatEtOHStress_long$Stress <- factor(df_heatEtOHStress_long$Stress, levels = c("42°C","7.5% Ethanol","0.8% Azide"))
 
 #factoring
@@ -1594,18 +1550,56 @@ df_heatEtOHStress_long$inducedCategory <- factor(df_heatEtOHStress_long$inducedC
 
 #column plot with sd
 #bar graph version where bar graph doesn't start at 0, involves arbitrarily resetting the 0 and then relabeling axes
+# p_stressSpecificEscape_heatEtOH <- ggplot(data = df_heatEtOHStress_long %>% filter(Stress %in% c('42°C','7.5% Ethanol')),
+#        aes(y = Zsup_delta + 4, x = inducedCategory, fill = inducedCategory)) +
+#   geom_jitter(shape=16,height = 0, alpha = 0.3) +
+#   geom_hline(yintercept = 4, linetype = 'dashed') +
+#   stat_summary(fun.data = mean_se, color = 'black',
+#                geom = "bar",
+#                alpha = .8) +
+#   stat_summary(fun.y = mean,
+#                fun.ymin = function(x) mean(x) - sd(x),
+#                fun.ymax = function(x) mean(x) + sd(x),
+#                geom = "linerange",
+#                alpha = .8) +
+#   scale_x_discrete(name = 'Induction Category',
+#                    labels = c('other' = 'Neither',
+#                               'temp' = 'Temp',
+#                               'etoh' = 'Ethanol',
+#                               'azide' = 'Azide',
+#                               'temp,etoh' = 'Both',
+#                               'temp,azide' = 'Temp Azide',
+#                               'etoh,azide' = 'Ethanol Azide',
+#                               'temp,etoh,azide' = 'Temp Ethanol Azide')) +
+#   scale_y_continuous(name = '∆Zsup (stress)', limits = c(0,8),
+#                      labels=seq(0,8,2) - 4, expand = c(0,0)) +
+#   scale_fill_manual(values = c('grey','orange','#A155B9','purple')) +
+#   facet_grid(cols = vars(Stress)) +
+#   theme(legend.position = 'none')
+# p_stressSpecificEscape_heatEtOH
+
+#calculate the summary stats:
+df_heatEtOHStress_summary <- df_heatEtOHStress_long %>%
+  select(-ORF) %>%
+  filter(Stress %in% c('42°C','7.5% Ethanol') & !is.na(esed)) %>%
+  group_by(Stress, inducedCategory) %>%
+  summarise(n = n(),
+            mean_esed = ave(esed),
+            sd_esed = sd(esed)) %>%
+  unique()
+
 p_stressSpecificEscape_heatEtOH <- ggplot(data = df_heatEtOHStress_long %>% filter(Stress %in% c('42°C','7.5% Ethanol')),
-       aes(y = Zsup_delta + 4, x = inducedCategory, fill = inducedCategory)) +
-  geom_jitter(shape=16,height = 0, alpha = 0.3) +
-  geom_hline(yintercept = 4, linetype = 'dashed') +
-  stat_summary(fun.data = mean_se, color = 'black',
-               geom = "bar",
-               alpha = .8) +
-  stat_summary(fun.y = mean,
-               fun.ymin = function(x) mean(x) - sd(x),
-               fun.ymax = function(x) mean(x) + sd(x),
-               geom = "linerange",
-               alpha = .8) +
+       aes(y = esed, x = inducedCategory, fill = inducedCategory)) +
+  geom_jitter(shape=16, height = 0, alpha = 0.03) +
+  geom_hline(yintercept = 0, linetype = 'dashed') +
+  geom_col(data = df_heatEtOHStress_summary,
+           aes(y = mean_esed),
+           color = 'black',
+           alpha = 0.8) +
+  geom_linerange(data = df_heatEtOHStress_summary,
+           aes(y = mean_esed, ymin = mean_esed - sd_esed, ymax = mean_esed + sd_esed),
+           color = 'black',
+           alpha = 0.8) +
   scale_x_discrete(name = 'Induction Category',
                    labels = c('other' = 'Neither',
                               'temp' = 'Temp',
@@ -1615,43 +1609,15 @@ p_stressSpecificEscape_heatEtOH <- ggplot(data = df_heatEtOHStress_long %>% filt
                               'temp,azide' = 'Temp Azide',
                               'etoh,azide' = 'Ethanol Azide',
                               'temp,etoh,azide' = 'Temp Ethanol Azide')) +
-  scale_y_continuous(name = '∆Zsup (stress)', limits = c(0,8),
-                     labels=seq(0,8,2) - 4, expand = c(0,0)) +
-  scale_fill_manual(values = c('grey','orange','#A155B9','purple')) +
+  scale_y_continuous(name = 'Escape score (stress)',
+                     limits = c(-2,3)) +
+  scale_fill_manual(values = c('grey','orange','#A155B9','brown')) +
   facet_grid(cols = vars(Stress)) +
   theme(legend.position = 'none')
 p_stressSpecificEscape_heatEtOH
 
-p_stressSpecificEscape_heatEtOH2 <- ggplot(data = df_heatEtOHStress_long %>% filter(Stress %in% c('42°C','7.5% Ethanol')),
-       aes(y = Zsup_delta, x = inducedCategory, fill = inducedCategory)) +
-  geom_jitter(shape=16, height = 0, alpha = 0.03) +
-  geom_hline(yintercept = 0, linetype = 'dashed') +
-  stat_summary(fun.data = mean_se, color = 'black',
-               geom = "bar",
-               alpha = .8) +
-  stat_summary(fun.y = mean,
-               fun.ymin = function(x) mean(x) - sd(x),
-               fun.ymax = function(x) mean(x) + sd(x),
-               geom = "linerange",
-               alpha = .8) +
-  scale_x_discrete(name = 'Induction Category',
-                   labels = c('other' = 'Neither',
-                              'temp' = 'Temp',
-                              'etoh' = 'Ethanol',
-                              'azide' = 'Azide',
-                              'temp,etoh' = 'Both',
-                              'temp,azide' = 'Temp Azide',
-                              'etoh,azide' = 'Ethanol Azide',
-                              'temp,etoh,azide' = 'Temp Ethanol Azide')) +
-  scale_y_continuous(name = '∆Zsup (stress)',
-                     limits = c(-4,4)) +
-  scale_fill_manual(values = c('grey','orange','#A155B9','purple')) +
-  facet_grid(cols = vars(Stress)) +
-  theme(legend.position = 'none')
-p_stressSpecificEscape_heatEtOH2
-
 ggsave(file.path(github_dir,"figures","Figure3/stressSpecificEscape_heatEtoh.pdf"),
-       p_stressSpecificEscape_heatEtOH2,
+       p_stressSpecificEscape_heatEtOH,
        width=150,height=100,units="mm",bg="transparent", device = cairo_pdf)
 ```
 
