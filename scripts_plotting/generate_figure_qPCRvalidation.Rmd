@@ -360,26 +360,58 @@ df_psup_compare$ORF <- factor(df_psup_compare$ORF, levels = c("YCR012W", "YER155
 
 #plot
 p_psup_compare <- ggplot(data = df_psup_compare,
-                           aes(x = pSup_qPCR, y = pSup_RNAseq, color = as.factor(Temperature), shape = ORF)) +
-  geom_point(size = 5) +
-  geom_abline(intercept = 0, slope = 1) +
+                         aes(x = pSup_qPCR, y = pSup_RNAseq,
+                             shape = ORF,
+                             fill = as.factor(Temperature))) +  # Moved fill here
+  geom_point(size = 4, color = "black", alpha = 0.8) +
+  geom_abline(intercept = 0, slope = 1, linetype = "dashed") +
   ylim(0,1) +
   xlim(0,1) +
   ylab("Proportion in supernatant (RNA-Seq)") +
   xlab("Proportion in supernatant (qRT-PCR)") +
-  #ggtitle("Sequencing and qPCR-Derived pSup's Agree.") +
-  scale_shape_discrete(labels = c("clover" = "Clover",
-                              "YBR072W" = "HSP26",
-                              "YEL009C" = "GCN4",
-                              "YFL031W" = "HAC1",
-                              "YCR012W" = "PGK1",
-                              "YER155C" = "BEM2")) +
-  guides(color=guide_legend(title="Treatment (\u00b0C):"),
-         shape = guide_legend(title="Gene:")) +
-  scale_color_manual(values = stress.cols) +
-  theme_minimal() +
-  coord_equal()
+  # ggtitle("Sequencing and qPCR-Derived pSup's Agree.") +
+  scale_shape_manual(
+    values = c("clover" = 8, "YBR072W" = 25, "YEL009C" = 23,
+               "YFL031W" = 24, "YCR012W" = 21, "YER155C" = 22),
+    labels = c("clover" = "Clover", "YBR072W" = "HSP26",
+               "YEL009C" = "GCN4", "YFL031W" = "HAC1",
+               "YCR012W" = "PGK1", "YER155C" = "BEM2")
+  ) +
+ guides(
+  fill = guide_legend(title = "Treatment (°C):", override.aes = list(shape = 21, size = 3)),
+  shape = guide_legend(title = "Gene:", override.aes = list(size = 2.5))
+)+
+  scale_fill_manual(values = stress.cols) +
+  coord_equal()+ theme(legend.spacing.y = unit(.1, "cm"))
+
 p_psup_compare
 
-ggsave( file.path(github_dir,"figures/pSup_qpcr_rnaseq_comparison.pdf"), p_psup_compare, width =4.5, height = 4.5)
+ggsave( file.path(github_dir,"figures/pSup_qpcr_rnaseq_comparison.pdf"), p_psup_compare, width =4, height = 4)
+```
+
+```{r}
+
+plot_compare <- ggplot(df_psup_compare, aes(x = pSup_qPCR, y = pSup_RNAseq)) +
+  geom_abline(intercept = 0, slope = 1, linetype = "dashed") +
+  geom_point(aes(fill = ORF, shape = as.factor(Temperature)), size = 3, alpha = 0.8) +
+  scale_fill_manual(values = c("#009E73", "#E69F00", "#CC79A7", "#0072B2", "#D55E00","#56B4E9"),labels = c("clover" = "Clover", "YBR072W" = "HSP26",
+               "YEL009C" = "GCN4", "YFL031W" = "HAC1",
+               "YCR012W" = "PGK1", "YER155C" = "BEM2")) +  # Colors for the fill
+  scale_color_manual(values = c("#009E73", "#E69F00", "#CC79A7", "#0072B2", "#D55E00","#56B4E9"), labels = c("clover" = "Clover", "YBR072W" = "HSP26",
+               "YEL009C" = "GCN4", "YFL031W" = "HAC1",
+               "YCR012W" = "PGK1", "YER155C" = "BEM2")) +  # Colors for the border (if needed)
+  scale_shape_manual(values = c(21, 22, 24)) +  # Shapes for different Temperature treatments
+  xlim(0, 1) + ylim(0, 1) +
+  coord_equal() +
+  xlab("Proportion in supernatant \n(qRT-PCR)") +
+  ylab("Proportion in supernatant \n(RNA-Seq)") +
+  guides(
+    shape = guide_legend(title = "Treatment (°C):", override.aes = list(size = 3, alpha = 1)),
+    fill = guide_legend(title = "Gene Label", override.aes = list(size = 3, shape =21))  # Customize the fill legend
+  ) +theme(strip.background = element_blank())
+
+plot_compare
+
+ggsave( file.path(github_dir,"figures/pSup_qpcr_rnaseq_comparison_CW.pdf"), plot_compare, width =3.3, height = 3.3)
+
 ```
