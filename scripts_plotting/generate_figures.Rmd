@@ -1585,9 +1585,11 @@ df_heatEtOHStress_summary <- df_heatEtOHStress_long %>%
   group_by(Stress, inducedCategory) %>%
   summarise(n = n(),
             mean_esed = ave(esed),
-            sd_esed = sd(esed)) %>%
+            sd_esed = sd(esed),
+            se_esed = sd(esed)/sqrt(n())) %>%
   unique()
 
+#plotting means +/-standard error
 p_stressSpecificEscape_heatEtOH <- ggplot(data = df_heatEtOHStress_long %>% filter(Stress %in% c('42°C','7.5% Ethanol')),
        aes(y = esed, x = inducedCategory, fill = inducedCategory)) +
   geom_jitter(shape=16, height = 0, alpha = 0.03) +
@@ -1596,10 +1598,11 @@ p_stressSpecificEscape_heatEtOH <- ggplot(data = df_heatEtOHStress_long %>% filt
            aes(y = mean_esed),
            color = 'black',
            alpha = 0.8) +
-  geom_linerange(data = df_heatEtOHStress_summary,
-           aes(y = mean_esed, ymin = mean_esed - sd_esed, ymax = mean_esed + sd_esed),
+  geom_errorbar(data = df_heatEtOHStress_summary,
+           aes(y = mean_esed, ymin = mean_esed - se_esed, ymax = mean_esed + se_esed),
            color = 'black',
-           alpha = 0.8) +
+           alpha = 1,
+           width = 0.2) +
   scale_x_discrete(name = 'Induction Category',
                    labels = c('other' = 'Neither',
                               'temp' = 'Temp',
@@ -1619,6 +1622,19 @@ p_stressSpecificEscape_heatEtOH
 ggsave(file.path(github_dir,"figures","Figure3/stressSpecificEscape_heatEtoh.pdf"),
        p_stressSpecificEscape_heatEtOH,
        width=150,height=100,units="mm",bg="transparent", device = cairo_pdf)
+```
+
+# QC - taking closer look at spread esed in different stresses 
+Rationalizing as d/t only normalizing to spread of mock. Those variance in treatment can be different between different stresses.
+
+```{r}
+ggplot(data = df_Zsup_mean, aes(x = interaction(Treatment,Temperature), y = esc.mean)) +
+         geom_jitter(shape = 16,height = 0, alpha = 0.002) +
+         stat_summary(fun.y = mean, fun.ymin = function(x) mean(x) - sd(x), fun.ymax = function(x) mean(x) + sd(x), 
+                      geom = 'errorbar', width = .4) +
+  facet_grid(rows = vars(Treatment_group)) +
+  scale_y_continuous(limits = c(-3,3)) +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
 ```
 
 
