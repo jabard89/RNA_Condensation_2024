@@ -116,24 +116,26 @@ df_Zsup_filt <- df_Zsup %>% ungroup %>%
   filter(classification=="Verified") %>%
   group_by(Lysate_sample) %>%
   mutate(Total.TPM = Total.TPM/sum(Total.TPM,na.rm=T)*1e6) %>%
-  filter(Total.TPM>1) %>% ungroup
+  filter(Total.TPM > 1,
+         pSup > 0,
+         !is.infinite(pSup)) %>% ungroup
 
 lengths = sort(unique(as.integer((df_Zsup_filt %>% pull(LengthTxEst)))))
 df_pSup_windowmean <- df_Zsup_filt %>%
   group_by(Lysate_sample) %>%
   nest %>%
   mutate(data = map(data, function(df) {
-    windowfunction(df,"pSup", "LengthTxEst", "Treatment",
+    windowfunction(df,"lo.psup", "LengthTxEst", "Treatment",
                    n=lengths, minwidth_fraction=0.05, logx=TRUE, minn=1, na.rm=T) %>%
-      rename("pSup.lysate.windowmean" = "pSup") %>% select(LengthTxEst,pSup.lysate.windowmean)
+      mutate("pSup.lysate.windowmean" = invlogodds(lo.psup)) %>% select(LengthTxEst,pSup.lysate.windowmean)
     })) %>%
   unnest(c(data))
 
 df_ctrl <- df_Zsup_filt %>% ungroup %>%
   left_join(df_pSup_windowmean, by = c("Lysate_sample", "LengthTxEst")) %>%
   group_by(Treatment_group,ORF) %>%
-  mutate(pSup.ctrl.mean = mean(pSup[Control == TRUE]),
-         pSup.ctrl.windowmean.mean = mean(pSup.lysate.windowmean[Control == TRUE])) %>%
+  mutate(pSup.ctrl.mean = invlogodds(mean(logodds(pSup[Control == TRUE]))),
+         pSup.ctrl.windowmean.mean = invlogodds(mean(logodds(pSup.lysate.windowmean[Control == TRUE])))) %>%
   group_by(Treatment_group) %>%
   mutate(pSup.ctrl.sd = sd(logodds(pSup.ctrl.mean) - logodds(pSup.ctrl.windowmean.mean), na.rm=T)) %>%
   select(ORF,Treatment_group,pSup.ctrl.mean,pSup.ctrl.windowmean.mean,pSup.ctrl.sd) %>%
@@ -188,21 +190,20 @@ df_Zsup_sed_esc_filt_mean <- df_Zsup_sed_esc %>%
   group_by(Lysate_sample) %>%
   mutate(Total.TPM = Total.TPM/sum(Total.TPM,na.rm=T)*1e6) %>%
   ungroup %>%
-  filter(Total.TPM>1) %>%
+  filter(Total.TPM>1, pSup>0, !is.infinite(pSup)) %>%
   group_by(ORF,LengthTxEst,Strain,Treatment_group,Treatment,Treated,Temperature) %>%
   filter(length(ORF)==2|(Treatment_group=="hairpinReporters")|
            Treatment_group=="CHX"&Temperature=="42C") %>%
   summarise(Total.TPM.mean = exp(mean(log(Total.TPM))),
-            pSup.mean = mean(pSup),
+            pSup.mean = invlogodds(mean(logodds(pSup))),
             SP.mean = exp(mean(log(SP))),
             Zsup.mean = mean(Zsup),
             sed.mean = mean(sed),
             esc.mean = mean(esc),
             RelSed.mean = mean(RelSed),
-            pSup.ctrl.window.mean.mean=mean(pSup.ctrl.windowmean.mean),
-            pSup.treatment.window.mean.mean=mean(pSup.lysate.windowmean)
-) %>%
+            pSup.ctrl.window.mean.mean=invlogodds(mean(logodds(pSup.ctrl.windowmean.mean))),
+            pSup.treatment.window.mean.mean=invlogodds(mean(logodds(pSup.lysate.windowmean)))
+  ) %>%
   write_tsv(file.path(github_dir,"data_processed","sedseq_filt_mean.tsv.gz"))
-
 
 
