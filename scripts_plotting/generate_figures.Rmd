@@ -398,16 +398,16 @@ mark_alpha = 0.4
 ctrl_dat = df |> filter(gene==control_gene, Temperature=='42C')
 ctrl_gene_length = unlist(ctrl_dat$length)
 ctrl_gene_pSup = unlist(df |> filter(gene==control_gene, Temperature=='42C') |> select(pSup.mean))
-effective_ctrl_length = unlist(df |> filter(pSup.ctrl.window.mean.mean>0.995*ctrl_gene_pSup & pSup.ctrl.window.mean.mean<(1/0.995)*ctrl_gene_pSup) |> select(gene, length) |> summarize(ml=mean(length)))
+effective_ctrl_length = unlist(df |> filter(pSup.ctrl.window.mean.mean>0.995*ctrl_gene_pSup & pSup.ctrl.window.mean.mean<(1/0.995)*ctrl_gene_pSup) |> select(gene, length) |> summarise(ml=mean(length)))
 
 g_data = ggplot(df, aes(x=length, y=pSup.mean, group=Temperature, colour=Temperature)) + 
   ggrastr::rasterize(geom_point(shape=shap, alpha=alph), dpi=600) + 
   geom_line(aes(y=pSup.treatment.window.mean.mean, group=Temperature), linewidth=0.5, linetype=1, colour=blackcol, alpha=0.5) +
   scale_colour_manual(values=stress.cols) + no.legend +
   #geom_hline(data=overview_foci, yintercept = overview_foci[2:3,]$pSup, linetype="11", alpha=0.5) +
-  annotate("segment", x=ctrl_gene_length, y=ctrl_gene_pSup, xend=effective_ctrl_length, yend=ctrl_gene_pSup, linetype="11") +
-  annotate("segment", x=effective_ctrl_length, y=ctrl_gene_pSup, xend=effective_ctrl_length, yend=-0.2, linetype="11") +
-  annotate("point", x=effective_ctrl_length, y=ctrl_gene_pSup, colour="black", shape=16, size=1) +
+  ggplot2::annotate("segment", x=ctrl_gene_length, y=ctrl_gene_pSup, xend=effective_ctrl_length, yend=ctrl_gene_pSup, linetype="11") +
+  ggplot2::annotate("segment", x=effective_ctrl_length, y=ctrl_gene_pSup, xend=effective_ctrl_length, yend=-0.2, linetype="11") +
+  ggplot2::annotate("point", x=effective_ctrl_length, y=ctrl_gene_pSup, colour="black", shape=16, size=1) +
   geom_point(data=overview_foci, size=2, colour=blackcol) + 
   geom_point(data=overview_foci, size=1) + 
   coord_cartesian(ylim=c(0,1)) +
@@ -671,23 +671,10 @@ ggsave(file.path(github_dir, "figures/Figure1/Fig1_psup_vs_model.pdf"),
 # Khong et al. data (Parker lab)
 kho = read_tsv("../src/khong-parker-2017-yeast-sg-transcriptome-tableS2.txt", comment='#')
 
-#psw_hs = dat_hs |> select(ORF, gene, label, length, Temperature, pSup.mean, esc.mean, sed.mean) |> pivot_wider(id_cols=c(ORF,gene,label,length), values_from=c(pSup.mean, esc.mean, sed.mean), names_from=Temperature) #, names_prefix = c("pSup.")
 dat_azide = df_Zsup_mean |> filter(Treatment_group=='azide3') |> mutate(length=LengthTxEst)
-pskho = dat_azide |> filter(Treatment=='Azide_0.8%_pH6.8') |> select(ORF, length, pSup.mean, sed.mean, esc.mean) |> left_join(kho |> select(-gene, -length), by='ORF') # |> mutate(deltaSed=zSup.azide-zSup.mock)
+pskho = dat_azide |> filter(Treatment=='Azide_0.8%_pH6.8') |> select(ORF, length, pSup.mean, sed.mean, esc.mean) |> left_join(kho |> select(-gene, -length), by='ORF')
 pskho_mock = dat_azide |> filter(Treatment=='mock') |> select(ORF, length, pSup.mean, sed.mean, esc.mean) |> left_join(kho |> select(-gene, -length), by='ORF') 
-#pskho_hs = psw |> left_join(kho |> select(-gene, -length), by='ORF')
 
-#pskho = psw_hs |> left_join(kho |> select(-gene), by='ORF')
-#pskho_sub = na.omit(pskho |> select(ORF, gene, pSup.46C, foldchange.sg.total, sg.classification) |> filter(pSup.46C>0 & #foldchange.sg.total>0))
-#ct = cor.test(logodds(pskho_sub$pSup.46C), log(pskho_sub$foldchange.sg.total), method='s')
-
-# gkhong_hs = ggplot(pskho_hs, aes(x=foldchange.sg.total, y=sed.mean, colour=sg.classification)) + 
-#   geom_point(shape=shap, alpha=alph) + 
-#   scale_y_continuous("Differential sedimentation (&#394sed)") + 
-#   scale_x_log2nice("Stress granule enrichment (Khong *et al.*)", limits=c(0.125,8)) +
-#   scale_colour_manual(values=sg_enrichment_colors) +
-#   guides(colour = guide_legend(override.aes = list(alpha = 1))) + no.legend + larger_labels +
-#   theme(axis.title.x = ggtext::element_markdown(), axis.title.y = ggtext::element_markdown())
 p_khong_vs_sed = ggplot(pskho, aes(x=foldchange.sg.total, y=sed.mean, colour=sg.classification)) + 
   geom_point(shape=shap, alpha=alph) + 
   scale_y_continuous("Differential sedimentation (Δsed)", limits=c(-2,6.5)) + 
@@ -703,14 +690,10 @@ p_khong_vs_pSup_mock = ggplot(pskho_mock, aes(x=foldchange.sg.total, y=1-pSup.me
   guides(colour = guide_legend(override.aes = list(alpha = 1))) + no.legend + larger_labels +
   theme(axis.title.x = ggtext::element_markdown())
 
-
-
-#cor.test(exp(pskho_hs$sed.mean), pskho_hs$foldchange.sg.total, method='s')
 cor.test(pskho$sed.mean, pskho$foldchange.sg.total, method='s')
 cor.test(1-pskho_mock$pSup.mean, pskho_mock$foldchange.sg.total, method='s')
 p_khong = p_khong_vs_sed + p_khong_vs_pSup_mock
 print(p_khong)
-#save_plot("../figures/khong-comparison.pdf", pg, base_asp=2, base_height=4)
 
 fig.asp = 7/14
 fig.width = 200
