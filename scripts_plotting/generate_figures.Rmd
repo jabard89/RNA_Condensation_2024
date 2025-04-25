@@ -728,6 +728,93 @@ ggsave(file.path(github_dir, "figures/FigureS1/FigS1_khong_comparison.pdf"),
 
 ##Figure 2A (deltasedScore vs. FC TPM, 42/46)
 ```{r}
+# genes_to_lab_2A <- c("SSB1","SSA4","HSP104","HSP26","PMU1","ADD66")
+# plot_fc_top100_2A <- function(df, xvar, yvar,
+#                                xmin, xmax, ymin, ymax,
+#                                xscale, xbreaks, yscale, ybreaks,
+#                                top100cat, col, genes_to_lab) {
+#   X <- sym(xvar)
+#   Y <- sym(yvar)
+#   top100cat <- sym(top100cat)
+# 
+#   df <- df %>%
+#     ungroup() %>%
+#     mutate(top100 = if_else(!!top100cat > sort(!!top100cat, decreasing=TRUE)[101], TRUE, FALSE)) %>%
+#     mutate(top100 = factor(top100, levels = c(FALSE, TRUE))) %>%
+#     mutate(gene_lab = if_else(gene %in% genes_to_lab, gene, NA_character_))
+# 
+#   xint <- ifelse(xscale %in% c("log2", "log10"), 1, 0)
+#   yint <- ifelse(yscale %in% c("log2", "log10"), 1, 0)
+# 
+#   p_scatter <- ggplot(df,aes(x=!!X,y=!!Y,color=top100))+
+#     geom_hline(yintercept = yint, linetype = 'dashed') +
+#     geom_vline(xintercept = xint, linetype = 'dashed') +
+#     ggrastr::rasterize(dpi = 600, geom_point(data=df %>% filter(gene %!in% genes_to_lab_2A, top100 == FALSE), alpha = 0.55, shape = 16, size = 0.8)) +
+#     ggrastr::rasterize(dpi = 600, geom_point(data=df %>% filter(gene %!in% genes_to_lab_2A, top100 == TRUE), alpha = 0.8, shape = 16, size = 0.9)) +
+#     ggrastr::rasterize(dpi = 600, geom_point(data=df %>% filter(gene %in% genes_to_lab_2A, top100 == FALSE), alpha = 1, shape = 16, size = 2, color = "black")) +
+#     ggrastr::rasterize(dpi = 600, geom_point(data=df %>% filter(gene %in% genes_to_lab_2A, top100 == TRUE), alpha = 1, shape = 16, size = 2)) +
+#     guides(color = "none") +
+#     scale_color_manual(values = c("TRUE" = col, "FALSE" = "grey80")) +
+#     coord_cartesian(xlim = c(xmin, xmax), ylim = c(ymin, ymax), expand = F) +
+#     labs(x = "", y = "") +
+#     geom_text_repel(aes(label = gene_lab), size = 8 * 0.35, min.segment.length = 0, color = "black")
+# 
+#   if (xscale == "log2") {
+#     p_scatter <- p_scatter + scale_x_log2nice(omag = xbreaks)
+#   } else if (xscale == "log10") {
+#     p_scatter <- p_scatter + scale_x_log10nice(omag = xbreaks)
+#   } else {
+#     p_scatter <- p_scatter + scale_x_continuous(breaks = xbreaks)
+#   }
+# 
+#   if (yscale == "log2") {
+#     p_scatter <- p_scatter + scale_y_log2nice(omag = ybreaks)
+#   } else if (yscale == "log10") {
+#     p_scatter <- p_scatter + scale_y_log10nice(omag = ybreaks)
+#   } else {
+#     p_scatter <- p_scatter + scale_y_continuous(breaks = ybreaks)
+#   }
+# 
+#   return(p_scatter)
+# }
+# 
+# # For 42°C plot
+# p_42C_deltaZ_TPMFC_plot <- plot_fc_top100_2A(
+#   df = df_Zsup_Poly_minfilt %>% filter(Stress_label == "42C", Stress_group == "Heat Shock"),
+#   xvar = "TPM.FC.SedSeq", 
+#   yvar = "deltaZ",
+#   xmin = 0.5, xmax = 60, ymin = -2.5, ymax = 3.5,
+#   xscale = "log2", xbreaks = c(0, 2, 4),
+#   yscale = "linear", ybreaks = c(-2, 0, 2),
+#   top100cat = "TPM.FC.SedSeq", col = unname(stress.cols["42C"]),
+#   genes_to_lab = genes_to_lab_2A
+# )
+# 
+# # For 46°C plot
+# p_46C_deltaZ_TPMFC_plot <- plot_fc_top100_2A(
+#   df = df_Zsup_Poly_minfilt %>% filter(Stress_label == "46C", Stress_group == "Heat Shock"),
+#   xvar = "TPM.FC.SedSeq", 
+#   yvar = "deltaZ",
+#   xmin = 0.5, xmax = 10, ymin = -2.5, ymax = 3.5,
+#   xscale = "log2", xbreaks = c(0, 1, 2),
+#   yscale = "linear", ybreaks = c(-2, 0, 2),
+#   top100cat = "TPM.FC.SedSeq", col = unname(stress.cols["46C"]),
+#   genes_to_lab = genes_to_lab_2A
+# )
+# 
+# p_42C_deltaZ_TPMFC_plot
+# ggsave(file.path(github_dir, "figures/Figure2/42C_zoom.pdf"), egg::set_panel_size(p_42C_deltaZ_TPMFC_plot, width = unit(50, "mm"), height = unit(50, "mm")),
+#        width = 75, height = 75, units = "mm", bg = "transparent")
+# 
+# plot(p_46C_deltaZ_TPMFC_plot)
+# ggsave(file.path(github_dir, "figures/Figure2/46C_zoom.pdf"), egg::set_panel_size(p_46C_deltaZ_TPMFC_plot, width = unit(50, "mm"), height = unit(50, "mm")),
+#        width = 75, height = 75, units = "mm", bg = "transparent")
+
+```
+
+
+##Figure 2A Esc
+```{r}
 genes_to_lab_2A <- c("SSB1","SSA4","HSP104","HSP26","PMU1","ADD66")
 plot_fc_top100_2A <- function(df, xvar, yvar,
                                xmin, xmax, ymin, ymax,
@@ -736,9 +823,9 @@ plot_fc_top100_2A <- function(df, xvar, yvar,
   X <- sym(xvar)
   Y <- sym(yvar)
   top100cat <- sym(top100cat)
-  
-  df <- df %>% 
-    ungroup() %>% 
+
+  df <- df %>%
+    ungroup() %>%
     mutate(top100 = if_else(!!top100cat > sort(!!top100cat, decreasing=TRUE)[101], TRUE, FALSE)) %>%
     mutate(top100 = factor(top100, levels = c(FALSE, TRUE))) %>%
     mutate(gene_lab = if_else(gene %in% genes_to_lab, gene, NA_character_))
@@ -777,46 +864,6 @@ plot_fc_top100_2A <- function(df, xvar, yvar,
 
   return(p_scatter)
 }
-
-# For 42°C plot
-p_42C_deltaZ_TPMFC_plot <- plot_fc_top100_2A(
-  df = df_Zsup_Poly_minfilt %>% filter(Stress_label == "42C", Stress_group == "Heat Shock"),
-  xvar = "TPM.FC.SedSeq", 
-  yvar = "deltaZ",
-  xmin = 0.5, xmax = 60, ymin = -2.5, ymax = 3.5,
-  xscale = "log2", xbreaks = c(0, 2, 4),
-  yscale = "linear", ybreaks = c(-2, 0, 2),
-  top100cat = "TPM.FC.SedSeq", col = unname(stress.cols["42C"]),
-  genes_to_lab = genes_to_lab_2A
-)
-
-# For 46°C plot
-p_46C_deltaZ_TPMFC_plot <- plot_fc_top100_2A(
-  df = df_Zsup_Poly_minfilt %>% filter(Stress_label == "46C", Stress_group == "Heat Shock"),
-  xvar = "TPM.FC.SedSeq", 
-  yvar = "deltaZ",
-  xmin = 0.5, xmax = 10, ymin = -2.5, ymax = 3.5,
-  xscale = "log2", xbreaks = c(0, 1, 2),
-  yscale = "linear", ybreaks = c(-2, 0, 2),
-  top100cat = "TPM.FC.SedSeq", col = unname(stress.cols["46C"]),
-  genes_to_lab = genes_to_lab_2A
-)
-
-p_42C_deltaZ_TPMFC_plot
-ggsave(file.path(github_dir, "figures/Figure2/42C_zoom.pdf"), egg::set_panel_size(p_42C_deltaZ_TPMFC_plot, width = unit(50, "mm"), height = unit(50, "mm")),
-       width = 75, height = 75, units = "mm", bg = "transparent")
-
-plot(p_46C_deltaZ_TPMFC_plot)
-ggsave(file.path(github_dir, "figures/Figure2/46C_zoom.pdf"), egg::set_panel_size(p_46C_deltaZ_TPMFC_plot, width = unit(50, "mm"), height = unit(50, "mm")),
-       width = 75, height = 75, units = "mm", bg = "transparent")
-
-```
-
-
-##Figure 2A Esc
-```{r}
-genes_to_lab_2A <- c("SSB1","SSA4","HSP104","HSP26","PMU1","ADD66")
-
 # For 42°C plot
 p_42C_esc_TPMFC_plot <- plot_fc_top100_2A(
   df = df_Zsup_Poly_minfilt %>% filter(Stress_label == "42C", Stress_group == "Heat Shock"),
@@ -845,7 +892,7 @@ p_42C_esc_TPMFC_plot
 ggsave(file.path(github_dir, "figures/Figure2/42C_zoom_esc.pdf"), egg::set_panel_size(p_42C_esc_TPMFC_plot, width = unit(50, "mm"), height = unit(50, "mm")),
        width = 75, height = 75, units = "mm", bg = "transparent")
 
-plot(p_46C_deltaZ_TPMFC_plot)
+plot(p_46C_esc_TPMFC_plot)
 ggsave(file.path(github_dir, "figures/Figure2/46C_zoom_esc.pdf"), egg::set_panel_size(p_46C_esc_TPMFC_plot, width = unit(50, "mm"), height = unit(50, "mm")),
        width = 75, height = 75, units = "mm", bg = "transparent")
 
@@ -856,106 +903,106 @@ ggsave(file.path(github_dir, "figures/Figure2/46C_zoom_esc.pdf"), egg::set_panel
 
 HS/Azide/EtOH SG quant plot
 ```{r}
-hs <- read_csv(file.path(github_dir,"data_processed/sg_quant/hs_sgs.csv"))
-azide <- read_csv(file.path(github_dir,"data_processed/sg_quant/azide_sgs.csv"))
-etoh <- read_csv(file.path(github_dir,"data_processed/sg_quant/etoh_sgs.csv"))
-
-common_columns <- Reduce(intersect, list(names(hs), names(azide), names(etoh)))
-
-# Subset each data frame to keep only the common columns
-hs_subset <- hs %>% select(all_of(common_columns))
-azide_subset <- azide %>% select(all_of(common_columns))
-etoh_subset <- etoh %>% select(all_of(common_columns))
-
-# Combine the subsetted data frames using rbind
-stress_sg_data <- bind_rows(hs_subset, azide_subset, etoh_subset) %>% mutate(Treatment = factor(Treatment, levels = c( "30C" , "42C" , "46C" ,"0_0", "0_5" ,  "0_8"  ,"1_0" , "0%"  , "7.5%" ,"15%")))
-
-
-sg_plot <- ggplot(data =stress_sg_data%>% filter(Treatment != "1_0"), aes(x = Treatment, y = Cell_Parent_Children_stress_granule_Count, color = Treatment))+
-  ggrastr::rasterize(dpi = 600, geom_point(aes(group = Stress), position=position_jitterdodge(dodge.width = 0.9, jitter.width = 4, jitter.height = 0.3), alpha = 0.2, shape = 16))+
-  geom_boxplot(aes(fill = Treatment), alpha = 1, color = "black", size = 0.7, outlier.colour = NA)+ 
-  ylab("SGs/cell")+
-  scale_color_manual(values = c("#7F7F7F", "#7F7F7F", "#7F7F7F", "#7F7F7F", "#7F7F7F", "#7F7F7F", "#7F7F7F", "#7F7F7F", "#7F7F7F"))+
-  scale_fill_manual(values = c("grey50", RColorBrewer::brewer.pal(n=7,"Oranges")[4], RColorBrewer::brewer.pal(n=7,"Oranges")[6],"grey50", RColorBrewer::brewer.pal(n=5,"Greens")[3], RColorBrewer::brewer.pal(n=5,"Greens")[5], "grey50", RColorBrewer::brewer.pal(n=7,"Purples")[5],RColorBrewer::brewer.pal(n=7,"Purples")[7]) )+
-  scale_x_discrete(labels = c("30°C", "42°C", "46°C", "0% \nNaN3", "0.5% \nNaN3", "0.8% \nNaN3",  "0% \nEtOH", "7.5% \nEtOH", "15% \nEtOH"))+
-  theme(legend.position = "none", axis.title.x = element_blank())
-
-sg_plot
-
-ggsave("../figures/Figure3/sg_comparison_plot.pdf", sg_plot, width = 7, height = 3, create.dir = TRUE)
+# hs <- read_csv(file.path(github_dir,"data_processed/sg_quant/hs_sgs.csv"))
+# azide <- read_csv(file.path(github_dir,"data_processed/sg_quant/azide_sgs.csv"))
+# etoh <- read_csv(file.path(github_dir,"data_processed/sg_quant/etoh_sgs.csv"))
+# 
+# common_columns <- Reduce(intersect, list(names(hs), names(azide), names(etoh)))
+# 
+# # Subset each data frame to keep only the common columns
+# hs_subset <- hs %>% select(all_of(common_columns))
+# azide_subset <- azide %>% select(all_of(common_columns))
+# etoh_subset <- etoh %>% select(all_of(common_columns))
+# 
+# # Combine the subsetted data frames using rbind
+# stress_sg_data <- bind_rows(hs_subset, azide_subset, etoh_subset) %>% mutate(Treatment = factor(Treatment, levels = c( "30C" , "42C" , "46C" ,"0_0", "0_5" ,  "0_8"  ,"1_0" , "0%"  , "7.5%" ,"15%")))
+# 
+# 
+# sg_plot <- ggplot(data =stress_sg_data%>% filter(Treatment != "1_0"), aes(x = Treatment, y = Cell_Parent_Children_stress_granule_Count, color = Treatment))+
+#   ggrastr::rasterize(dpi = 600, geom_point(aes(group = Stress), position=position_jitterdodge(dodge.width = 0.9, jitter.width = 4, jitter.height = 0.3), alpha = 0.2, shape = 16))+
+#   geom_boxplot(aes(fill = Treatment), alpha = 1, color = "black", size = 0.7, outlier.colour = NA)+ 
+#   ylab("SGs/cell")+
+#   scale_color_manual(values = c("#7F7F7F", "#7F7F7F", "#7F7F7F", "#7F7F7F", "#7F7F7F", "#7F7F7F", "#7F7F7F", "#7F7F7F", "#7F7F7F"))+
+#   scale_fill_manual(values = c("grey50", RColorBrewer::brewer.pal(n=7,"Oranges")[4], RColorBrewer::brewer.pal(n=7,"Oranges")[6],"grey50", RColorBrewer::brewer.pal(n=5,"Greens")[3], RColorBrewer::brewer.pal(n=5,"Greens")[5], "grey50", RColorBrewer::brewer.pal(n=7,"Purples")[5],RColorBrewer::brewer.pal(n=7,"Purples")[7]) )+
+#   scale_x_discrete(labels = c("30°C", "42°C", "46°C", "0% \nNaN3", "0.5% \nNaN3", "0.8% \nNaN3",  "0% \nEtOH", "7.5% \nEtOH", "15% \nEtOH"))+
+#   theme(legend.position = "none", axis.title.x = element_blank())
+# 
+# sg_plot
+# 
+# ggsave("../figures/Figure3/sg_comparison_plot.pdf", sg_plot, width = 7, height = 3, create.dir = TRUE)
 ```
 
 ## stress SP violins
 ```{r}
-df_30_control <- df_Zsup_mean %>% filter(Treatment_group == "milderEtOH2", Temperature == "30C" & Treated == FALSE) %>% group_by( Temperature, Treated) %>% filter(SP.mean>0,!is.infinite(SP.mean)) %>% summarise(mean_sp_30 = mean(SP.mean)) 
-
-df_30 <- df_Zsup_mean %>% filter (Temperature == "30C")  %>% filter(Treatment_group == "milderEtOH1") %>% filter(Treated == FALSE) %>%  left_join(df_30_control, by = c("Temperature", "Treated")) %>% select(-SP.mean) %>% rename(SP.mean = mean_sp_30) %>% mutate(Control=FALSE) 
-
-df <- df_Zsup_mean %>%
-  filter(Temperature!="42CR",
-         Treatment!="KCl_1M") %>%
-  filter(Treatment_group%in%c("EW_TSPP","Azide_0.5%_pH6.8","azide3",
-                              "milderEtOH1","milderEtOH2","HyperOsmotic_EtOH")) %>%
-  mutate(Control=case_when(Treatment_group=="EW_TSPP"&Temperature=="30C"~TRUE,
-                           Treatment_group!="EW_TSPP"&Treated==FALSE~TRUE,
-                           TRUE~FALSE)) %>%
-  #filter(Temperature != "30C" | Treatment_group != "EW_TSPP") %>% 
-  rbind(df_30) %>% 
-  filter(SP.mean>0,!is.infinite(SP.mean)) %>%
-  group_by(Treatment_group,ORF) %>%
-  filter(length(ORF[Control==TRUE])==1) %>%
-  mutate(SP.FC = SP.mean/SP.mean[Control==TRUE]) %>%
-  #filter(Control==FALSE|(Treatment_group=="EW_TSPP"&Temperature=="30C")) %>%
-  filter(Control == FALSE) %>% 
-  mutate(Stress_label=case_when(Temperature%in%c("42C","46C")~Temperature,
-                               # Treatment_group=="EW_TSPP"&Temperature=="30C"~"mock",
-                               Treatment_group=="milderEtOH1"&Treatment=="mock"~"mock",
-                                Treatment=="EtOH_15%"~"Ethanol 15%",
-                                Treatment=="EtOH_10%"~"Ethanol 10%",
-                                Treatment=="EtOH_7.5%"~"Ethanol 7.5%",
-                                Treatment=="EtOH_5%"~"Ethanol 5%",
-                                Treatment=="Azide_0.8%_pH6.8"~"Azide 0.8%",
-                                Treatment=="Azide_0.5%_pH6.8"~"Azide 0.5%")) %>%
-  mutate(Stress_label=factor(Stress_label,
-                             levels=c("mock","42C","46C","Azide 0.5%","Azide 0.8%",
-                                      "Ethanol 5%","Ethanol 7.5%","Ethanol 10%","Ethanol 15%"))) %>%
-  filter(Stress_label%in%c("mock","42C","46C","Azide 0.5%","Azide 0.8%",
-                           "Ethanol 7.5%","Ethanol 15%"))
-stress_labels <- c("mock"="mock",
-                   "42C"="42°C",
-                   "46C"="46°C",
-                   "Azide 0.5%"="0.5%",
-                   "Azide 0.8%"="0.8%",
-                   "Ethanol 5%"="5%",
-                   "Ethanol 7.5%"="7.5%",
-                   "Ethanol 10%"="10%",
-                   "Ethanol 15%"="15%")
-p_violin <- ggplot(df,
-                   #%>%filter(Stress_label!="mock"),
-       aes(x=Stress_label,y=SP.FC))+
-  geom_hline(yintercept=1,linetype="dotted")+
-  ggrastr::rasterize(dpi = 600, geom_point(shape=16,alpha=0.2,color="grey50",position=position_jitter(width=0.2), size = 0.5)) +
-  geom_violin(aes(fill=Stress_label,alpha=Stress_label))+
-  geom_violin(fill=NA,alpha=1,draw_quantiles = c(0.5),size=0.5)+
-  scale_y_log10nice()+
-  scale_x_discrete(labels=stress_labels)+
-  coord_cartesian(ylim=c(0.01,8))+
-  scale_fill_manual(values=stress.cols)+
-  scale_alpha_manual(values=c("mock"=0.8,
-                   "42C"=0.8,
-                   "46C"=0.8,
-                   "Azide 0.5%"=0.8,
-                   "Azide 0.8%"=0.8,
-                   "Ethanol 5%"=0.8,
-                   "Ethanol 7.5%"=0.8,
-                   "Ethanol 10%"=0.8,
-                   "Ethanol 15%"=0.7))+
-  labs(y="",x="")
-p_violin
-
-ggsave("../figures/Figure3/all_violins.pdf",
-       p_violin+theme(legend.position="none"),
-       width=70,height=65,units="mm",bg="transparent")
+# df_30_control <- df_Zsup_mean %>% filter(Treatment_group == "milderEtOH2", Temperature == "30C" & Treated == FALSE) %>% group_by( Temperature, Treated) %>% filter(SP.mean>0,!is.infinite(SP.mean)) %>% summarise(mean_sp_30 = mean(SP.mean)) 
+# 
+# df_30 <- df_Zsup_mean %>% filter (Temperature == "30C")  %>% filter(Treatment_group == "milderEtOH1") %>% filter(Treated == FALSE) %>%  left_join(df_30_control, by = c("Temperature", "Treated")) %>% select(-SP.mean) %>% rename(SP.mean = mean_sp_30) %>% mutate(Control=FALSE) 
+# 
+# df <- df_Zsup_mean %>%
+#   filter(Temperature!="42CR",
+#          Treatment!="KCl_1M") %>%
+#   filter(Treatment_group%in%c("EW_TSPP","Azide_0.5%_pH6.8","azide3",
+#                               "milderEtOH1","milderEtOH2","HyperOsmotic_EtOH")) %>%
+#   mutate(Control=case_when(Treatment_group=="EW_TSPP"&Temperature=="30C"~TRUE,
+#                            Treatment_group!="EW_TSPP"&Treated==FALSE~TRUE,
+#                            TRUE~FALSE)) %>%
+#   #filter(Temperature != "30C" | Treatment_group != "EW_TSPP") %>% 
+#   rbind(df_30) %>% 
+#   filter(SP.mean>0,!is.infinite(SP.mean)) %>%
+#   group_by(Treatment_group,ORF) %>%
+#   filter(length(ORF[Control==TRUE])==1) %>%
+#   mutate(SP.FC = SP.mean/SP.mean[Control==TRUE]) %>%
+#   #filter(Control==FALSE|(Treatment_group=="EW_TSPP"&Temperature=="30C")) %>%
+#   filter(Control == FALSE) %>% 
+#   mutate(Stress_label=case_when(Temperature%in%c("42C","46C")~Temperature,
+#                                # Treatment_group=="EW_TSPP"&Temperature=="30C"~"mock",
+#                                Treatment_group=="milderEtOH1"&Treatment=="mock"~"mock",
+#                                 Treatment=="EtOH_15%"~"Ethanol 15%",
+#                                 Treatment=="EtOH_10%"~"Ethanol 10%",
+#                                 Treatment=="EtOH_7.5%"~"Ethanol 7.5%",
+#                                 Treatment=="EtOH_5%"~"Ethanol 5%",
+#                                 Treatment=="Azide_0.8%_pH6.8"~"Azide 0.8%",
+#                                 Treatment=="Azide_0.5%_pH6.8"~"Azide 0.5%")) %>%
+#   mutate(Stress_label=factor(Stress_label,
+#                              levels=c("mock","42C","46C","Azide 0.5%","Azide 0.8%",
+#                                       "Ethanol 5%","Ethanol 7.5%","Ethanol 10%","Ethanol 15%"))) %>%
+#   filter(Stress_label%in%c("mock","42C","46C","Azide 0.5%","Azide 0.8%",
+#                            "Ethanol 7.5%","Ethanol 15%"))
+# stress_labels <- c("mock"="mock",
+#                    "42C"="42°C",
+#                    "46C"="46°C",
+#                    "Azide 0.5%"="0.5%",
+#                    "Azide 0.8%"="0.8%",
+#                    "Ethanol 5%"="5%",
+#                    "Ethanol 7.5%"="7.5%",
+#                    "Ethanol 10%"="10%",
+#                    "Ethanol 15%"="15%")
+# p_violin <- ggplot(df,
+#                    #%>%filter(Stress_label!="mock"),
+#        aes(x=Stress_label,y=SP.FC))+
+#   geom_hline(yintercept=1,linetype="dotted")+
+#   ggrastr::rasterize(dpi = 600, geom_point(shape=16,alpha=0.2,color="grey50",position=position_jitter(width=0.2), size = 0.5)) +
+#   geom_violin(aes(fill=Stress_label,alpha=Stress_label))+
+#   geom_violin(fill=NA,alpha=1,draw_quantiles = c(0.5),size=0.5)+
+#   scale_y_log10nice()+
+#   scale_x_discrete(labels=stress_labels)+
+#   coord_cartesian(ylim=c(0.01,8))+
+#   scale_fill_manual(values=stress.cols)+
+#   scale_alpha_manual(values=c("mock"=0.8,
+#                    "42C"=0.8,
+#                    "46C"=0.8,
+#                    "Azide 0.5%"=0.8,
+#                    "Azide 0.8%"=0.8,
+#                    "Ethanol 5%"=0.8,
+#                    "Ethanol 7.5%"=0.8,
+#                    "Ethanol 10%"=0.8,
+#                    "Ethanol 15%"=0.7))+
+#   labs(y="",x="")
+# p_violin
+# 
+# ggsave("../figures/Figure3/all_violins.pdf",
+#        p_violin+theme(legend.position="none"),
+#        width=70,height=65,units="mm",bg="transparent")
 ```
 
 ## stress sed violins
@@ -1242,44 +1289,44 @@ plot_fc_top100 <- function(df,xvar,yvar,
   return(p_combined)
 }
 
-p_42C_deltaZ_TPMFC <- plot_fc_top100(df=df_Zsup_Poly_minfilt %>% filter(Stress_label=="42C",Stress_group=="Heat Shock"),
-                                     xvar="TPM.FC.SedSeq",yvar="deltaZ",
-                                     xmin=0.1,xmax=500,ymin=(-4),ymax=4,
-                                     xscale="log10",xbreaks=c(0,1,2),
-                                     yscale="linear",ybreaks=c(-3,0,3),
-                                     top100cat="TPM.FC.SedSeq",col=unname(stress.cols["42C"]),genes_to_lab=labeled_genes)
-p_42C_deltaZ_TPMFC_panel <- egg::set_panel_size(p=p_42C_deltaZ_TPMFC+
-                                                  theme(axis.text.x=element_blank(),
-                                                      axis.ticks.x=element_blank(),
-                                                      plot.margin=margin(0,0,-11,0,unit="pt")),
-                           width=unit(25,"mm"),height=unit(25,"mm"))
-plot(p_42C_deltaZ_TPMFC_panel)
-
-
-p_N3_deltaZ_TPMFC <- plot_fc_top100(df=df_Zsup_Poly_minfilt %>% filter(Stress_label=="Azide 0.8%",Stress_group=="Azide 0.8%"),
-                                     xvar="TPM.FC.SedSeq",yvar="deltaZ",
-                                     xmin=0.1,xmax=500,ymin=(-4),ymax=4,
-                                     xscale="log10",xbreaks=c(0,1,2),
-                                     yscale="linear",ybreaks=c(-3,0,3),
-                                     top100cat="TPM.FC.SedSeq",col=unname(stress.cols["Azide 0.8%"]),genes_to_lab=labeled_genes)
-p_N3_deltaZ_TPMFC_panel <- egg::set_panel_size(p=p_N3_deltaZ_TPMFC+
-                                                 theme(axis.text.x=element_blank(),
-                                                      axis.ticks.x=element_blank(),
-                                                      plot.margin=margin(0,0,-11,0,unit="pt")),
-                           width=unit(25,"mm"),height=unit(25,"mm"))
-plot(p_N3_deltaZ_TPMFC_panel)
-
-p_EtOH_deltaZ_TPMFC <- plot_fc_top100(df=df_Zsup_Poly_minfilt %>% filter(Stress_label=="Ethanol 7.5%",Stress_group=="Ethanol 7.5%"),
-                                     xvar="TPM.FC.SedSeq",yvar="deltaZ",
-                                     xmin=0.1,xmax=500,ymin=(-4),ymax=4,
-                                     xscale="log10",xbreaks=c(0,1,2),
-                                     yscale="linear",ybreaks=c(-3,0,3),
-                                     top100cat="TPM.FC.SedSeq",col=unname(stress.cols["Ethanol 7.5%"]),genes_to_lab=labeled_genes)
-p_EtOH_deltaZ_TPMFC_panel <- egg::set_panel_size(p=p_EtOH_deltaZ_TPMFC,width=unit(25,"mm"),height=unit(25,"mm"))
-plot(p_EtOH_deltaZ_TPMFC_panel)
-
-p_deltaZ_TPMFC <- gtable_rbind(p_42C_deltaZ_TPMFC_panel,p_N3_deltaZ_TPMFC_panel,p_EtOH_deltaZ_TPMFC_panel)
-ggsave("../figures/Figure3/deltaZ_TPMFC.pdf",p_deltaZ_TPMFC,bg="transparent")
+# p_42C_deltaZ_TPMFC <- plot_fc_top100(df=df_Zsup_Poly_minfilt %>% filter(Stress_label=="42C",Stress_group=="Heat Shock"),
+#                                      xvar="TPM.FC.SedSeq",yvar="deltaZ",
+#                                      xmin=0.1,xmax=500,ymin=(-4),ymax=4,
+#                                      xscale="log10",xbreaks=c(0,1,2),
+#                                      yscale="linear",ybreaks=c(-3,0,3),
+#                                      top100cat="TPM.FC.SedSeq",col=unname(stress.cols["42C"]),genes_to_lab=labeled_genes)
+# p_42C_deltaZ_TPMFC_panel <- egg::set_panel_size(p=p_42C_deltaZ_TPMFC+
+#                                                   theme(axis.text.x=element_blank(),
+#                                                       axis.ticks.x=element_blank(),
+#                                                       plot.margin=margin(0,0,-11,0,unit="pt")),
+#                            width=unit(25,"mm"),height=unit(25,"mm"))
+# plot(p_42C_deltaZ_TPMFC_panel)
+# 
+# 
+# p_N3_deltaZ_TPMFC <- plot_fc_top100(df=df_Zsup_Poly_minfilt %>% filter(Stress_label=="Azide 0.8%",Stress_group=="Azide 0.8%"),
+#                                      xvar="TPM.FC.SedSeq",yvar="deltaZ",
+#                                      xmin=0.1,xmax=500,ymin=(-4),ymax=4,
+#                                      xscale="log10",xbreaks=c(0,1,2),
+#                                      yscale="linear",ybreaks=c(-3,0,3),
+#                                      top100cat="TPM.FC.SedSeq",col=unname(stress.cols["Azide 0.8%"]),genes_to_lab=labeled_genes)
+# p_N3_deltaZ_TPMFC_panel <- egg::set_panel_size(p=p_N3_deltaZ_TPMFC+
+#                                                  theme(axis.text.x=element_blank(),
+#                                                       axis.ticks.x=element_blank(),
+#                                                       plot.margin=margin(0,0,-11,0,unit="pt")),
+#                            width=unit(25,"mm"),height=unit(25,"mm"))
+# plot(p_N3_deltaZ_TPMFC_panel)
+# 
+# p_EtOH_deltaZ_TPMFC <- plot_fc_top100(df=df_Zsup_Poly_minfilt %>% filter(Stress_label=="Ethanol 7.5%",Stress_group=="Ethanol 7.5%"),
+#                                      xvar="TPM.FC.SedSeq",yvar="deltaZ",
+#                                      xmin=0.1,xmax=500,ymin=(-4),ymax=4,
+#                                      xscale="log10",xbreaks=c(0,1,2),
+#                                      yscale="linear",ybreaks=c(-3,0,3),
+#                                      top100cat="TPM.FC.SedSeq",col=unname(stress.cols["Ethanol 7.5%"]),genes_to_lab=labeled_genes)
+# p_EtOH_deltaZ_TPMFC_panel <- egg::set_panel_size(p=p_EtOH_deltaZ_TPMFC,width=unit(25,"mm"),height=unit(25,"mm"))
+# plot(p_EtOH_deltaZ_TPMFC_panel)
+# 
+# p_deltaZ_TPMFC <- gtable_rbind(p_42C_deltaZ_TPMFC_panel,p_N3_deltaZ_TPMFC_panel,p_EtOH_deltaZ_TPMFC_panel)
+# ggsave("../figures/Figure3/deltaZ_TPMFC.pdf",p_deltaZ_TPMFC,bg="transparent")
 
 ### PolyFC vs TPMFC
 
@@ -1320,43 +1367,43 @@ ggsave("../figures/Figure3/PolyFC_TPMFC.pdf",p_PolyFC_TPMFC,bg="transparent")
 
 ### PolyFC vs deltaZ
 
-p_42C_deltaZ_PolyFC <- plot_fc_top100(df=df_Zsup_Poly_minfilt %>% filter(Stress_label=="42C",Stress_group=="Heat Shock"),
-                                     xvar="FC.vs.ctrl_TE",yvar="deltaZ",
-                                     xmin=0.25,xmax=4,ymin=(-4.3),ymax=4.3,
-                                     xscale="log2",xbreaks=c(-1,0,1),
-                                     yscale="linear",ybreaks=c(-3,0,3),
-                                     top100cat="FC.vs.ctrl_TE",col=unname(stress.cols["42C"]),genes_to_lab=labeled_genes)
-p_42C_deltaZ_PolyFC_panel <- egg::set_panel_size(p=p_42C_deltaZ_PolyFC+
-                                                  theme(axis.text.x=element_blank(),
-                                                      axis.ticks.x=element_blank(),
-                                                      plot.margin=margin(0,0,-11,0,unit="pt")),
-                           width=unit(25,"mm"),height=unit(25,"mm"))
-plot(p_42C_deltaZ_PolyFC_panel)
-
-
-p_N3_deltaZ_PolyFC <- plot_fc_top100(df=df_Zsup_Poly_minfilt %>% filter(Stress_label=="Azide 0.8%",Stress_group=="Azide 0.8%"),
-                                     xvar="FC.vs.ctrl_TE",yvar="deltaZ",
-                                     xmin=0.25,xmax=4,ymin=(-4.3),ymax=4.3,
-                                     xscale="log2",xbreaks=c(-1,0,1),
-                                     yscale="linear",ybreaks=c(-3,0,3),
-                                     top100cat="FC.vs.ctrl_TE",col=unname(stress.cols["Azide 0.8%"]),genes_to_lab=labeled_genes)
-p_N3_deltaZ_PolyFC_panel <- egg::set_panel_size(p=p_N3_deltaZ_PolyFC+
-                                                 theme(axis.text.x=element_blank(),
-                                                      axis.ticks.x=element_blank(),
-                                                      plot.margin=margin(0,0,-11,0,unit="pt")),
-                           width=unit(25,"mm"),height=unit(25,"mm"))
-plot(p_N3_deltaZ_PolyFC_panel)
-
-p_EtOH_deltaZ_PolyFC <- plot_fc_top100(df=df_Zsup_Poly_minfilt %>% filter(Stress_label=="Ethanol 7.5%",Stress_group=="Ethanol 7.5%"),
-                                     xvar="FC.vs.ctrl_TE",yvar="deltaZ",
-                                     xmin=0.25,xmax=4,ymin=(-4.3),ymax=4.3,
-                                     xscale="log2",xbreaks=c(-1,0,1),
-                                     yscale="linear",ybreaks=c(-3,0,3),
-                                     top100cat="FC.vs.ctrl_TE",col=unname(stress.cols["Ethanol 7.5%"]),genes_to_lab=labeled_genes)
-p_EtOH_deltaZ_PolyFC_panel <- egg::set_panel_size(p=p_EtOH_deltaZ_PolyFC,width=unit(25,"mm"),height=unit(25,"mm"))
-plot(p_EtOH_deltaZ_PolyFC_panel)
-p_deltaZ_PolyFC <- gtable_rbind(p_42C_deltaZ_PolyFC_panel,p_N3_deltaZ_PolyFC_panel,p_EtOH_deltaZ_PolyFC_panel)
-ggsave("../figures/Figure3/deltaZ_PolyFC.pdf",p_deltaZ_PolyFC,bg="transparent")
+# p_42C_deltaZ_PolyFC <- plot_fc_top100(df=df_Zsup_Poly_minfilt %>% filter(Stress_label=="42C",Stress_group=="Heat Shock"),
+#                                      xvar="FC.vs.ctrl_TE",yvar="deltaZ",
+#                                      xmin=0.25,xmax=4,ymin=(-4.3),ymax=4.3,
+#                                      xscale="log2",xbreaks=c(-1,0,1),
+#                                      yscale="linear",ybreaks=c(-3,0,3),
+#                                      top100cat="FC.vs.ctrl_TE",col=unname(stress.cols["42C"]),genes_to_lab=labeled_genes)
+# p_42C_deltaZ_PolyFC_panel <- egg::set_panel_size(p=p_42C_deltaZ_PolyFC+
+#                                                   theme(axis.text.x=element_blank(),
+#                                                       axis.ticks.x=element_blank(),
+#                                                       plot.margin=margin(0,0,-11,0,unit="pt")),
+#                            width=unit(25,"mm"),height=unit(25,"mm"))
+# plot(p_42C_deltaZ_PolyFC_panel)
+# 
+# 
+# p_N3_deltaZ_PolyFC <- plot_fc_top100(df=df_Zsup_Poly_minfilt %>% filter(Stress_label=="Azide 0.8%",Stress_group=="Azide 0.8%"),
+#                                      xvar="FC.vs.ctrl_TE",yvar="deltaZ",
+#                                      xmin=0.25,xmax=4,ymin=(-4.3),ymax=4.3,
+#                                      xscale="log2",xbreaks=c(-1,0,1),
+#                                      yscale="linear",ybreaks=c(-3,0,3),
+#                                      top100cat="FC.vs.ctrl_TE",col=unname(stress.cols["Azide 0.8%"]),genes_to_lab=labeled_genes)
+# p_N3_deltaZ_PolyFC_panel <- egg::set_panel_size(p=p_N3_deltaZ_PolyFC+
+#                                                  theme(axis.text.x=element_blank(),
+#                                                       axis.ticks.x=element_blank(),
+#                                                       plot.margin=margin(0,0,-11,0,unit="pt")),
+#                            width=unit(25,"mm"),height=unit(25,"mm"))
+# plot(p_N3_deltaZ_PolyFC_panel)
+# 
+# p_EtOH_deltaZ_PolyFC <- plot_fc_top100(df=df_Zsup_Poly_minfilt %>% filter(Stress_label=="Ethanol 7.5%",Stress_group=="Ethanol 7.5%"),
+#                                      xvar="FC.vs.ctrl_TE",yvar="deltaZ",
+#                                      xmin=0.25,xmax=4,ymin=(-4.3),ymax=4.3,
+#                                      xscale="log2",xbreaks=c(-1,0,1),
+#                                      yscale="linear",ybreaks=c(-3,0,3),
+#                                      top100cat="FC.vs.ctrl_TE",col=unname(stress.cols["Ethanol 7.5%"]),genes_to_lab=labeled_genes)
+# p_EtOH_deltaZ_PolyFC_panel <- egg::set_panel_size(p=p_EtOH_deltaZ_PolyFC,width=unit(25,"mm"),height=unit(25,"mm"))
+# plot(p_EtOH_deltaZ_PolyFC_panel)
+# p_deltaZ_PolyFC <- gtable_rbind(p_42C_deltaZ_PolyFC_panel,p_N3_deltaZ_PolyFC_panel,p_EtOH_deltaZ_PolyFC_panel)
+# ggsave("../figures/Figure3/deltaZ_PolyFC.pdf",p_deltaZ_PolyFC,bg="transparent")
 
 ```
 
@@ -1958,110 +2005,6 @@ ggsave(file.path(github_dir,"figures","Figure4/native_Occ.pdf"),
 
 ```
 
-## eIF3b deplete
-
-```{r}
-sedseq_compTemp_bygroup <- read_tsv(file.path(github_dir,"data_processed/deseq_results/TSP_DESeq_compTemp_byGroup_deseq2_230510.tsv")) %>%
-  rename("TPM.FC.SedSeq"="FC.vs.30C")
-genes_to_label <- c("SSA4","SSB1")
-labeled_genes <- c("SSA4","SSB1")
-df <- df_Zsup_mean %>% filter(Treatment_group%in%c("eIF3b_deplete","eIF4E_deplete")) %>%
-  mutate(Target=case_when(Treatment_group=="eIF3b_deplete"~"eIF3b",
-                              Treatment_group=="eIF4E_deplete"~"eIF4E")) %>%
-  left_join(sedseq_compTemp_bygroup %>% select(ORF,Treatment_group,Treatment,Temperature,TPM.FC.SedSeq),
-            by=c("Treatment_group","Treatment","Temperature","ORF")) %>%
-  group_by(Treatment_group,Treatment,ORF) %>%
-  filter(length(ORF[Temperature=="30C"])==1) %>%
-  mutate(deltaZ = Zsup.mean-Zsup.mean[Temperature=="30C"]) %>%
-  group_by(Treatment_group,Treatment,Temperature) %>%
-  mutate(top100 = if_else(TPM.FC.SedSeq>sort(TPM.FC.SedSeq,decreasing=TRUE)[51],TRUE,FALSE)) %>%
-  mutate(top100=factor(top100,levels=c(FALSE,TRUE))) %>%
-  filter(Temperature=="42C") %>%
-  arrange(top100) %>%
-  mutate(gene_lab = if_else(gene%in%genes_to_label,gene,NA_character_))
-#remove marginal distributions
-plot_fc_top100_no_margdist <- function(df,xvar,yvar,
-                           xmin,xmax,ymin,ymax,
-                           xscale,xbreaks,yscale,ybreaks,
-                           top100cat,col,genes_to_lab) {
-  X <- sym(xvar)
-  Y <- sym(yvar)
-  top100cat <- sym(top100cat)
-  df <- df %>% ungroup %>%
-    mutate(top100 = if_else(!!top100cat>sort(!!top100cat,decreasing=TRUE)[101],TRUE,FALSE)) %>%
-    mutate(top100=factor(top100,levels=c(FALSE,TRUE))) %>%
-    mutate(gene_lab = if_else(gene%in%genes_to_lab,gene,NA_character_))
-  xint <- ifelse (xscale%in%c("log2","log10"),1,0)
-  yint <- ifelse (yscale%in%c("log2","log10"),1,0)
-  p_scatter <- ggplot(df,
-                      aes(x=!!X,y=!!Y,color=top100))+
-    geom_hline(yintercept = yint,
-               linetype = 'dashed') +
-    geom_vline(xintercept = xint,
-               linetype = 'dashed') +
-    ggrastr::rasterize(dpi = 600, geom_point(data=df%>%filter(gene%!in%genes_to_lab,top100==FALSE),alpha=0.6,shape=16,size=0.4)) +
-    ggrastr::rasterize(dpi = 600, geom_point(data=df%>%filter(gene%!in%genes_to_lab,top100==TRUE),alpha=0.5,shape=16,size=0.5)) +
-    ggrastr::rasterize(dpi = 600, geom_point(data=df%>%filter(gene%in%genes_to_lab,top100==FALSE),alpha=1,shape=16,size=1.5,color="black")) +
-    ggrastr::rasterize(dpi = 600, geom_point(data=df%>%filter(gene%in%genes_to_lab,top100==TRUE),alpha=1,shape=16,size=1.5)) +
-    guides(color="none")+
-    scale_color_manual(values=c("TRUE"=col, "FALSE"="grey"))+
-    coord_cartesian(xlim=c(xmin,xmax),ylim=c(ymin,ymax),expand=F)+
-    labs(x="",y="")+
-    geom_cross(data=df%>%filter(top100==TRUE),grouping="top100",x=xvar,y=yvar,color = "black")+
-    geom_text_repel(aes(label=gene_lab),size=8*0.35,min.segment.length = 0,color="black")
-  if (xscale=="log2"){
-    p_scatter <- p_scatter+scale_x_log2nice(omag=xbreaks)  
-  } else if (xscale=="log10"){
-    p_scatter <- p_scatter+scale_x_log10nice(omag=xbreaks)
-  } else {
-    p_scatter <- p_scatter+scale_x_continuous(breaks=xbreaks)
-  }
-  if (yscale=="log2"){
-    p_scatter <- p_scatter+scale_y_log2nice(omag=ybreaks)  
-  } else if (yscale=="log10"){
-    p_scatter <- p_scatter+scale_y_log10nice(omag=ybreaks)
-  } else {
-    p_scatter <- p_scatter+scale_y_continuous(breaks=ybreaks)
-  }
-  
-
-  # Overlay the density plots onto the main plot using annotation_custom
-  p_combined <- p_scatter 
-    labs(x="",y="")+
-    theme(plot.margin = margin(0, 0, 0, 0, "pt"))
-  return(p_combined)
-}
-
-p_3b_mock_FC <- plot_fc_top100_no_margdist(df=df %>% filter(Target=="eIF3b",Treated==FALSE),
-                                     xvar="TPM.FC.SedSeq",yvar="deltaZ",
-                                     xmin=0.1,xmax=500,ymin=(-4.3),ymax=4.3,
-                                     xscale="log10",xbreaks=c(0,1,2),
-                                     yscale="linear",ybreaks=c(-3,0,3),
-                                     top100cat="TPM.FC.SedSeq",col=unname(stress.cols["42C"]),genes_to_lab=labeled_genes)+
-  labs(x="",y="")
-  #theme(plot.margin=margin(t=0,r=0,b=0,l=0,unit="pt"))
-p_3b_mock_FC_panel <- egg::set_panel_size(p=p_3b_mock_FC,
-                                          width=unit(30,"mm"),height=unit(30,"mm"))
-plot(p_3b_mock_FC_panel)
-
-p_3b_deplete_FC <- plot_fc_top100_no_margdist(df=df %>% filter(Target=="eIF3b",Treated==TRUE),
-                                     xvar="TPM.FC.SedSeq",yvar="deltaZ",
-                                     xmin=0.1,xmax=500,ymin=(-4.3),ymax=4.3,
-                                     xscale="log10",xbreaks=c(0,1,2),
-                                     yscale="linear",ybreaks=c(-3,0,3),
-                                     top100cat="TPM.FC.SedSeq",col=unname(stress.cols["42C"]),genes_to_lab=labeled_genes)+
-  labs(x="",y="")+
-  theme(axis.text.y=element_blank(),
-        axis.ticks.y=element_blank(),
-        plot.margin=margin(t=0,r=0,b=0,l=-10,unit="pt"))
-p_3b_deplete_FC_panel <- egg::set_panel_size(p=p_3b_deplete_FC,
-                                          width=unit(30,"mm"),height=unit(30,"mm"))
-plot(p_3b_deplete_FC_panel)
-
-p_3b_FC <- gtable_cbind(p_3b_mock_FC_panel,p_3b_deplete_FC_panel)
-ggsave(file.path(github_dir,"figures","Figure4/3b_FC.pdf"),p_3b_FC,bg="transparent")
-```
-
 ##eIF3b esc
 ```{r}
 sedseq_compTemp_bygroup <- read_tsv(file.path(github_dir,"data_processed/deseq_results/TSP_DESeq_compTemp_byGroup_deseq2_230510.tsv")) %>%
@@ -2103,8 +2046,8 @@ plot_fc_top100_no_margdist_nocross <- function(df,xvar,yvar,
                linetype = 'dashed') +
     geom_vline(xintercept = xint,
                linetype = 'dashed') +
-    ggrastr::rasterize(dpi = 600, geom_point(data=df%>%filter(gene%!in%genes_to_lab,top100==FALSE),alpha=0.6,shape=16,size=0.4)) +
-    ggrastr::rasterize(dpi = 600, geom_point(data=df%>%filter(gene%!in%genes_to_lab,top100==TRUE),alpha=0.5,shape=16,size=0.5)) +
+    ggrastr::rasterize(dpi = 600, geom_point(data=df%>%filter(gene%!in%genes_to_lab,top100==FALSE),alpha=0.6,shape=16,size=1)) +
+    ggrastr::rasterize(dpi = 600, geom_point(data=df%>%filter(gene%!in%genes_to_lab,top100==TRUE),alpha=0.5,shape=16,size=1)) +
     ggrastr::rasterize(dpi = 600, geom_point(data=df%>%filter(gene%in%genes_to_lab,top100==FALSE),alpha=1,shape=16,size=1.5,color="black")) +
     ggrastr::rasterize(dpi = 600, geom_point(data=df%>%filter(gene%in%genes_to_lab,top100==TRUE),alpha=1,shape=16,size=1.5)) +
     guides(color="none")+
@@ -2143,7 +2086,7 @@ p_3b_mock_FC_esc <- plot_fc_top100_no_margdist_nocross(df=df %>% filter(Target==
   labs(x="",y="")
   #theme(plot.margin=margin(t=0,r=0,b=0,l=0,unit="pt"))
 p_3b_mock_FC_esc_panel <- egg::set_panel_size(p=p_3b_mock_FC_esc,
-                                          width=unit(30,"mm"),height=unit(30,"mm"))
+                                          width=unit(40,"mm"),height=unit(40,"mm"))
 plot(p_3b_mock_FC_esc_panel)
 
 p_3b_deplete_FC_esc <- plot_fc_top100_no_margdist_nocross(df=df %>% filter(Target=="eIF3b",Treated==TRUE),
@@ -2157,7 +2100,7 @@ p_3b_deplete_FC_esc <- plot_fc_top100_no_margdist_nocross(df=df %>% filter(Targe
         axis.ticks.y=element_blank(),
         plot.margin=margin(t=0,r=0,b=0,l=-10,unit="pt"))
 p_3b_deplete_FC_esc_panel <- egg::set_panel_size(p=p_3b_deplete_FC_esc,
-                                          width=unit(30,"mm"),height=unit(30,"mm"))
+                                          width=unit(40,"mm"),height=unit(40,"mm"))
 plot(p_3b_deplete_FC_esc_panel)
 
 p_3b_FC_esc <- gtable_cbind(p_3b_mock_FC_esc_panel,p_3b_deplete_FC_esc_panel)
@@ -2167,167 +2110,167 @@ ggsave(file.path(github_dir,"figures","Figure4/3b_FC_esc.pdf"),p_3b_FC_esc,bg="t
 ## deltaZsup vs FC abundance boxplots
 
 ```{r}
-cutoff <- 0.1
-df <- df_Zsup_Poly_minfilt %>% filter(Control==FALSE,Stress_group%in%c("Azide 0.8%","Ethanol 7.5%","Heat Shock"),
-                                      Temperature%in%c("30C","42C")) %>%
-  group_by(Stress_label) %>%
-  mutate(TE_cat=if_else(FC.vs.ctrl_TE<=quantile(FC.vs.ctrl_TE,cutoff),"down",
-                        if_else(FC.vs.ctrl_TE>=quantile(FC.vs.ctrl_TE,1-cutoff),"up","other")),
-         TPM_cat=if_else(TPM.FC.SedSeq<=quantile(TPM.FC.SedSeq,cutoff),"down",
-                        if_else(TPM.FC.SedSeq>=quantile(TPM.FC.SedSeq,1-cutoff),"up","other")),
-         deltaZ_cat=if_else(deltaZ<=(-1),"down",
-                            if_else(deltaZ>(-1)&deltaZ<1,"other","up"))) %>%
-  mutate(highlight=if_else(TPM_cat=="down"&TE_cat=="down","TPM down\nTE down",
-                           if_else(TPM_cat=="down"&TE_cat=="up","TPM down\nTE up",
-                                   if_else(TPM_cat=="up"&TE_cat=="down","TPM up\nTE down",
-                                           if_else(TPM_cat=="up"&TE_cat=="up","TPM up\nTE up",
-                                                   "other"))))) %>%
-  mutate(highlight=factor(highlight,levels=c("other","TPM down\nTE down","TPM down\nTE up",
-                                             "TPM up\nTE down","TPM up\nTE up"))) %>%
-  arrange(highlight)
-
-p_TPMFC_deltaZ <- ggplot(df,
-       aes(x=TPM.FC.SedSeq,y=deltaZ,color=TE_cat))+
-  geom_hline(yintercept=0,linetype="dotted")+geom_vline(xintercept=1,linetype="dotted")+
-  ggrastr::rasterize(dpi = 600, geom_point(shape=16,data=df%>%filter(highlight=="other"),alpha=0.1)) +
-  ggrastr::rasterize(dpi = 600, geom_point(shape=16,data=df%>%filter(highlight!="other"),alpha=0.5)) +
-  scale_x_log10nice(omag=c(-1,0,2,4))+
-  scale_y_continuous(breaks=c(-3,0,3))+
-  coord_cartesian(xlim=c(0.1,500),ylim=c(-4.3,4.3),expand=F)+
-  facet_grid(.~Stress_label)+
-  scale_color_manual(values=cat.cols)+
-  labs(x="",y="")+
-  theme(panel.spacing.y = unit(1.1,"mm"))
-p_TPMFC_deltaZ
-
-dge_wid <- 1
-stress_labs <- c("42C"="42\u00B0C","Azide 0.8%"="0.8% Azide","Ethanol 7.5%"="7.5% EtOH")
-p_deltaZ_byTPMbyTE <- ggplot(df,
-       aes(x=TPM_cat,y=deltaZ,fill=TE_cat,group=interaction(TPM_cat,TE_cat)))+
-  geom_hline(yintercept=0,linetype="dotted")+
-  ggrastr::rasterize(dpi = 600, geom_point(shape=16,alpha=0.3,size=0.5,color="grey50",
-             aes(group=TE_cat),
-             position=position_jitterdodge(jitter.width=0.2,seed=1,dodge.width = dge_wid))) +
-  geom_boxplot(outlier.shape=NA,alpha=0.5,position=position_dodge(width=dge_wid),size=0.25)+
-  geom_boxplot(fill=NA,outlier.shape=NA,position=position_dodge(width=dge_wid),size=0.25)+
-  facet_grid(.~Stress_label,
-             labeller=labeller(Stress_label=stress_labs))+
-  scale_fill_manual(values=cat.cols)+
-  labs(x="",y="")+
-  coord_cartesian(ylim=c(-4.3,4.3),expand=F)+
-  scale_y_continuous(breaks=c(-3,0,3))+
-  guides(fill="none")+
-  theme(
-    panel.spacing.y=unit(1.1,"mm")
-  )
-
-
-# 1. Calculate the p-values
-p_values_wilcox <- df %>%
-  group_by(TPM_cat, Stress_label) %>%
-  nest() %>%
-  mutate(kruskal_result = map(data, ~ kruskal.test(deltaZ ~ TE_cat, data = .x)),
-         p_value = map_dbl(kruskal_result, ~ .x$p.value)) %>%
-  select(-data, -kruskal_result) %>%
-  mutate(p_label = map_chr(p_value, function(x) {
-    symnum(x, corr = FALSE, 
-           cutpoints = c(0, .001, .01, .05, 1), 
-           symbols = c("***", "**", "*", "N.S."))
-  })) %>%
-  unnest(cols = c(p_value, p_label))
-
-# Perform the Kruskal-Wallis test and nest the data
-p_values_kruskal <- df %>%
-  group_by(TPM_cat, Stress_label) %>%
-  nest() %>%
-  mutate(kruskal_result = map(data, ~ kruskal.test(deltaZ ~ TE_cat, data = .x)),
-         p_value = map_dbl(kruskal_result, ~ .x$p.value))
-
-# Function to perform pairwise comparisons with Bonferroni correction
-perform_pairwise <- function(data) {
-  pairwise_results <- pairwise.wilcox.test(data$deltaZ, data$TE_cat, p.adjust.method = "bonferroni")
-  broom::tidy(pairwise_results) %>%
-  rename("TE_group1"="group1",
-                "TE_group2"="group2",
-                "p_value_wilcox"="p.value")
-}
-
-# Apply the pairwise comparisons if Kruskal-Wallis test is significant
-p_values <- p_values_kruskal %>%
-  mutate(pairwise_comparisons = map(data, perform_pairwise)) %>%
-  unnest(pairwise_comparisons)  %>%
-  mutate(p_label = map_chr(p_value_wilcox, function(x) {
-    symnum(x, corr = FALSE, 
-           cutpoints = c(0, .001, .01, .05, 1), 
-           symbols = c("***", "**", "*", "N.S."))
-  })) %>%
-  mutate(TE_cat = case_when(TE_group1=="other"&TE_group2=="down"~"down",
-                            TE_group1=="up"&TE_group2=="other"~"up",
-                            TE_group1=="up"&TE_group2=="down"~"other")) %>%
-  select(Stress_label,TPM_cat,TE_cat,p_value,p_value_wilcox,p_label)
-
-# Build the ggplot object to capture the computed data
-gb <- ggplot_build(p_deltaZ_byTPMbyTE)
-
-# Extract data from the boxplot layer (this might change depending on the order of your layers)
-boxplot_data <- gb$data[[3]]  
-
-# Calculate the median x position for each TPM_cat group
-x_positions <- boxplot_data %>% 
-  group_by(group,PANEL) %>% 
-  summarize(median_x = median(x)) %>%
-  mutate(PANEL=factor(as.integer(PANEL)),
-         group=factor(as.integer(group)))
-df_groups <- df %>%
-  group_by(Stress_label) %>%
-  arrange(Stress_label) %>%
-  nest %>%
-  mutate(PANEL = factor(cur_group_id())) %>%
-  mutate(box_group = map(data,function(df){
-    df %>% select(TPM_cat,TE_cat) %>% unique %>%
-      mutate(cat = interaction(TPM_cat,TE_cat)) %>% group_by(cat) %>%
-      mutate(group = factor(cur_group_id()))
-  })) %>%
-  select(-data) %>%
-  unnest(box_group)
-# Join the x_positions with p_values
-p_values_annot <- df_groups %>%
-  left_join(x_positions,by=c("PANEL","group")) %>%
-  group_by(Stress_label,TPM_cat) %>%
-  mutate(xmin=case_when(TE_cat=="down"~median_x[TE_cat=="down"],
-                        TE_cat=="up"~median_x[TE_cat=="other"],
-                        TRUE~NA_real_))%>%
-  mutate(xmax=case_when(TE_cat=="down"~median_x[TE_cat=="other"],
-                        TE_cat=="up"~median_x[TE_cat=="up"],
-                        TRUE~NA_real_)) %>%
-  mutate(xmin.updown = median_x[TE_cat=="down"],
-         xmax.updown = median_x[TE_cat=="up"]) %>%
-  filter(TE_cat=="other") %>%
-  left_join(p_values %>% filter(TE_cat=="other"),
-            by=c("Stress_label","TPM_cat","TE_cat")) %>%
-  mutate(y_pos=case_when(Stress_label=="42C"~3,
-                         Stress_label=="Azide 0.8%"~3,
-                         Stress_label=="Ethanol 7.5%"~3))
-
-# Add the significance bars using geom_signif
-p_deltaZ_byTPMbyTE_sig <- p_deltaZ_byTPMbyTE + 
-  geom_signif(inherit.aes=F,data = p_values_annot, 
-              aes(group=interaction(TPM_cat,TE_cat), # this needs to match the aes of the ggplot object
-                  xmin = xmin.updown, xmax = xmax.updown, annotations = p_label,y_position=y_pos), 
-              manual=T,
-              textsize=8*0.35)+
-  labs(x="",y="",
-       subtitle="")
-
-p_deltaZ_byTPMbyTE_sig
-ggsave(file.path(github_dir,"figures","Figure4/deltaZ_byTPMbyTE_boxes_allcat_wide.pdf"),
-       egg::set_panel_size(p=p_deltaZ_byTPMbyTE_sig+
-                             labs(x="",y="",subtitle="")+
-                             theme(strip.text.y=element_blank(),
-                                   legend.position="none",
-                                   axis.text.x = element_blank()),
-                           width=unit(45,"mm"),height=unit(35,"mm")),
-       width=200,height=50,units="mm",bg="transparent")
+# cutoff <- 0.1
+# df <- df_Zsup_Poly_minfilt %>% filter(Control==FALSE,Stress_group%in%c("Azide 0.8%","Ethanol 7.5%","Heat Shock"),
+#                                       Temperature%in%c("30C","42C")) %>%
+#   group_by(Stress_label) %>%
+#   mutate(TE_cat=if_else(FC.vs.ctrl_TE<=quantile(FC.vs.ctrl_TE,cutoff),"down",
+#                         if_else(FC.vs.ctrl_TE>=quantile(FC.vs.ctrl_TE,1-cutoff),"up","other")),
+#          TPM_cat=if_else(TPM.FC.SedSeq<=quantile(TPM.FC.SedSeq,cutoff),"down",
+#                         if_else(TPM.FC.SedSeq>=quantile(TPM.FC.SedSeq,1-cutoff),"up","other")),
+#          deltaZ_cat=if_else(deltaZ<=(-1),"down",
+#                             if_else(deltaZ>(-1)&deltaZ<1,"other","up"))) %>%
+#   mutate(highlight=if_else(TPM_cat=="down"&TE_cat=="down","TPM down\nTE down",
+#                            if_else(TPM_cat=="down"&TE_cat=="up","TPM down\nTE up",
+#                                    if_else(TPM_cat=="up"&TE_cat=="down","TPM up\nTE down",
+#                                            if_else(TPM_cat=="up"&TE_cat=="up","TPM up\nTE up",
+#                                                    "other"))))) %>%
+#   mutate(highlight=factor(highlight,levels=c("other","TPM down\nTE down","TPM down\nTE up",
+#                                              "TPM up\nTE down","TPM up\nTE up"))) %>%
+#   arrange(highlight)
+# 
+# p_TPMFC_deltaZ <- ggplot(df,
+#        aes(x=TPM.FC.SedSeq,y=deltaZ,color=TE_cat))+
+#   geom_hline(yintercept=0,linetype="dotted")+geom_vline(xintercept=1,linetype="dotted")+
+#   ggrastr::rasterize(dpi = 600, geom_point(shape=16,data=df%>%filter(highlight=="other"),alpha=0.1)) +
+#   ggrastr::rasterize(dpi = 600, geom_point(shape=16,data=df%>%filter(highlight!="other"),alpha=0.5)) +
+#   scale_x_log10nice(omag=c(-1,0,2,4))+
+#   scale_y_continuous(breaks=c(-3,0,3))+
+#   coord_cartesian(xlim=c(0.1,500),ylim=c(-4.3,4.3),expand=F)+
+#   facet_grid(.~Stress_label)+
+#   scale_color_manual(values=cat.cols)+
+#   labs(x="",y="")+
+#   theme(panel.spacing.y = unit(1.1,"mm"))
+# p_TPMFC_deltaZ
+# 
+# dge_wid <- 1
+# stress_labs <- c("42C"="42\u00B0C","Azide 0.8%"="0.8% Azide","Ethanol 7.5%"="7.5% EtOH")
+# p_deltaZ_byTPMbyTE <- ggplot(df,
+#        aes(x=TPM_cat,y=deltaZ,fill=TE_cat,group=interaction(TPM_cat,TE_cat)))+
+#   geom_hline(yintercept=0,linetype="dotted")+
+#   ggrastr::rasterize(dpi = 600, geom_point(shape=16,alpha=0.3,size=0.5,color="grey50",
+#              aes(group=TE_cat),
+#              position=position_jitterdodge(jitter.width=0.2,seed=1,dodge.width = dge_wid))) +
+#   geom_boxplot(outlier.shape=NA,alpha=0.5,position=position_dodge(width=dge_wid),size=0.25)+
+#   geom_boxplot(fill=NA,outlier.shape=NA,position=position_dodge(width=dge_wid),size=0.25)+
+#   facet_grid(.~Stress_label,
+#              labeller=labeller(Stress_label=stress_labs))+
+#   scale_fill_manual(values=cat.cols)+
+#   labs(x="",y="")+
+#   coord_cartesian(ylim=c(-4.3,4.3),expand=F)+
+#   scale_y_continuous(breaks=c(-3,0,3))+
+#   guides(fill="none")+
+#   theme(
+#     panel.spacing.y=unit(1.1,"mm")
+#   )
+# 
+# 
+# # 1. Calculate the p-values
+# p_values_wilcox <- df %>%
+#   group_by(TPM_cat, Stress_label) %>%
+#   nest() %>%
+#   mutate(kruskal_result = map(data, ~ kruskal.test(deltaZ ~ TE_cat, data = .x)),
+#          p_value = map_dbl(kruskal_result, ~ .x$p.value)) %>%
+#   select(-data, -kruskal_result) %>%
+#   mutate(p_label = map_chr(p_value, function(x) {
+#     symnum(x, corr = FALSE, 
+#            cutpoints = c(0, .001, .01, .05, 1), 
+#            symbols = c("***", "**", "*", "N.S."))
+#   })) %>%
+#   unnest(cols = c(p_value, p_label))
+# 
+# # Perform the Kruskal-Wallis test and nest the data
+# p_values_kruskal <- df %>%
+#   group_by(TPM_cat, Stress_label) %>%
+#   nest() %>%
+#   mutate(kruskal_result = map(data, ~ kruskal.test(deltaZ ~ TE_cat, data = .x)),
+#          p_value = map_dbl(kruskal_result, ~ .x$p.value))
+# 
+# # Function to perform pairwise comparisons with Bonferroni correction
+# perform_pairwise <- function(data) {
+#   pairwise_results <- pairwise.wilcox.test(data$deltaZ, data$TE_cat, p.adjust.method = "bonferroni")
+#   broom::tidy(pairwise_results) %>%
+#   rename("TE_group1"="group1",
+#                 "TE_group2"="group2",
+#                 "p_value_wilcox"="p.value")
+# }
+# 
+# # Apply the pairwise comparisons if Kruskal-Wallis test is significant
+# p_values <- p_values_kruskal %>%
+#   mutate(pairwise_comparisons = map(data, perform_pairwise)) %>%
+#   unnest(pairwise_comparisons)  %>%
+#   mutate(p_label = map_chr(p_value_wilcox, function(x) {
+#     symnum(x, corr = FALSE, 
+#            cutpoints = c(0, .001, .01, .05, 1), 
+#            symbols = c("***", "**", "*", "N.S."))
+#   })) %>%
+#   mutate(TE_cat = case_when(TE_group1=="other"&TE_group2=="down"~"down",
+#                             TE_group1=="up"&TE_group2=="other"~"up",
+#                             TE_group1=="up"&TE_group2=="down"~"other")) %>%
+#   select(Stress_label,TPM_cat,TE_cat,p_value,p_value_wilcox,p_label)
+# 
+# # Build the ggplot object to capture the computed data
+# gb <- ggplot_build(p_deltaZ_byTPMbyTE)
+# 
+# # Extract data from the boxplot layer (this might change depending on the order of your layers)
+# boxplot_data <- gb$data[[3]]  
+# 
+# # Calculate the median x position for each TPM_cat group
+# x_positions <- boxplot_data %>% 
+#   group_by(group,PANEL) %>% 
+#   summarize(median_x = median(x)) %>%
+#   mutate(PANEL=factor(as.integer(PANEL)),
+#          group=factor(as.integer(group)))
+# df_groups <- df %>%
+#   group_by(Stress_label) %>%
+#   arrange(Stress_label) %>%
+#   nest %>%
+#   mutate(PANEL = factor(cur_group_id())) %>%
+#   mutate(box_group = map(data,function(df){
+#     df %>% select(TPM_cat,TE_cat) %>% unique %>%
+#       mutate(cat = interaction(TPM_cat,TE_cat)) %>% group_by(cat) %>%
+#       mutate(group = factor(cur_group_id()))
+#   })) %>%
+#   select(-data) %>%
+#   unnest(box_group)
+# # Join the x_positions with p_values
+# p_values_annot <- df_groups %>%
+#   left_join(x_positions,by=c("PANEL","group")) %>%
+#   group_by(Stress_label,TPM_cat) %>%
+#   mutate(xmin=case_when(TE_cat=="down"~median_x[TE_cat=="down"],
+#                         TE_cat=="up"~median_x[TE_cat=="other"],
+#                         TRUE~NA_real_))%>%
+#   mutate(xmax=case_when(TE_cat=="down"~median_x[TE_cat=="other"],
+#                         TE_cat=="up"~median_x[TE_cat=="up"],
+#                         TRUE~NA_real_)) %>%
+#   mutate(xmin.updown = median_x[TE_cat=="down"],
+#          xmax.updown = median_x[TE_cat=="up"]) %>%
+#   filter(TE_cat=="other") %>%
+#   left_join(p_values %>% filter(TE_cat=="other"),
+#             by=c("Stress_label","TPM_cat","TE_cat")) %>%
+#   mutate(y_pos=case_when(Stress_label=="42C"~3,
+#                          Stress_label=="Azide 0.8%"~3,
+#                          Stress_label=="Ethanol 7.5%"~3))
+# 
+# # Add the significance bars using geom_signif
+# p_deltaZ_byTPMbyTE_sig <- p_deltaZ_byTPMbyTE + 
+#   geom_signif(inherit.aes=F,data = p_values_annot, 
+#               aes(group=interaction(TPM_cat,TE_cat), # this needs to match the aes of the ggplot object
+#                   xmin = xmin.updown, xmax = xmax.updown, annotations = p_label,y_position=y_pos), 
+#               manual=T,
+#               textsize=8*0.35)+
+#   labs(x="",y="",
+#        subtitle="")
+# 
+# p_deltaZ_byTPMbyTE_sig
+# ggsave(file.path(github_dir,"figures","Figure4/deltaZ_byTPMbyTE_boxes_allcat_wide.pdf"),
+#        egg::set_panel_size(p=p_deltaZ_byTPMbyTE_sig+
+#                              labs(x="",y="",subtitle="")+
+#                              theme(strip.text.y=element_blank(),
+#                                    legend.position="none",
+#                                    axis.text.x = element_blank()),
+#                            width=unit(45,"mm"),height=unit(35,"mm")),
+#        width=200,height=50,units="mm",bg="transparent")
 ```
 
 ## esc vs FC abundance boxplots
@@ -2556,140 +2499,140 @@ ggsave(file.path(github_dir,"figures","Figure4/esc_byTE_TPMup_HS_EtOH.pdf"),
 ## A: Occ vs Zsup
 
 ```{r}
-set.seed(100)
-df_hairpins <- df_Zsup_mean %>% filter(Treatment_group=="hairpinReporters") %>%
-  group_by(ORF) %>%
-  summarise(SP.mean = exp(mean(log(SP.mean))),
-            Zsup.mean = mean(Zsup.mean),
-            TPM.mean = exp(mean(log(Total.TPM.mean))))
-df_30C_occ <- df_Occ_mean_minfilt %>%
-  filter(Treatment%in%c("none","mock"),Temperature=="30C") %>%
-  group_by(ORF) %>%
-  summarise(Occ.odds.mean = exp(mean(log(Occ.odds.mean))))
-df <- df_hairpins %>% full_join(df_30C_occ,by="ORF") %>%
-  filter(!is.na(Zsup.mean),!is.na(Occ.odds.mean),!is.infinite(Occ.odds.mean),Occ.odds.mean>0) %>%
-  left_join(gene_labels,by="ORF") %>%
-  left_join(df_Weinberg,by="ORF") %>%
-  filter(Occ.odds.mean>0) %>%
-  left_join(df_rnafold %>%
-              select(ORF,EnergyBin),by="ORF") %>%
-  mutate(EnergyBin=if_else(EnergyBin=="uORF","other",EnergyBin)) %>%
-  mutate(EnergyBin=factor(EnergyBin,levels=c("least structured 5'UTR","other","most structured 5'UTR"),
-                          labels=c("least","other","most"))) %>% 
-  arrange(EnergyBin)
-df_corr <- df %>% 
-  nest() %>%
-  mutate(corr = map(data,function(df){
-    df %>% column_to_rownames(var="ORF") %>% correlate(method="spearman")
-  })) %>%
-  select(-data) %>%
-  unnest(corr) 
-genes_to_label <- c("HAC1","GCN4")
-energy_color_scale <- c("least" = RColorBrewer::brewer.pal(12,"Paired")[4], 
-                              "other" = "grey50", 
-                              "most" = RColorBrewer::brewer.pal(12,"Paired")[10])
-p_Occ <- ggplot(df,
-       aes(x=Occ.odds.mean,y=Zsup.mean))+
-  geom_hline(yintercept=0,linetype="dotted")+
-  geom_vline(xintercept=median(df$Occ.odds.mean,na.rm=T),linetype="dotted")+
-  ggrastr::rasterize(dpi = 600, geom_point(data=df%>%filter(EnergyBin=="other"),alpha=0.5, shape = 16, size = 0.8, color = "grey")) +
-  ggrastr::rasterize(dpi = 600, geom_point(data=df%>%filter(EnergyBin!="other"),alpha=0.75,aes(color=EnergyBin), shape = 16, size = 0.8)) +
-  scale_color_manual(values=energy_color_scale)+
-  #scale_x_log10nice()+#coord_cartesian(xlim=c(0.2,50))+
-  scale_x_log10nice()+
-  geom_text(data=df_corr %>% filter(term=="Occ.odds.mean"),
-             aes(label=paste0("r = ",round(Zsup.mean,digits=2)),
-                 x=1,y=2.8),
-            size=10*0.35)+
-  geom_smooth(method="lm",se=F,color="black")+
-  #geom_point(data=df %>% filter(gene%in%genes_to_label),size=2,color="red")+
-  #geom_label_repel(data=df %>% filter(gene%in%genes_to_label),size=4.2,aes(label=gene))+
-  labs(x="",y="")+
-  theme(legend.position="none")
-p_Occ
-p_zsup_box <- ggplot(df %>% filter(!is.na(EnergyBin)),
-         aes(x=EnergyBin,y=Zsup.mean,fill=EnergyBin))+
-    ggrastr::rasterize(dpi = 600, geom_point(position=position_jitterdodge(jitter.width=1.5),
-               aes(color=EnergyBin,alpha=EnergyBin), shape =16, size = 0.75)) +
-  scale_color_manual(values=energy_color_scale)+
-    scale_alpha_manual(values=c("least" = 0.6, "other" = 0.1, "most" = 0.6)) +
-  geom_violin(fill=NA,draw_quantiles = c(0.5),size=0.5,color="black")+
-    theme(legend.position="none")+
-  ggsignif::geom_signif(na.rm=T,
-                        map_signif_level=T,
-                        test="wilcox.test",
-              y_position=c(2,2),
-              textsize = 4.2,
-              comparisons=list(
-                c("least","other"),
-                c("other","most")
-              ))+
-  labs(x="",y="")+
-  theme(axis.text.x = element_text(angle=45,hjust=1))
-p_zsup_box
-ggsave("../figures/Figure5/Zsup_Occ_left.pdf",
-       egg::set_panel_size(p=p_Occ,width=unit(30,"mm"),height=unit(30,"mm")),
-       width=75,height=75,units="mm",bg="transparent")
-ggsave("../figures/Figure5/Zsup_Occ_right.pdf",
-       egg::set_panel_size(p=p_zsup_box+theme(axis.title.y=element_blank()),width=unit(30,"mm"),height=unit(30,"mm")),
-       width=75,height=75,units="mm",bg="transparent")
+# set.seed(100)
+# df_hairpins <- df_Zsup_mean %>% filter(Treatment_group=="hairpinReporters") %>%
+#   group_by(ORF) %>%
+#   summarise(SP.mean = exp(mean(log(SP.mean))),
+#             Zsup.mean = mean(Zsup.mean),
+#             TPM.mean = exp(mean(log(Total.TPM.mean))))
+# df_30C_occ <- df_Occ_mean_minfilt %>%
+#   filter(Treatment%in%c("none","mock"),Temperature=="30C") %>%
+#   group_by(ORF) %>%
+#   summarise(Occ.odds.mean = exp(mean(log(Occ.odds.mean))))
+# df <- df_hairpins %>% full_join(df_30C_occ,by="ORF") %>%
+#   filter(!is.na(Zsup.mean),!is.na(Occ.odds.mean),!is.infinite(Occ.odds.mean),Occ.odds.mean>0) %>%
+#   left_join(gene_labels,by="ORF") %>%
+#   left_join(df_Weinberg,by="ORF") %>%
+#   filter(Occ.odds.mean>0) %>%
+#   left_join(df_rnafold %>%
+#               select(ORF,EnergyBin),by="ORF") %>%
+#   mutate(EnergyBin=if_else(EnergyBin=="uORF","other",EnergyBin)) %>%
+#   mutate(EnergyBin=factor(EnergyBin,levels=c("least structured 5'UTR","other","most structured 5'UTR"),
+#                           labels=c("least","other","most"))) %>% 
+#   arrange(EnergyBin)
+# df_corr <- df %>% 
+#   nest() %>%
+#   mutate(corr = map(data,function(df){
+#     df %>% column_to_rownames(var="ORF") %>% correlate(method="spearman")
+#   })) %>%
+#   select(-data) %>%
+#   unnest(corr) 
+# genes_to_label <- c("HAC1","GCN4")
+# energy_color_scale <- c("least" = RColorBrewer::brewer.pal(12,"Paired")[4], 
+#                               "other" = "grey50", 
+#                               "most" = RColorBrewer::brewer.pal(12,"Paired")[10])
+# p_Occ <- ggplot(df,
+#        aes(x=Occ.odds.mean,y=Zsup.mean))+
+#   geom_hline(yintercept=0,linetype="dotted")+
+#   geom_vline(xintercept=median(df$Occ.odds.mean,na.rm=T),linetype="dotted")+
+#   ggrastr::rasterize(dpi = 600, geom_point(data=df%>%filter(EnergyBin=="other"),alpha=0.5, shape = 16, size = 0.8, color = "grey")) +
+#   ggrastr::rasterize(dpi = 600, geom_point(data=df%>%filter(EnergyBin!="other"),alpha=0.75,aes(color=EnergyBin), shape = 16, size = 0.8)) +
+#   scale_color_manual(values=energy_color_scale)+
+#   #scale_x_log10nice()+#coord_cartesian(xlim=c(0.2,50))+
+#   scale_x_log10nice()+
+#   geom_text(data=df_corr %>% filter(term=="Occ.odds.mean"),
+#              aes(label=paste0("r = ",round(Zsup.mean,digits=2)),
+#                  x=1,y=2.8),
+#             size=10*0.35)+
+#   geom_smooth(method="lm",se=F,color="black")+
+#   #geom_point(data=df %>% filter(gene%in%genes_to_label),size=2,color="red")+
+#   #geom_label_repel(data=df %>% filter(gene%in%genes_to_label),size=4.2,aes(label=gene))+
+#   labs(x="",y="")+
+#   theme(legend.position="none")
+# p_Occ
+# p_zsup_box <- ggplot(df %>% filter(!is.na(EnergyBin)),
+#          aes(x=EnergyBin,y=Zsup.mean,fill=EnergyBin))+
+#     ggrastr::rasterize(dpi = 600, geom_point(position=position_jitterdodge(jitter.width=1.5),
+#                aes(color=EnergyBin,alpha=EnergyBin), shape =16, size = 0.75)) +
+#   scale_color_manual(values=energy_color_scale)+
+#     scale_alpha_manual(values=c("least" = 0.6, "other" = 0.1, "most" = 0.6)) +
+#   geom_violin(fill=NA,draw_quantiles = c(0.5),size=0.5,color="black")+
+#     theme(legend.position="none")+
+#   ggsignif::geom_signif(na.rm=T,
+#                         map_signif_level=T,
+#                         test="wilcox.test",
+#               y_position=c(2,2),
+#               textsize = 4.2,
+#               comparisons=list(
+#                 c("least","other"),
+#                 c("other","most")
+#               ))+
+#   labs(x="",y="")+
+#   theme(axis.text.x = element_text(angle=45,hjust=1))
+# p_zsup_box
+# ggsave("../figures/Figure5/Zsup_Occ_left.pdf",
+#        egg::set_panel_size(p=p_Occ,width=unit(30,"mm"),height=unit(30,"mm")),
+#        width=75,height=75,units="mm",bg="transparent")
+# ggsave("../figures/Figure5/Zsup_Occ_right.pdf",
+#        egg::set_panel_size(p=p_zsup_box+theme(axis.title.y=element_blank()),width=unit(30,"mm"),height=unit(30,"mm")),
+#        width=75,height=75,units="mm",bg="transparent")
 ```
 
 
 ```{r}
-genes_to_label <- c("HAC1","GCN4")
-
-df_hairpins <- df_Zsup_mean %>% filter(Treatment_group=="hairpinReporters") %>%
-  group_by(ORF) %>%
-  summarise(SP.mean = exp(mean(log(SP.mean))),
-            Zsup.mean = mean(Zsup.mean),
-            TPM.mean = exp(mean(log(Total.TPM.mean))))
-df_30C_occ <- df_Occ_mean_minfilt %>%
-  filter(Treatment%in%c("none","mock"),Temperature=="30C") %>%
-  group_by(ORF) %>%
-  summarise(Occ.odds.mean = exp(mean(log(Occ.odds.mean))))
-df <- df_hairpins %>% full_join(df_30C_occ,by="ORF") %>%
-  left_join(gene_labels,by="ORF") %>%
-  left_join(df_Weinberg,by="ORF") %>%
-  filter(Occ.odds.mean>0) %>%
-  mutate(gene_label = if_else(gene%in%genes_to_label,gene,""))
-df_corr <- df %>% ungroup %>%
-  nest() %>%
-  mutate(corr = map(data,function(df){
-    df %>% select(ORF,Zsup.mean,TE,Occ.odds.mean,TPM.mean) %>% column_to_rownames(var="ORF") %>% correlate(method="spearman")
-  })) %>%
-  select(-data) %>%
-  unnest(corr) 
-p_TPM_TE <- ggplot(df,
-       aes(x=TPM.mean,y=TE))+
-  scale_x_log10nice()+coord_cartesian(xlim=c(1,1e4))+
-  scale_y_log10nice()+coord_cartesian(ylim=c(0.01,10))+
-  ggrastr::rasterize(dpi = 600, geom_point(alpha=0.3, size = 0.5, shape = 16, color = "black")) +
-  ggrastr::rasterize(dpi = 600, geom_point(data=df %>% filter(gene%in%genes_to_label),size=2,color="red")) +
-  geom_text_repel(data=df,size=4.2,aes(label=gene_label),max.overlaps = 10000,min.segment.length = 0)+
-  labs(x="mRNA Abundance",y="Translation\nEfficiency")
-p_TPM_TE
-
-p_Z_box <- ggplot(df,
-                  aes(x=1,y=Zsup.mean))+
-  ggrastr::rasterize(dpi = 600, geom_point(data=df%>%filter(gene%!in%genes_to_label),position=position_jitter(width=0.43),alpha=0.02, size = 0.3)) +
-  #geom_boxplot(fill=NA,outlier.shape=NA)+
-  geom_violin(fill="grey70", alpha = 0.6, draw_quantiles = c(0.5))+
-  ggrastr::rasterize(dpi = 600, geom_point(data=df%>%filter(gene%in%genes_to_label),alpha=1,color="red",size=1)) +
-  #geom_text_repel(data=df%>%filter(gene=="GCN4"),size=4.2,aes(label=gene_label),max.overlaps = 10000,min.segment.length = 0,nudge_y=2.5,nudge_x=0.25)+
-  #geom_text_repel(data=df%>%filter(gene=="HAC1"),size=4.2,aes(label=gene_label),max.overlaps = 10000,min.segment.length = 0,nudge_y=-2.5 ,nudge_x=0.25)+
-  labs(x="",y="Zsup")+
-  theme(axis.title.x=element_blank(),  # Removes x-axis label
-        axis.text.x=element_blank(),   # Removes x-axis tick labels
-        axis.ticks.x=element_blank(),   # Removes x-axis ticks
-        axis.title.y = element_text(margin = margin(t = 0, r = 0, b = 0, l = 0, unit = "pt"))
-        )
-p_Z_box
-ggsave("../figures/Figure5/TPM_TE_left.pdf",
-       egg::set_panel_size(p=p_TPM_TE+labs(x="",y=""),width=unit(30,"mm"),height=unit(30,"mm")),
-       width=100,height=100,units="mm",bg="transparent")
-ggsave("../figures/Figure5/TPM_TE_right.pdf",egg::set_panel_size(p=p_Z_box+labs(x="",y=""),width=unit(15,"mm"),height=unit(30,"mm")),
-       width=100,height=100,units="mm",bg="transparent")
+# genes_to_label <- c("HAC1","GCN4")
+# 
+# df_hairpins <- df_Zsup_mean %>% filter(Treatment_group=="hairpinReporters") %>%
+#   group_by(ORF) %>%
+#   summarise(SP.mean = exp(mean(log(SP.mean))),
+#             Zsup.mean = mean(Zsup.mean),
+#             TPM.mean = exp(mean(log(Total.TPM.mean))))
+# df_30C_occ <- df_Occ_mean_minfilt %>%
+#   filter(Treatment%in%c("none","mock"),Temperature=="30C") %>%
+#   group_by(ORF) %>%
+#   summarise(Occ.odds.mean = exp(mean(log(Occ.odds.mean))))
+# df <- df_hairpins %>% full_join(df_30C_occ,by="ORF") %>%
+#   left_join(gene_labels,by="ORF") %>%
+#   left_join(df_Weinberg,by="ORF") %>%
+#   filter(Occ.odds.mean>0) %>%
+#   mutate(gene_label = if_else(gene%in%genes_to_label,gene,""))
+# df_corr <- df %>% ungroup %>%
+#   nest() %>%
+#   mutate(corr = map(data,function(df){
+#     df %>% select(ORF,Zsup.mean,TE,Occ.odds.mean,TPM.mean) %>% column_to_rownames(var="ORF") %>% correlate(method="spearman")
+#   })) %>%
+#   select(-data) %>%
+#   unnest(corr) 
+# p_TPM_TE <- ggplot(df,
+#        aes(x=TPM.mean,y=TE))+
+#   scale_x_log10nice()+coord_cartesian(xlim=c(1,1e4))+
+#   scale_y_log10nice()+coord_cartesian(ylim=c(0.01,10))+
+#   ggrastr::rasterize(dpi = 600, geom_point(alpha=0.3, size = 0.5, shape = 16, color = "black")) +
+#   ggrastr::rasterize(dpi = 600, geom_point(data=df %>% filter(gene%in%genes_to_label),size=2,color="red")) +
+#   geom_text_repel(data=df,size=4.2,aes(label=gene_label),max.overlaps = 10000,min.segment.length = 0)+
+#   labs(x="mRNA Abundance",y="Translation\nEfficiency")
+# p_TPM_TE
+# 
+# p_Z_box <- ggplot(df,
+#                   aes(x=1,y=Zsup.mean))+
+#   ggrastr::rasterize(dpi = 600, geom_point(data=df%>%filter(gene%!in%genes_to_label),position=position_jitter(width=0.43),alpha=0.02, size = 0.3)) +
+#   #geom_boxplot(fill=NA,outlier.shape=NA)+
+#   geom_violin(fill="grey70", alpha = 0.6, draw_quantiles = c(0.5))+
+#   ggrastr::rasterize(dpi = 600, geom_point(data=df%>%filter(gene%in%genes_to_label),alpha=1,color="red",size=1)) +
+#   #geom_text_repel(data=df%>%filter(gene=="GCN4"),size=4.2,aes(label=gene_label),max.overlaps = 10000,min.segment.length = 0,nudge_y=2.5,nudge_x=0.25)+
+#   #geom_text_repel(data=df%>%filter(gene=="HAC1"),size=4.2,aes(label=gene_label),max.overlaps = 10000,min.segment.length = 0,nudge_y=-2.5 ,nudge_x=0.25)+
+#   labs(x="",y="Zsup")+
+#   theme(axis.title.x=element_blank(),  # Removes x-axis label
+#         axis.text.x=element_blank(),   # Removes x-axis tick labels
+#         axis.ticks.x=element_blank(),   # Removes x-axis ticks
+#         axis.title.y = element_text(margin = margin(t = 0, r = 0, b = 0, l = 0, unit = "pt"))
+#         )
+# p_Z_box
+# ggsave("../figures/Figure5/TPM_TE_left.pdf",
+#        egg::set_panel_size(p=p_TPM_TE+labs(x="",y=""),width=unit(30,"mm"),height=unit(30,"mm")),
+#        width=100,height=100,units="mm",bg="transparent")
+# ggsave("../figures/Figure5/TPM_TE_right.pdf",egg::set_panel_size(p=p_Z_box+labs(x="",y=""),width=unit(15,"mm"),height=unit(30,"mm")),
+#        width=100,height=100,units="mm",bg="transparent")
 
 ```
 
@@ -3735,85 +3678,85 @@ ggsave("../figures/Figure7/aid_sgs_per_cell.pdf", aid_sg_per_cell_plot, width = 
 # Supplemental
 
 ```{r}
-df_sedseq_withreps <- read_tsv(file.path(github_dir,
-                                   "data_processed/sedseq_out.tsv.gz")) %>%
-  left_join(df_samples_byLysate %>% select(Treatment_group,Treatment,Temperature,Time) %>%
-              unique,by=c("Treatment","Treatment_group","Temperature","Time")) %>%
-  left_join(df_stress_samples,by=c("Temperature","Treatment_group","Treatment"))
-df <- df_sedseq_withreps %>%
-  select(ORF,Strain,Treatment_group,Treatment_group_ID,Stress,Stress_group,Stress_label,Treatment,Temperature,Biorep,Zsup) %>%
-  pivot_wider(names_from=Biorep,values_from=Zsup) %>%
-  filter(Stress_group %in% c("Heat Shock","Azide 0.5%","Azide 0.8%",
-                             "Ethanol 5%","Ethanol 7.5%","Ethanol 10%","Ethanol 15%")) %>%
-  filter(Temperature!="42CR") %>%
-  arrange(Stress,Treatment_group_ID,Stress_label) %>%
-  mutate(facet_col = interaction(Stress_label,Treatment_group_ID))
- 
-# Step 1: Compute the correlation matrix. Here's an example with more variables.
-# If you're only comparing BR1 and BR2 directly, adjust this step accordingly.
-df_cor <- df %>%
-  group_by(Stress,Stress_label,Treatment_group,Treatment_group_ID,Treatment,facet_col) %>%
-  summarize(pearson = cor(BR1, BR2, method = "pearson",use="pairwise.complete.obs"))
-
-stress_label_mapping <- df %>%
-  distinct(Stress_label,facet_col) %>% unique %>%
-  pull(Stress_label,name=facet_col)
-stress_facet_labeller <- function(value) {
-  mapped_label <- stress_label_mapping[value]
-  return(mapped_label)
-}
-plot_table <- df %>%
-  group_by(Stress,Treatment_group_ID) %>%
-  nest %>%
-  mutate(plot = pmap(list("df"=data,"stress_var"=Stress,"tg"=Treatment_group_ID),function(df,stress_var,tg){
-    df_cor_filt <- df_cor %>% filter(Stress==stress_var,Treatment_group_ID==tg)
-    ggplot(data = df, aes(x = BR1, y = BR2)) +
-    geom_hline(yintercept = 0, color = "grey",linetype="dotted") +
-    geom_vline(xintercept = 0, color = "grey",linetype="dotted") +
-    ggrastr::rasterize(dpi = 600, geom_point(size = 0.5, shape=16,alpha=0.5,color="grey",na.rm = TRUE)) +
-    coord_cartesian(xlim = c(-5, 5), ylim = c(-5, 5)) +
-    scale_x_continuous(breaks = c(-4, 0, 4)) +
-    scale_y_continuous(breaks = c(-4, 0, 4)) +
-    geom_smooth(method = "lm", formula = "y ~ x", se = FALSE, na.rm = TRUE,
-                color = "black", size = 0.25) +
-    geom_text(label = "r =", x = -4, y = 4, hjust = 0,
-              size = 8*0.35, color = "black") +
-    geom_text(data=df_cor_filt,inherit.aes=F,aes(label = sprintf("%.2f", pearson)),
-              x = -4, y = 2, hjust = 0,
-              size = 8*0.35, color = "black") +
-    theme_sedseq(base_size=8) +
-    theme(aspect.ratio = 1)+
-       theme(axis.title.x = element_blank(),
-             axis.text.x = element_blank(),
-             axis.title.y = element_blank(),
-             axis.text.y = element_blank())+
-      facet_grid(.~facet_col,labeller=as_labeller(stress_facet_labeller))
-  }))
-p_out_HS <- plot_table %>% filter(Stress=="Heat Shock") %>% pull(plot) %>% .[[1]]
-p_out_N3_tg20 <- plot_table %>% filter(Stress=="Azide",Treatment_group_ID=="tg_20") %>% pull(plot) %>% .[[1]]
-p_out_N3_tg9 <- plot_table %>% filter(Stress=="Azide",Treatment_group_ID=="tg_9") %>% pull(plot) %>% .[[1]]
-p_out_EtOH_tg10 <- plot_table %>% filter(Stress=="Ethanol",Treatment_group_ID=="tg_10") %>% pull(plot) %>% .[[1]]
-p_out_EtOH_tg11 <- plot_table %>% filter(Stress=="Ethanol",Treatment_group_ID=="tg_11") %>% pull(plot) %>% .[[1]]
-p_out_EtOH_tg12 <- plot_table %>% filter(Stress=="Ethanol",Treatment_group_ID=="tg_12") %>% pull(plot) %>% .[[1]]
-
-ggsave("../figures/Supplemental/compare_Zsup_bioreps_HS.pdf",
-       egg::set_panel_size(p=p_out_HS,width=unit(15,"mm"),height=unit(15,"mm")),
-       width=100,height=50,units="mm",bg="transparent")
-ggsave("../figures/Supplemental/compare_Zsup_bioreps_N3_tg20.pdf",
-       egg::set_panel_size(p=p_out_N3_tg20,width=unit(15,"mm"),height=unit(15,"mm")),
-       width=100,height=50,units="mm",bg="transparent")
-ggsave("../figures/Supplemental/compare_Zsup_bioreps_N3_tg9.pdf",
-       egg::set_panel_size(p=p_out_N3_tg9,width=unit(15,"mm"),height=unit(15,"mm")),
-       width=100,height=50,units="mm",bg="transparent")
-ggsave("../figures/Supplemental/compare_Zsup_bioreps_EtOH_tg10.pdf",
-       egg::set_panel_size(p=p_out_EtOH_tg10,width=unit(15,"mm"),height=unit(15,"mm")),
-       width=100,height=50,units="mm",bg="transparent")
-ggsave("../figures/Supplemental/compare_Zsup_bioreps_EtOH_tg11.pdf",
-       egg::set_panel_size(p=p_out_EtOH_tg11,width=unit(15,"mm"),height=unit(15,"mm")),
-       width=100,height=50,units="mm",bg="transparent")
-ggsave("../figures/Supplemental/compare_Zsup_bioreps_EtOH_tg12.pdf",
-       egg::set_panel_size(p=p_out_EtOH_tg12,width=unit(15,"mm"),height=unit(15,"mm")),
-       width=100,height=50,units="mm",bg="transparent")
+# df_sedseq_withreps <- read_tsv(file.path(github_dir,
+#                                    "data_processed/sedseq_out.tsv.gz")) %>%
+#   left_join(df_samples_byLysate %>% select(Treatment_group,Treatment,Temperature,Time) %>%
+#               unique,by=c("Treatment","Treatment_group","Temperature","Time")) %>%
+#   left_join(df_stress_samples,by=c("Temperature","Treatment_group","Treatment"))
+# df <- df_sedseq_withreps %>%
+#   select(ORF,Strain,Treatment_group,Treatment_group_ID,Stress,Stress_group,Stress_label,Treatment,Temperature,Biorep,Zsup) %>%
+#   pivot_wider(names_from=Biorep,values_from=Zsup) %>%
+#   filter(Stress_group %in% c("Heat Shock","Azide 0.5%","Azide 0.8%",
+#                              "Ethanol 5%","Ethanol 7.5%","Ethanol 10%","Ethanol 15%")) %>%
+#   filter(Temperature!="42CR") %>%
+#   arrange(Stress,Treatment_group_ID,Stress_label) %>%
+#   mutate(facet_col = interaction(Stress_label,Treatment_group_ID))
+#  
+# # Step 1: Compute the correlation matrix. Here's an example with more variables.
+# # If you're only comparing BR1 and BR2 directly, adjust this step accordingly.
+# df_cor <- df %>%
+#   group_by(Stress,Stress_label,Treatment_group,Treatment_group_ID,Treatment,facet_col) %>%
+#   summarize(pearson = cor(BR1, BR2, method = "pearson",use="pairwise.complete.obs"))
+# 
+# stress_label_mapping <- df %>%
+#   distinct(Stress_label,facet_col) %>% unique %>%
+#   pull(Stress_label,name=facet_col)
+# stress_facet_labeller <- function(value) {
+#   mapped_label <- stress_label_mapping[value]
+#   return(mapped_label)
+# }
+# plot_table <- df %>%
+#   group_by(Stress,Treatment_group_ID) %>%
+#   nest %>%
+#   mutate(plot = pmap(list("df"=data,"stress_var"=Stress,"tg"=Treatment_group_ID),function(df,stress_var,tg){
+#     df_cor_filt <- df_cor %>% filter(Stress==stress_var,Treatment_group_ID==tg)
+#     ggplot(data = df, aes(x = BR1, y = BR2)) +
+#     geom_hline(yintercept = 0, color = "grey",linetype="dotted") +
+#     geom_vline(xintercept = 0, color = "grey",linetype="dotted") +
+#     ggrastr::rasterize(dpi = 600, geom_point(size = 0.5, shape=16,alpha=0.5,color="grey",na.rm = TRUE)) +
+#     coord_cartesian(xlim = c(-5, 5), ylim = c(-5, 5)) +
+#     scale_x_continuous(breaks = c(-4, 0, 4)) +
+#     scale_y_continuous(breaks = c(-4, 0, 4)) +
+#     geom_smooth(method = "lm", formula = "y ~ x", se = FALSE, na.rm = TRUE,
+#                 color = "black", size = 0.25) +
+#     geom_text(label = "r =", x = -4, y = 4, hjust = 0,
+#               size = 8*0.35, color = "black") +
+#     geom_text(data=df_cor_filt,inherit.aes=F,aes(label = sprintf("%.2f", pearson)),
+#               x = -4, y = 2, hjust = 0,
+#               size = 8*0.35, color = "black") +
+#     theme_sedseq(base_size=8) +
+#     theme(aspect.ratio = 1)+
+#        theme(axis.title.x = element_blank(),
+#              axis.text.x = element_blank(),
+#              axis.title.y = element_blank(),
+#              axis.text.y = element_blank())+
+#       facet_grid(.~facet_col,labeller=as_labeller(stress_facet_labeller))
+#   }))
+# p_out_HS <- plot_table %>% filter(Stress=="Heat Shock") %>% pull(plot) %>% .[[1]]
+# p_out_N3_tg20 <- plot_table %>% filter(Stress=="Azide",Treatment_group_ID=="tg_20") %>% pull(plot) %>% .[[1]]
+# p_out_N3_tg9 <- plot_table %>% filter(Stress=="Azide",Treatment_group_ID=="tg_9") %>% pull(plot) %>% .[[1]]
+# p_out_EtOH_tg10 <- plot_table %>% filter(Stress=="Ethanol",Treatment_group_ID=="tg_10") %>% pull(plot) %>% .[[1]]
+# p_out_EtOH_tg11 <- plot_table %>% filter(Stress=="Ethanol",Treatment_group_ID=="tg_11") %>% pull(plot) %>% .[[1]]
+# p_out_EtOH_tg12 <- plot_table %>% filter(Stress=="Ethanol",Treatment_group_ID=="tg_12") %>% pull(plot) %>% .[[1]]
+# 
+# ggsave("../figures/Supplemental/compare_Zsup_bioreps_HS.pdf",
+#        egg::set_panel_size(p=p_out_HS,width=unit(15,"mm"),height=unit(15,"mm")),
+#        width=100,height=50,units="mm",bg="transparent")
+# ggsave("../figures/Supplemental/compare_Zsup_bioreps_N3_tg20.pdf",
+#        egg::set_panel_size(p=p_out_N3_tg20,width=unit(15,"mm"),height=unit(15,"mm")),
+#        width=100,height=50,units="mm",bg="transparent")
+# ggsave("../figures/Supplemental/compare_Zsup_bioreps_N3_tg9.pdf",
+#        egg::set_panel_size(p=p_out_N3_tg9,width=unit(15,"mm"),height=unit(15,"mm")),
+#        width=100,height=50,units="mm",bg="transparent")
+# ggsave("../figures/Supplemental/compare_Zsup_bioreps_EtOH_tg10.pdf",
+#        egg::set_panel_size(p=p_out_EtOH_tg10,width=unit(15,"mm"),height=unit(15,"mm")),
+#        width=100,height=50,units="mm",bg="transparent")
+# ggsave("../figures/Supplemental/compare_Zsup_bioreps_EtOH_tg11.pdf",
+#        egg::set_panel_size(p=p_out_EtOH_tg11,width=unit(15,"mm"),height=unit(15,"mm")),
+#        width=100,height=50,units="mm",bg="transparent")
+# ggsave("../figures/Supplemental/compare_Zsup_bioreps_EtOH_tg12.pdf",
+#        egg::set_panel_size(p=p_out_EtOH_tg12,width=unit(15,"mm"),height=unit(15,"mm")),
+#        width=100,height=50,units="mm",bg="transparent")
 ```
 
 ## RelSed reps
@@ -4151,11 +4094,6 @@ ggsave("../figures/Supplemental/hairpin_30C_error.pdf",
 
 ## noise relsed hairpin replicates
 ```{r}
-df_Zsup_mean <- read_tsv(file.path(github_dir, "data_processed/sedseq_filt_mean.tsv.gz")) |>
-  left_join(df_samples_byLysate |> 
-              select(Treatment_group,Treatment,Temperature,Time) |> unique(),
-              by=c("Treatment","Treatment_group","Temperature")) |>
-  left_join(gene_labels |> select(-LengthTxEst), by='ORF')
 df <- df_Zsup_mean %>%
   filter(Treatment_group == "hairpinReporters",
          pSup.mean>0,SP.mean>0,!is.infinite(pSup.mean),!is.infinite(SP.mean)) %>%
@@ -4253,6 +4191,23 @@ ggsave("../figures/Supplemental/hairpin_relsed_30C_error.pdf",
         egg::set_panel_size(p=p,
                             width=unit(50,"mm"),height=unit(50,"mm")),
        width=75,height=75,units="mm",bg = "transparent",dpi=600)
+```
+
+## stats HAC1, GCN4
+```{r}
+df <- df_Zsup_mean %>%
+  filter(Treatment_group == "hairpinReporters",
+         pSup.mean>0,SP.mean>0,!is.infinite(pSup.mean),!is.infinite(SP.mean)) %>%
+  filter(classification=="Verified")
+
+  t_result_hac1 <- t.test(df %>% filter(gene == "HAC1") %>% pull(RelSed.mean), df %>% filter(gene != "HAC1") %>% pull(RelSed.mean), 
+                    alternative = "less",
+                    var.equal = FALSE)
+  t_result_hac1
+    t_result_gcn4 <- t.test(df %>% filter(gene == "GCN4") %>% pull(RelSed.mean), df %>% filter(gene != "HAC1") %>% pull(RelSed.mean), 
+                    alternative = "less",
+                    var.equal = FALSE)
+    t_result_gcn4
 ```
 
 ```{r}
