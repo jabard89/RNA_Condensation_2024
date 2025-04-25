@@ -529,140 +529,140 @@ ggsave(file.path(github_dir, "figures/Figure1/Fig1_sed_esc_hsf1.pdf"),
 
 ## Figure 1H (pSup with model comparison)
 ```{r fig_theory_psup, dependson='dependson="fig1_psup_vs_length"'}
-logit = function(p) { log(p / (1 - p)) }
-invlogit = function (x) { 1 / (1 + exp(-x)) }
-
-fit_data = df |> filter(pSup.mean>0)
-
-nls_fit_30C_noclust <-
-  nls(lopSup ~ logit(1 - beta_param * length^chi_param),
-      data = fit_data |>
-        filter(Temperature == '30C') |>
-        mutate(lopSup = logit(pSup.mean)),
-      start = list(beta_param = 1e-5, chi_param = 1))
-
-beta_fit <- coef(nls_fit_30C_noclust)["beta_param"]
-chi_fit  <- coef(nls_fit_30C_noclust)["chi_param"]
-
-#summary(nls_fit_30C_noclust)
-
-nls_fit_42C <-
-  nls(lopSup ~ logit( (1 - beta_fit * length^chi_fit) * exp( - mu_param - nu_param * length) ),
-      data = fit_data |>
-        filter(Temperature == '42C') |>
-        mutate(lopSup = logit(pSup.mean)),
-      start = list(mu_param = 1e-5, nu_param = 1e-5))
-
-mu_fit_42C <- coef(nls_fit_42C)["mu_param"]
-nu_fit_42C  <- coef(nls_fit_42C)["nu_param"]
-
-#summary(nls_fit_42C)
-
-
-nls_fit_46C <-
-  nls(lopSup ~ logit( (1 - beta_fit * length^chi_fit) * exp( - mu_param - nu_param * length) ),
-      data = fit_data |>
-        filter(Temperature == '46C') |>
-        mutate(lopSup = logit(pSup.mean)),
-      start = list(mu_param = 1e-5, nu_param = 1e-5))
-
-mu_fit_46C <- coef(nls_fit_46C)["mu_param"]
-nu_fit_46C  <- coef(nls_fit_46C)["nu_param"]
-
-#summary(nls_fit_46C)
-
-
-nls_fitnuonly_42C <-
-  nls(lopSup ~ logit( (1 - beta_fit * length^chi_fit) * exp( - nu_param * length) ),
-      data = fit_data |>
-        filter(Temperature == '42C') |>
-        mutate(lopSup = logit(pSup.mean)),
-      start = list(nu_param = 1e-5))
-
-nuonly_fit_42C  <- coef(nls_fitnuonly_42C)["nu_param"]
-
-#summary(nls_fitnuonly_42C)
-
-nls_fitnuonly_46C <-
-  nls(lopSup ~ logit( (1 - beta_fit * length^chi_fit) * exp( - nu_param * length) ),
-      data = fit_data |>
-        filter(Temperature == '46C') |>
-        mutate(lopSup = logit(pSup.mean)),
-      start = list(nu_param = 1e-5))
-
-nuonly_fit_46C  <- coef(nls_fitnuonly_46C)["nu_param"]
-
-#summary(nls_fitnuonly_46C)
-
-# Theory
-psup_curve = function(length, beta, chi, mu, nu, baseline=0.0) {
-  res = sapply(length, function(L) {
-    baseline + exp(-mu)*exp(-nu*L)*max(1-beta*L^chi,0)
-  })
-  res
-}
-
-s_nlsfit =
-  list('30C' =
-         tibble(length=lengths,
-                pSup.mean=psup_curve(length, beta = beta_fit, chi = chi_fit, mu = 0, nu = 0, baseline=0),
-                Temperature='30C.line'),
-       '42C' =
-         tibble(length=lengths,
-                pSup.mean=psup_curve(length, beta = beta_fit, chi = chi_fit, mu = mu_fit_42C, nu = nu_fit_42C, baseline=0),
-                Temperature='42C.line'),
-       '46C' =
-         tibble(length=lengths,
-                pSup.mean=psup_curve(length, beta = beta_fit, chi = chi_fit, mu = mu_fit_46C, nu = nu_fit_46C, baseline=0),
-                Temperature='46C.line')
-  )
-sx_nlsfit = bind_rows(s_nlsfit)
-
-s_nlsfit.nomu =
-    list('30C' =
-         tibble(length=lengths,
-                pSup.mean=psup_curve(length, beta = beta_fit, chi = chi_fit, mu = 0, nu = 0, baseline=0),
-                Temperature='30C.line'),
-       '42C' =
-         tibble(length=lengths,
-                pSup.mean=psup_curve(length, beta = beta_fit, chi = chi_fit, mu = 0, nu = nuonly_fit_42C, baseline=0),
-                Temperature='42C.line'),
-       '46C' =
-         tibble(length=lengths,
-                pSup.mean=psup_curve(length, beta = beta_fit, chi = chi_fit, mu = 0, nu = nuonly_fit_46C, baseline=0),
-                Temperature='46C.line')
-  )
-sx_nlsfit.nomu = bind_rows(s_nlsfit.nomu)
-
-ranklength = df |> filter(Temperature=='30C');
-ranklength = ranklength |> mutate(rl=rank(length)/nrow(ranklength)) |> select(gene, length, rl)
-lower_length = median(unlist(ranklength |> filter(rl>0.0099 & rl<0.011) |> select(length)),na.rm=T) # |(rl<0.99&rl>0.989)) |> arrange(desc(rl))
-upper_length = median(unlist(ranklength |> filter(rl>0.989 & rl<0.991) |> select(length)),na.rm=T) # |(rl<0.99&rl>0.989)) |> arrange(desc(rl))
-p_fit_vs_psup = ggplot(df, aes(x=length, y=pSup.mean, group=Temperature, colour=Temperature)) +
-  ggrastr::rasterize(geom_point(shape=shap, alpha=0.2*alph),dpi=600) +
-  #geom_point(shape=shap, alpha=0.2*alph) +
-  geom_vline(xintercept = upper_length, alpha=0.1) + geom_vline(xintercept = lower_length, alpha=0.1) +
-  geom_line( aes(y=pSup.treatment.window.mean.mean, group=Temperature), linewidth=1, linetype=1, colour=blackcol, alpha=0.1) +
-  geom_line(data=dat_hs |> filter(length>=lower_length, length<=upper_length), aes(y=pSup.treatment.window.mean.mean, group=Temperature), linewidth=1, linetype=1, colour=blackcol, alpha=0.5) +
-  geom_line(data=sx_nlsfit, linewidth=1.3, lty=1, alpha=0.8) +
-  geom_line(data=sx_nlsfit.nomu, linewidth=1.3, linetype='11', alpha=0.8) +
-  scale_colour_manual(values=theory_colors) + no.legend +
-  #geom_hline(yintercept=(mark_bounds), alpha=mark_alpha, colour=blackcol, linetype=2) +
-  coord_cartesian(ylim=c(0,1)) +
-  scale_y_continuous("Proportion in supernatant (pSup)", breaks=c(0,0.5,1)) +
-  scale_x_log10nice("mRNA length (nucleotides)") + larger_labels
-
-p_fit_vs_psup
-
-fig.asp = 7/7
-fig.width = 97
-fig.vs.panel.ratio = 1/0.7
-
-ggsave(file.path(github_dir, "figures/Figure1/Fig1_psup_vs_model.pdf"),
-       egg::set_panel_size(p_fit_vs_psup, width = unit(fig.width, "mm"), height = unit(fig.width*fig.asp, "mm")),
-       width = fig.width*fig.vs.panel.ratio,
-       height = fig.width*fig.asp*fig.vs.panel.ratio,
-       units = "mm", bg = "transparent", create.dir=TRUE)
+# logit = function(p) { log(p / (1 - p)) }
+# invlogit = function (x) { 1 / (1 + exp(-x)) }
+# 
+# fit_data = df |> filter(pSup.mean>0)
+# 
+# nls_fit_30C_noclust <-
+#   nls(lopSup ~ logit(1 - beta_param * length^chi_param),
+#       data = fit_data |>
+#         filter(Temperature == '30C') |>
+#         mutate(lopSup = logit(pSup.mean)),
+#       start = list(beta_param = 1e-5, chi_param = 1))
+# 
+# beta_fit <- coef(nls_fit_30C_noclust)["beta_param"]
+# chi_fit  <- coef(nls_fit_30C_noclust)["chi_param"]
+# 
+# #summary(nls_fit_30C_noclust)
+# 
+# nls_fit_42C <-
+#   nls(lopSup ~ logit( (1 - beta_fit * length^chi_fit) * exp( - mu_param - nu_param * length) ),
+#       data = fit_data |>
+#         filter(Temperature == '42C') |>
+#         mutate(lopSup = logit(pSup.mean)),
+#       start = list(mu_param = 1e-5, nu_param = 1e-5))
+# 
+# mu_fit_42C <- coef(nls_fit_42C)["mu_param"]
+# nu_fit_42C  <- coef(nls_fit_42C)["nu_param"]
+# 
+# #summary(nls_fit_42C)
+# 
+# 
+# nls_fit_46C <-
+#   nls(lopSup ~ logit( (1 - beta_fit * length^chi_fit) * exp( - mu_param - nu_param * length) ),
+#       data = fit_data |>
+#         filter(Temperature == '46C') |>
+#         mutate(lopSup = logit(pSup.mean)),
+#       start = list(mu_param = 1e-5, nu_param = 1e-5))
+# 
+# mu_fit_46C <- coef(nls_fit_46C)["mu_param"]
+# nu_fit_46C  <- coef(nls_fit_46C)["nu_param"]
+# 
+# #summary(nls_fit_46C)
+# 
+# 
+# nls_fitnuonly_42C <-
+#   nls(lopSup ~ logit( (1 - beta_fit * length^chi_fit) * exp( - nu_param * length) ),
+#       data = fit_data |>
+#         filter(Temperature == '42C') |>
+#         mutate(lopSup = logit(pSup.mean)),
+#       start = list(nu_param = 1e-5))
+# 
+# nuonly_fit_42C  <- coef(nls_fitnuonly_42C)["nu_param"]
+# 
+# #summary(nls_fitnuonly_42C)
+# 
+# nls_fitnuonly_46C <-
+#   nls(lopSup ~ logit( (1 - beta_fit * length^chi_fit) * exp( - nu_param * length) ),
+#       data = fit_data |>
+#         filter(Temperature == '46C') |>
+#         mutate(lopSup = logit(pSup.mean)),
+#       start = list(nu_param = 1e-5))
+# 
+# nuonly_fit_46C  <- coef(nls_fitnuonly_46C)["nu_param"]
+# 
+# #summary(nls_fitnuonly_46C)
+# 
+# # Theory
+# psup_curve = function(length, beta, chi, mu, nu, baseline=0.0) {
+#   res = sapply(length, function(L) {
+#     baseline + exp(-mu)*exp(-nu*L)*max(1-beta*L^chi,0)
+#   })
+#   res
+# }
+# 
+# s_nlsfit =
+#   list('30C' =
+#          tibble(length=lengths,
+#                 pSup.mean=psup_curve(length, beta = beta_fit, chi = chi_fit, mu = 0, nu = 0, baseline=0),
+#                 Temperature='30C.line'),
+#        '42C' =
+#          tibble(length=lengths,
+#                 pSup.mean=psup_curve(length, beta = beta_fit, chi = chi_fit, mu = mu_fit_42C, nu = nu_fit_42C, baseline=0),
+#                 Temperature='42C.line'),
+#        '46C' =
+#          tibble(length=lengths,
+#                 pSup.mean=psup_curve(length, beta = beta_fit, chi = chi_fit, mu = mu_fit_46C, nu = nu_fit_46C, baseline=0),
+#                 Temperature='46C.line')
+#   )
+# sx_nlsfit = bind_rows(s_nlsfit)
+# 
+# s_nlsfit.nomu =
+#     list('30C' =
+#          tibble(length=lengths,
+#                 pSup.mean=psup_curve(length, beta = beta_fit, chi = chi_fit, mu = 0, nu = 0, baseline=0),
+#                 Temperature='30C.line'),
+#        '42C' =
+#          tibble(length=lengths,
+#                 pSup.mean=psup_curve(length, beta = beta_fit, chi = chi_fit, mu = 0, nu = nuonly_fit_42C, baseline=0),
+#                 Temperature='42C.line'),
+#        '46C' =
+#          tibble(length=lengths,
+#                 pSup.mean=psup_curve(length, beta = beta_fit, chi = chi_fit, mu = 0, nu = nuonly_fit_46C, baseline=0),
+#                 Temperature='46C.line')
+#   )
+# sx_nlsfit.nomu = bind_rows(s_nlsfit.nomu)
+# 
+# ranklength = df |> filter(Temperature=='30C');
+# ranklength = ranklength |> mutate(rl=rank(length)/nrow(ranklength)) |> select(gene, length, rl)
+# lower_length = median(unlist(ranklength |> filter(rl>0.0099 & rl<0.011) |> select(length)),na.rm=T) # |(rl<0.99&rl>0.989)) |> arrange(desc(rl))
+# upper_length = median(unlist(ranklength |> filter(rl>0.989 & rl<0.991) |> select(length)),na.rm=T) # |(rl<0.99&rl>0.989)) |> arrange(desc(rl))
+# p_fit_vs_psup = ggplot(df, aes(x=length, y=pSup.mean, group=Temperature, colour=Temperature)) +
+#   ggrastr::rasterize(geom_point(shape=shap, alpha=0.2*alph),dpi=600) +
+#   #geom_point(shape=shap, alpha=0.2*alph) +
+#   geom_vline(xintercept = upper_length, alpha=0.1) + geom_vline(xintercept = lower_length, alpha=0.1) +
+#   geom_line( aes(y=pSup.treatment.window.mean.mean, group=Temperature), linewidth=1, linetype=1, colour=blackcol, alpha=0.1) +
+#   geom_line(data=dat_hs |> filter(length>=lower_length, length<=upper_length), aes(y=pSup.treatment.window.mean.mean, group=Temperature), linewidth=1, linetype=1, colour=blackcol, alpha=0.5) +
+#   geom_line(data=sx_nlsfit, linewidth=1.3, lty=1, alpha=0.8) +
+#   geom_line(data=sx_nlsfit.nomu, linewidth=1.3, linetype='11', alpha=0.8) +
+#   scale_colour_manual(values=theory_colors) + no.legend +
+#   #geom_hline(yintercept=(mark_bounds), alpha=mark_alpha, colour=blackcol, linetype=2) +
+#   coord_cartesian(ylim=c(0,1)) +
+#   scale_y_continuous("Proportion in supernatant (pSup)", breaks=c(0,0.5,1)) +
+#   scale_x_log10nice("mRNA length (nucleotides)") + larger_labels
+# 
+# p_fit_vs_psup
+# 
+# fig.asp = 7/7
+# fig.width = 97
+# fig.vs.panel.ratio = 1/0.7
+# 
+# ggsave(file.path(github_dir, "figures/Figure1/Fig1_psup_vs_model.pdf"),
+#        egg::set_panel_size(p_fit_vs_psup, width = unit(fig.width, "mm"), height = unit(fig.width*fig.asp, "mm")),
+#        width = fig.width*fig.vs.panel.ratio,
+#        height = fig.width*fig.asp*fig.vs.panel.ratio,
+#        units = "mm", bg = "transparent", create.dir=TRUE)
 ```
 
 # Figure S1
@@ -2949,8 +2949,7 @@ ylims <- ggplot_build(p_reps)$layout$panel_params[[1]]$y.range
 p_dens <- ggplot(df_dist,aes(x=RelSed.mean))+
   geom_density(fill = "grey80")+
   theme_void()+
-  scale_x_continuous(limits = c(ylims[1]-1, ylims[2]+1))+
-  coord_flip(xlim=c(ylims[1],ylims[2]))
+  coord_flip(xlim=c(ylims[1],ylims[2]), expand = F)
 p_reps + p_dens+ plot_layout(widths = c(2, 1))
 ggsave(file.path(github_dir,"figures/Figure5/TE_hairpins_RelSed.pdf"),
        egg::set_panel_size(p=p_reps+labs(x="",y=""),width=unit(30,"mm"),height=unit(30,"mm")),
@@ -2959,6 +2958,109 @@ ggsave(file.path(github_dir,"figures/Figure5/TE_dens_hairpins_RelSed.pdf"),
        egg::set_panel_size(p=p_dens,width=unit(8,"mm"),height=unit(30,"mm")),
        width=75,height=75,units="mm",bg="transparent")
 ```
+
+## hairpin deltaSed
+```{r}
+df_hairpins <- df_Zsup_mean %>% filter(Treatment_group=="hairpinReporters") %>%
+  ungroup %>%
+  mutate(pSup.unstructured.sd = sd(logodds(pSup.mean[Strain == "yHG010"]) - logodds(pSup.treatment.window.mean.mean[Strain == "yHG010"]), na.rm=T)) %>%
+  group_by(ORF) %>%
+  filter(length(ORF[Strain == "yHG010"]) == 1) %>%
+  mutate(deltaSed.unstructured = (logodds(pSup.mean[Strain == "yHG010"]) - logodds(pSup.mean)) / pSup.unstructured.sd)
+
+df_uorf_rna <- df_Zsup_mean %>% filter(Strain%in%c("yHG026","yHG027","yHG010")) %>%
+  filter(ORF%in%c("strong_Clover","mCherry")) %>%
+  mutate(Reporter=case_when(ORF=="strong_Clover"~"Clover",
+                            ORF=="mCherry"~"mCherry")) %>%
+  select(Strain,Reporter,Total.TPM.mean)
+df_uorf_TE <- df_uorfs %>%  filter(Strain%in%c("yHG026","yHG027","yHG010")) %>%
+  pivot_longer(cols=c("mCherry","Clover"),names_to="Reporter",values_to="Protein") %>%
+  group_by(Strain,Reporter) %>%
+  summarise(Protein.mean = mean(Protein),
+            Protein.se = sd(Protein)/sqrt(length(Protein))) %>%
+  left_join(df_uorf_rna,by=c("Strain","Reporter")) %>%
+  mutate(TE=Protein.mean/Total.TPM.mean) %>%
+  ungroup %>%
+  mutate(TE_norm = TE/TE[Strain=="yHG010"])
+df_hairpin_rna <- df_Zsup_mean %>% filter(Strain%in%c("yHG010","yHG005","yHG006","yHG007","yHG008")) %>%
+  filter(ORF%in%c("strong_Clover","mCherry")) %>%
+  mutate(Reporter=case_when(ORF=="strong_Clover"~"Clover",
+                            ORF=="mCherry"~"mCherry")) %>%
+  select(Strain,Reporter,Total.TPM.mean)
+df_hairpin_TE <- df_hairpin_reporters %>%
+  filter(Strain%in%c("yHG010","yHG005","yHG006","yHG007","yHG008")) %>%
+  pivot_longer(cols=c("mCherry","Clover"),names_to="Reporter",values_to="Protein") %>%
+  group_by(Strain,Reporter) %>%
+  summarise(Protein.mean = mean(Protein),
+            Protein.se = sd(Protein)/sqrt(length(Protein))) %>%
+  left_join(df_hairpin_rna,by=c("Strain","Reporter")) %>%
+  mutate(TE=Protein.mean/Total.TPM.mean) %>%
+  ungroup %>%
+  mutate(TE_norm = TE/TE[Strain=="yHG010"])
+#combine hairpin and uORF data frames
+df_reporter_TE <-  rbind(df_hairpin_TE,df_uorf_TE) %>%
+  select(Strain,Reporter,TE_norm) %>%
+  unique() %>% #get rid of extra yHG010 (normalized to 1,1 in both), bc/ used in both hairpin and uORF experiment as reference
+  pivot_wider(names_from = Reporter, values_from = TE_norm) %>%
+  mutate(TE_norm = Clover/mCherry) #this now normalizes the TE (which has already been calculated as protein/mRNA normalized to that of yHG010) to that of mCherry in each strain
+
+
+df <- df_hairpins %>%
+  left_join(df_samples_byLysate %>% select(Treatment_group,Treatment,Temperature,Time) %>% unique,by=c("Treatment","Treatment_group","Temperature")) %>%
+  filter(Strain%in%df_reporter_TE$Strain,Treated==FALSE,Temperature=="30C") %>%
+  filter(ORF=="strong_Clover") %>%
+  select(ORF,Strain,Treatment_group,Treatment,Treated,Temperature,deltaSed.unstructured) %>%
+  group_by(ORF,Strain) %>%
+  summarise(n = length(deltaSed.unstructured),
+            sed.se = sd(deltaSed.unstructured)/sqrt(length(deltaSed.unstructured)),
+            sed.mean = mean(deltaSed.unstructured)) %>%
+  left_join(df_reporter_TE,by="Strain") %>%
+  mutate(Strain=factor(Strain,levels=c("yHG010","yHG005","yHG006","yHG007","yHG008","yHG027","yHG026"))) %>%
+  arrange(Strain)
+
+strain_tibble <- tribble(~"Strain",~"Desc",~"color",~"shape",
+                         "yHG010","unstructured","black",1,
+                         "yHG005","weakest","#AC97D0",16,
+                         "yHG006","weak","#9668D5",16,
+                         "yHG007","medium","#6B41AA",16,
+                         "yHG008","strong","#411C80",16,
+                         "yHG026","uORF",RColorBrewer::brewer.pal(8,"Dark2")[4],15,
+                        #"yHG027","uORF_control",RColorBrewer::brewer.pal(8,"Dark2")[4],0)
+                        "yHG027","uORF_control","black",0)
+strain_colors <- setNames(strain_tibble$color,strain_tibble$Strain)
+strain_shapes <- setNames(strain_tibble$shape,strain_tibble$Strain)
+p_reps <- ggplot(df %>%arrange(desc(TE_norm)),
+       aes(x=TE_norm,y=sed.mean))+
+  geom_hline(yintercept = 0, linetype = "dotted") +
+  geom_errorbar(aes(x=TE_norm,ymin=sed.mean-sed.se,ymax=sed.mean+sed.se),width=0.5,size=0.5)+
+  ggrastr::rasterize(dpi = 600, geom_point(aes(color=Strain,shape=Strain),size=3.1)) +
+  scale_y_reverse(breaks=c(0,2,4))+
+  scale_color_manual(values=strain_colors)+
+  scale_shape_manual(values=strain_shapes)+
+  scale_x_log10nice()+
+  coord_cartesian(xlim=c(0.001,1.6), ylim = c(4,-1))+
+  theme(legend.position="none")+
+  labs(x="TE (norm. to unstructured)",y="∆Sed (SDs)\n(relative to unstructured reporter strain)")
+p_reps
+
+
+ylims <- ggplot_build(p_reps)$layout$panel_params[[1]]$y.range
+
+p_dens <- ggplot(df_hairpins %>% filter(Strain != "yHG010"),aes(x=deltaSed.unstructured))+
+  geom_density(fill = "grey80")+
+  theme_void()+
+  coord_flip(xlim=c(ylims[1],ylims[2]), expand = F)
+p_dens
+p_reps + p_dens+ plot_layout(widths = c(2, 1))
+
+ggsave(file.path(github_dir,"figures/Figure5/TE_hairpins_deltaSed.pdf"),
+       egg::set_panel_size(p=p_reps+labs(x="",y=""),width=unit(30,"mm"),height=unit(30,"mm")),
+       width=75,height=75,units="mm",bg="transparent")
+ggsave(file.path(github_dir,"figures/Figure5/TE_dens_hairpins_deltaSed.pdf"),
+       egg::set_panel_size(p=p_dens,width=unit(8,"mm"),height=unit(30,"mm")),
+       width=75,height=75,units="mm",bg="transparent")
+```
+
 ## hac1 gel
 ```{r}
 df <- read_csv(file.path(github_dir,"data_processed","20200903_hac1splicingstatusgel_quant.csv")) %>%
