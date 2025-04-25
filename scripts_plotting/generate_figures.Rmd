@@ -4151,19 +4151,129 @@ ggsave("../figures/Supplemental/hairpin_30C_error.pdf",
 
 ## noise relsed hairpin replicates
 ```{r}
+df_Zsup_mean <- read_tsv(file.path(github_dir, "data_processed/sedseq_filt_mean.tsv.gz")) |>
+  left_join(df_samples_byLysate |> 
+              select(Treatment_group,Treatment,Temperature,Time) |> unique(),
+              by=c("Treatment","Treatment_group","Temperature")) |>
+  left_join(gene_labels |> select(-LengthTxEst), by='ORF')
 df <- df_Zsup_mean %>%
   filter(Treatment_group == "hairpinReporters",
          pSup.mean>0,SP.mean>0,!is.infinite(pSup.mean),!is.infinite(SP.mean)) %>%
   filter(classification=="Verified") %>%
   group_by(ORF,gene,LengthTxEst) %>%
-  summarise(pSup.mean = mean(pSup.mean),
+  summarise(pSup.mean = invlogodds(mean(logodds(pSup.mean))),
             SP.mean.all = exp(mean(log(SP.mean))),
             SP.sem.all  = exp(sd(log(SP.mean))/sqrt(n())),
-            pSup.windowmean = mean(pSup.treatment.window.mean.mean),
-            odds.pSup.windowmean = odds(pSup.windowmean),
+            pSup.windowmean = invlogodds(mean(logodds(pSup.treatment.window.mean.mean))),
             RelSed.mean = mean(RelSed.mean)) %>%
   ungroup %>%
   mutate(lo.pSup.hairpin.sd = sd(logodds(pSup.mean) - logodds(pSup.windowmean), na.rm=T))
+# not bad set.seed(1)
+set.seed(3)
+which_genes <- df_Zsup_mean %>%
+  filter(Treatment_group == "hairpinReporters",
+         pSup.mean>0,SP.mean>0,!is.infinite(pSup.mean),!is.infinite(SP.mean)) %>%
+  group_by(ORF) %>%
+  summarise(Total.TPM = exp(mean(log(Total.TPM.mean))),
+            RelSed.mean = mean(RelSed.mean)) %>%
+  left_join(gene_labels,by="ORF") %>%
+  filter(!is.na(gene),classification=="Verified",
+         LengthTxEst < 6e3,LengthTxEst > 300) %>%
+  ungroup %>%
+  mutate(RelSed_group = if_else(RelSed.mean>=0,"RelSed.up","RelSed.down")) %>%
+  mutate(length_bin = cut_interval(log(LengthTxEst),n=6)) %>%
+  group_by(length_bin,RelSed_group) %>%
+  nest %>%
+  mutate(sampled = map(data,function(df) {
+    return(tibble(sampled_genes = sample(df$gene,size=1)))
+  })) %>%
+  select(-data) %>%
+  unnest(sampled)
+
+genes_to_highlight <- which_genes$sampled_genes
+genes_to_label <- c("GCN4","HAC1")
+
+
+set_label_size = theme(
+  axis.title.x = element_text(size = 10),
+  axis.text.x = element_text(size = 10),
+  axis.title.y = element_text(size = 10),
+  axis.text.y = element_text(size = 10))
+
+p <- ggplot(df,
+            aes(x=LengthTxEst,y=SP.mean.all))+
+  ggrastr::rasterize(dpi = 600, geom_point(alpha=0.3,shape=16,size=0.5,color="grey60")) +
+  geom_line(aes(y=odds(pSup.windowmean)),color="black",size=0.5,alpha=0.5,linetype=1,linewidth=0.5)+
+  geom_line(aes(y=exp(logodds(pSup.windowmean) - lo.pSup.hairpin.sd)),color=okabe_ito_colors[4],size=1,linewidth=0.5, linetype=1)+
+  geom_line(aes(y=exp(logodds(pSup.windowmean) + lo.pSup.hairpin.sd)),color=okabe_ito_colors[4],size=1, linewidth=0.5, linetype=1)+
+  scale_x_log10nice()+ scale_y_log10nice()+
+  coord_cartesian(ylim=c(0.5,40))+
+  geom_point(data=df %>% filter(gene %in% c(genes_to_highlight)),
+             size=1.5,shape=16)+
+  geom_errorbar(data=df %>% filter(gene %in% c(genes_to_highlight)),
+             aes(y=SP.mean.all,
+                 ymin=SP.mean.all-SP.sem.all,
+                 ymax=SP.mean.all+SP.sem.all),
+             width=0,linewidth=1)+
+  geom_point(data=df %>% filter(gene=="GCN4"),
+             size=1.5,shape=16,
+                  color=okabe_ito_colors[7])+
+  geom_errorbar(data=df %>% filter(gene=="GCN4"),
+             aes(y=SP.mean.all,
+                 ymin=SP.mean.all-SP.sem.all,
+                 ymax=SP.mean.all+SP.sem.all),
+             width=0,linewidth=1,
+                  color=okabe_ito_colors[7])+
+  geom_point(data=df %>% filter(gene=="HAC1"),
+             size=1.5,shape=16,
+                  color=stress.cols[["DTT"]])+
+  geom_errorbar(data=df %>% filter(gene=="HAC1"),
+             aes(y=SP.mean.all,
+                 ymin=SP.mean.all-SP.sem.all,
+                 ymax=SP.mean.all+SP.sem.all),
+             width=0,linewidth=1,
+                  color=stress.cols[["DTT"]])+
+  geom_label_repel(data=df%>%filter(gene=="HAC1"),
+                  aes(label=gene),
+                  size=0.35*8,
+                  nudge_x = -0.4, nudge_y = -0.4,
+                  linewidth=0.25,
+                  color=stress.cols[["DTT"]])+
+  geom_label_repel(data=df%>%filter(gene=="GCN4"),
+                  aes(label=gene),
+                  size=0.35*8,
+                  nudge_x = 0.4, nudge_y = 0.4,
+                  linewidth=0.25,
+                  color=okabe_ito_colors[7])+
+  set_label_size+
+  labs(x="mRNA length (nucleotides)", y="Odds in supernatant")
+p
+
+ggsave("../figures/Supplemental/hairpin_relsed_30C_error.pdf",
+        egg::set_panel_size(p=p,
+                            width=unit(50,"mm"),height=unit(50,"mm")),
+       width=75,height=75,units="mm",bg = "transparent",dpi=600)
+```
+
+```{r}
+df_Zsup_mean <- read_tsv(file.path(github_dir, "data_processed/sedseq_filt_mean_lo.tsv.gz")) |>
+  left_join(df_samples_byLysate |> 
+              select(Treatment_group,Treatment,Temperature,Time) |> unique(),
+              by=c("Treatment","Treatment_group","Temperature")) |>
+  left_join(gene_labels |> select(-LengthTxEst), by='ORF')
+df <- df_Zsup_mean %>%
+  filter(Treatment_group == "hairpinReporters",
+         pSup.mean>0,SP.mean>0,!is.infinite(pSup.mean),!is.infinite(SP.mean)) %>%
+  filter(classification=="Verified") %>%
+  group_by(ORF,gene,LengthTxEst) %>%
+  summarise(pSup.mean = invlogodds(mean(logodds(pSup.mean))),
+            SP.mean.all = exp(mean(log(SP.mean))),
+            SP.sem.all  = exp(sd(log(SP.mean))/sqrt(n())),
+            lo.pSup.windowmean = mean(lo.pSup.treatment.window.mean.mean),
+            odds.pSup.windowmean = exp(lo.pSup.windowmean),
+            RelSed.mean = mean(RelSed.mean)) %>%
+  ungroup %>%
+  mutate(lo.pSup.hairpin.sd = sd(logodds(pSup.mean) - lo.pSup.windowmean, na.rm=T))
 # not bad set.seed(1)
 set.seed(1)
 which_genes <- df_Zsup_mean %>%
@@ -4195,6 +4305,14 @@ set_label_size = theme(
   axis.text.x = element_text(size = 10),
   axis.title.y = element_text(size = 10),
   axis.text.y = element_text(size = 10))
+p_rep <- ggplot(df_Zsup_mean %>% filter(Treatment_group == "hairpinReporters"),
+            aes(x=LengthTxEst,y=SP.mean))+
+  ggrastr::rasterize(dpi = 600, geom_point(alpha=0.3,shape=16,size=0.5,color="grey60")) +
+  geom_line(aes(y=exp(lo.pSup.treatment.window.mean.mean)),color="black",size=0.5,alpha=0.5,linetype=1,linewidth=0.5) +
+  facet_wrap(facets = "Strain") +
+  scale_x_log10nice() + scale_y_log10nice() +
+  coord_cartesian(ylim = c(1e-1,1e2))
+p_rep
 p <- ggplot(df,
             aes(x=LengthTxEst,y=SP.mean.all))+
   ggrastr::rasterize(dpi = 600, geom_point(alpha=0.3,shape=16,size=0.5,color="grey60")) +
@@ -4244,7 +4362,7 @@ p <- ggplot(df,
   labs(x="mRNA length (nucleotides)", y="Odds in supernatant")
 p
 
-ggsave("../figures/Supplemental/hairpin_relsed_30C_error.pdf",
+ggsave("../figures/Supplemental/hairpin_relsed_30C_error2.pdf",
         egg::set_panel_size(p=p,
                             width=unit(50,"mm"),height=unit(50,"mm")),
        width=75,height=75,units="mm",bg = "transparent",dpi=600)
@@ -4413,13 +4531,20 @@ ggsave("../figures/Supplemental/esc_hsf1_boxplot.pdf",
 wilcox_result <- df %>%
   group_by(Temperature) %>%
   nest %>%
-  mutate(wilcox = map(data,function(df){
+  mutate(wilcox_hsf1 = map(data,function(df){
     wilcox.test(esc.mean ~ target, data = df, 
                              subset = (target %in% c("other", "HSF1 targets")),
                              exact = FALSE
     )
+  }),
+  wilcox_msn24 = map(data,function(df){
+    wilcox.test(esc.mean ~ target, data = df, 
+                             subset = (target %in% c("other", "MSN2/4 targets")),
+                             exact = FALSE
+    )
   }))
-print(wilcox_result$wilcox)
+print(wilcox_result$wilcox_hsf1)
+print(wilcox_result$wilcox_msn24)
 ```
 
 ## specificity bars
