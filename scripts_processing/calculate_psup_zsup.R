@@ -9,7 +9,7 @@ library(here)
 conflicts_prefer(dplyr::filter)
 conflicts_prefer(dplyr::rename)
 
-github_dir <- here()
+github_dir <- here::here()
 source(file.path(github_dir,"scripts_processing/utilityFunctions.R"))
 gene_labels <- read_tsv(file.path(github_dir,"src/annotations/labeled_genes_scer.tsv")) 
 read_kallisto <- function(file) {

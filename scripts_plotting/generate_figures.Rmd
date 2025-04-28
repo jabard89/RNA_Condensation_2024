@@ -382,8 +382,6 @@ ggsave(file.path(github_dir, "figures/Figure1/Fig1_prot_vs_mRNA_condensation.pdf
 ```{r fig1_psup_vs_length, dependson="setup", fig.asp=0.5}
 df = df_Zsup_mean |> filter(Treatment_group=='EW_TSPP') |> filter(Temperature != '42CR') |> mutate(length=LengthTxEst)
 
-
-
 focal_genes = c('PMU1','HSP104')
 foci = df |> filter(gene %in% focal_genes)# & Temperature != '46C')
 
