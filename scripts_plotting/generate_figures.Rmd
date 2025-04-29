@@ -2863,7 +2863,7 @@ p_TPM_TE <- ggplot(df,
   scale_y_log10nice()+coord_cartesian(ylim=c(0.01,10))+
   ggrastr::rasterize(dpi = 600, geom_point(alpha=0.3, size = 0.5, shape = 16, color = "black")) +
   ggrastr::rasterize(dpi = 600, geom_point(data=df %>% filter(gene%in%genes_to_label),size=2,color="red")) +
-  geom_text_repel(data=df,size=4.2,aes(label=gene_label),max.overlaps = 10000,min.segment.length = 0)+
+  geom_text_repel(data=df%>% filter(gene %in% genes_to_label),size=4.2,aes(label=gene_label),max.overlaps = 10000,min.segment.length = 0, segment.color = NA)+
   labs(x="mRNA Abundance",y="Translation\nEfficiency")
 p_TPM_TE
 
