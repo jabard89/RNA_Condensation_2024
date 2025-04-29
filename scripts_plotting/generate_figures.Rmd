@@ -1494,6 +1494,13 @@ df_azide_08_delta <- df_Zsup_mean %>% filter(Treatment_group %in% c('azide3')) %
   mutate(tpm_fc_azide_08 = as.numeric(`Total.TPM.mean_Azide_0.8%_pH6.8_30C`) / as.numeric(Total.TPM.mean_mock_30C),
          Zsup_delta_azide_08 = as.numeric(`Zsup.mean_Azide_0.8%_pH6.8_30C`) - as.numeric(Zsup.mean_mock_30C),
          esed_azide_08 = as.numeric(`esc.mean_Azide_0.8%_pH6.8_30C`))
+# #test 0.5% azide data frame:
+# df_azide_08_delta <- df_Zsup_mean %>% filter(Treatment_group %in% c('Azide_0.5%_pH6.8')) %>%
+#   select(ORF,gene, LengthTxEst,Strain,Treatment_group,Treatment, Temperature, Total.TPM.mean,Zsup.mean,esc.mean) %>%
+#   pivot_wider(names_from = c(Treatment,Temperature), values_from = c(Total.TPM.mean,Zsup.mean,esc.mean)) %>%
+#   mutate(tpm_fc_azide_08 = as.numeric(`Total.TPM.mean_Azide_0.5%_pH6.8_30C`) / as.numeric(Total.TPM.mean_mock_30C),
+#          Zsup_delta_azide_08 = as.numeric(`Zsup.mean_Azide_0.5%_pH6.8_30C`) - as.numeric(Zsup.mean_mock_30C),
+#          esed_azide_08 = as.numeric(`esc.mean_Azide_0.5%_pH6.8_30C`))
 #etoh 7.5%
 df_etoh_75_delta <- df_Zsup_mean %>% filter(Treatment_group %in% c('milderEtOH2')) %>%
   select(ORF,gene, LengthTxEst,Strain,Treatment_group,Treatment, Temperature, Total.TPM.mean,Zsup.mean,esc.mean) %>%
@@ -1658,6 +1665,158 @@ p_stressSpecificEscape_heatEtOH
 ggsave(file.path(github_dir,"figures","Figure3/stressSpecificEscape_heatEtoh.pdf"),
        p_stressSpecificEscape_heatEtOH,
        width=150,height=100,units="mm",bg="transparent", device = cairo_pdf)
+```
+
+# Try azide again, this time with escape scores and top 100 transcripts.
+
+Hmm don't really see escape of azide specific transcripts. Maybe look at a different azide data set (like 0.5%?) next.
+
+```{r}
+#now just focus on heat and ethanol
+df_heatAzideStress_wide <- df_combineStress_wide
+#redo labels for just heat and etoh (rather than all 3) -> need to use wide to do
+#now do overall induced category
+df_heatAzideStress_wide$inducedCategory[which(df_heatAzideStress_wide$temp_induced %in% c('induced') &
+                                              df_heatAzideStress_wide$azide_induced %in% c('induced'))] <- 'temp,azide'
+df_heatAzideStress_wide$inducedCategory[which(df_heatAzideStress_wide$temp_induced %in% c('induced') &
+                                              df_heatAzideStress_wide$azide_induced %in% c('other'))] <- 'temp'
+df_heatAzideStress_wide$inducedCategory[which(df_heatAzideStress_wide$temp_induced %in% c('other') &
+                                              df_heatAzideStress_wide$azide_induced %in% c('induced'))] <- 'azide'
+df_heatAzideStress_wide$inducedCategory[which(df_heatAzideStress_wide$temp_induced %in% c('other') &
+                                              df_heatAzideStress_wide$azide_induced %in% c('other'))] <- 'other'
+
+#make long:
+df_heatAzideStress_long <- df_heatAzideStress_wide %>%
+  select(ORF,esed_Azide_08,esed_Ethanol_75,esed_Temp_42C,inducedCategory) %>%
+  pivot_longer(., cols = c("esed_Azide_08","esed_Ethanol_75","esed_Temp_42C"), 
+               names_to = "Stress", values_to = "esed")
+
+df_heatAzideStress_long$Stress[which(df_heatAzideStress_long$Stress == "esed_Azide_08")] <- "0.8% Azide"
+df_heatAzideStress_long$Stress[which(df_heatAzideStress_long$Stress == "esed_Temp_42C")] <- "42°C"
+df_heatAzideStress_long$Stress[which(df_heatAzideStress_long$Stress == "esed_Ethanol_75")] <- "7.5% Ethanol"
+df_heatAzideStress_long$Stress <- factor(df_heatAzideStress_long$Stress, levels = c("42°C","7.5% Ethanol","0.8% Azide"))
+
+#factoring
+df_heatAzideStress_long$inducedCategory <- factor(df_heatAzideStress_long$inducedCategory,
+                                                    levels = c("other", "temp", "etoh", "azide",
+                                                               "temp,etoh", "temp,azide", "etoh,azide", "temp,etoh,azide"))
+
+#calculate the summary stats:
+df_heatAzideStress_summary <- df_heatAzideStress_long %>%
+  select(-ORF) %>%
+  filter(Stress %in% c('42°C','0.8% Azide') & !is.na(esed)) %>%
+  group_by(Stress, inducedCategory) %>%
+  summarise(n = n(),
+            mean_esed = ave(esed),
+            sd_esed = sd(esed),
+            se_esed = sd(esed)/sqrt(n())) %>%
+  unique()
+
+#plotting means +/-standard error
+p_stressSpecificEscape_heatAzide <- ggplot(data = df_heatAzideStress_long %>% filter(Stress %in% c('42°C','0.8% Azide')),
+       aes(y = esed, x = inducedCategory, fill = inducedCategory)) +
+  geom_jitter(shape=16, height = 0, alpha = 0.03) +
+  geom_hline(yintercept = 0, linetype = 'dashed') +
+  geom_col(data = df_heatAzideStress_summary,
+           aes(y = mean_esed),
+           color = 'black',
+           alpha = 0.8) +
+  geom_errorbar(data = df_heatAzideStress_summary,
+           aes(y = mean_esed, ymin = mean_esed - se_esed, ymax = mean_esed + se_esed),
+           color = 'black',
+           alpha = 1,
+           width = 0.2) +
+  scale_x_discrete(name = 'Induction Category',
+                   labels = c('other' = 'Neither',
+                              'temp' = 'Temp',
+                              'etoh' = 'Ethanol',
+                              'azide' = 'Azide',
+                              'temp,etoh' = 'Both',
+                              'temp,azide' = 'Both',
+                              'etoh,azide' = 'Ethanol Azide',
+                              'temp,etoh,azide' = 'Temp Ethanol Azide')) +
+  scale_y_continuous(name = 'Escape score (stress)',
+                     limits = c(-2,3)) +
+  scale_fill_manual(values = c('grey','orange','forestgreen','brown')) +
+  facet_grid(cols = vars(Stress)) +
+  theme(legend.position = 'none')
+p_stressSpecificEscape_heatAzide
+
+```
+
+Now etoh and azide
+
+```{r}
+#now just focus on heat and ethanol
+df_etohAzideStress_wide <- df_combineStress_wide
+#redo labels for just heat and etoh (rather than all 3) -> need to use wide to do
+#now do overall induced category
+df_etohAzideStress_wide$inducedCategory[which(df_etohAzideStress_wide$etoh_induced %in% c('induced') &
+                                              df_etohAzideStress_wide$azide_induced %in% c('induced'))] <- 'etoh,azide'
+df_etohAzideStress_wide$inducedCategory[which(df_etohAzideStress_wide$etoh_induced %in% c('induced') &
+                                              df_etohAzideStress_wide$azide_induced %in% c('other'))] <- 'etoh'
+df_etohAzideStress_wide$inducedCategory[which(df_etohAzideStress_wide$etoh_induced %in% c('other') &
+                                              df_etohAzideStress_wide$azide_induced %in% c('induced'))] <- 'azide'
+df_etohAzideStress_wide$inducedCategory[which(df_etohAzideStress_wide$etoh_induced %in% c('other') &
+                                              df_etohAzideStress_wide$azide_induced %in% c('other'))] <- 'other'
+
+#make long:
+df_etohAzideStress_long <- df_etohAzideStress_wide %>%
+  select(ORF,esed_Azide_08,esed_Ethanol_75,esed_Temp_42C,inducedCategory) %>%
+  pivot_longer(., cols = c("esed_Azide_08","esed_Ethanol_75","esed_Temp_42C"), 
+               names_to = "Stress", values_to = "esed")
+
+df_etohAzideStress_long$Stress[which(df_etohAzideStress_long$Stress == "esed_Azide_08")] <- "0.8% Azide"
+df_etohAzideStress_long$Stress[which(df_etohAzideStress_long$Stress == "esed_Temp_42C")] <- "42°C"
+df_etohAzideStress_long$Stress[which(df_etohAzideStress_long$Stress == "esed_Ethanol_75")] <- "7.5% Ethanol"
+df_etohAzideStress_long$Stress <- factor(df_etohAzideStress_long$Stress, levels = c("42°C","7.5% Ethanol","0.8% Azide"))
+
+#factoring
+df_etohAzideStress_long$inducedCategory <- factor(df_etohAzideStress_long$inducedCategory,
+                                                    levels = c("other", "temp", "etoh", "azide",
+                                                               "temp,etoh", "temp,azide", "etoh,azide", "temp,etoh,azide"))
+
+#calculate the summary stats:
+df_etohAzideStress_summary <- df_etohAzideStress_long %>%
+  select(-ORF) %>%
+  filter(Stress %in% c('7.5% Ethanol','0.8% Azide') & !is.na(esed)) %>%
+  group_by(Stress, inducedCategory) %>%
+  summarise(n = n(),
+            mean_esed = ave(esed),
+            sd_esed = sd(esed),
+            se_esed = sd(esed)/sqrt(n())) %>%
+  unique()
+
+#plotting means +/-standard error
+p_stressSpecificEscape_etohAzide <- ggplot(data = df_etohAzideStress_long %>% filter(Stress %in% c('7.5% Ethanol','0.8% Azide')),
+       aes(y = esed, x = inducedCategory, fill = inducedCategory)) +
+  geom_jitter(shape=16, height = 0, alpha = 0.03) +
+  geom_hline(yintercept = 0, linetype = 'dashed') +
+  geom_col(data = df_etohAzideStress_summary,
+           aes(y = mean_esed),
+           color = 'black',
+           alpha = 0.8) +
+  geom_errorbar(data = df_etohAzideStress_summary,
+           aes(y = mean_esed, ymin = mean_esed - se_esed, ymax = mean_esed + se_esed),
+           color = 'black',
+           alpha = 1,
+           width = 0.2) +
+  scale_x_discrete(name = 'Induction Category',
+                   labels = c('other' = 'Neither',
+                              'temp' = 'Temp',
+                              'etoh' = 'Ethanol',
+                              'azide' = 'Azide',
+                              'temp,etoh' = 'Both',
+                              'temp,azide' = 'Both',
+                              'etoh,azide' = 'Both',
+                              'temp,etoh,azide' = 'Temp Ethanol Azide')) +
+  scale_y_continuous(name = 'Escape score (stress)',
+                     limits = c(-2,3)) +
+  scale_fill_manual(values = c('grey','#A155B9','forestgreen','brown')) +
+  facet_grid(cols = vars(Stress)) +
+  theme(legend.position = 'none')
+p_stressSpecificEscape_etohAzide
+
 ```
 
 # QC - taking closer look at spread esed in different stresses 
