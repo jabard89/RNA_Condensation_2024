@@ -3247,7 +3247,7 @@ p_dtt <- ggplot(df,
                     "46°C" = stress.cols[["46C"]],
                     "DTT" = stress.cols[["DTT"]])) +
   geom_violin(draw_quantiles=c(0.5),fill=NA, color ="black", width = 1)+
-  coord_cartesian(ylim=c(-4.5,4.5))+
+  coord_cartesian(ylim=c(-4.75,4.75))+
   scale_y_continuous(breaks=c(-4,0,4))+
   theme(axis.ticks.x=element_blank())+
   geom_point(data=df%>%filter(gene=="HAC1"),size=2,shape=21,fill="red3",alpha=1, color = "black", stroke = 0.5) +
@@ -3255,7 +3255,7 @@ p_dtt <- ggplot(df,
 p_dtt
 ggsave(file.path(github_dir,"figures","Figure5","DTT_esc.pdf"),
                  p_dtt+labs(x="",y=""),
-       width=42.5,height=42.5,units="mm",bg="transparent")
+       width=42.55,height=42.55,units="mm",bg="transparent")
 ```
 
 
