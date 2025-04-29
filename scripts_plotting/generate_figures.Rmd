@@ -527,6 +527,12 @@ ggsave(file.path(github_dir, "figures/Figure1/Fig1_sed_esc_hsf1.pdf"),
 
 ## Figure 1H (pSup with model comparison)
 ```{r fig_theory_psup, dependson='dependson="fig1_psup_vs_length"'}
+
+theory_colors = c("30C"=stress.cols[["30C"]],
+                              "42C"=stress.cols[["42C"]],"46C"=stress.cols[["46C"]],
+                              "30C.line"="black","42C.line"="#d65e09",
+                              "46C.line"=redcol)
+
 logit = function(p) { log(p / (1 - p)) }
 invlogit = function (x) { 1 / (1 + exp(-x)) }
 
