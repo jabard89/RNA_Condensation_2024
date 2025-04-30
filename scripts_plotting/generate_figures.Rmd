@@ -596,7 +596,32 @@ nls_fitnuonly_46C <-
 
 nuonly_fit_46C  <- coef(nls_fitnuonly_46C)["nu_param"]
 
-#summary(nls_fitnuonly_46C)
+# Fit statistics
+
+fit_wide = fit_data |> rename(pSup=pSup.treatment.window.mean.mean) |> pivot_wider(id_cols = c(ORF, length), values_from=pSup, names_from=Temperature, names_prefix = "pSup.")
+fit_wide = fit_data |> rename(pSup=pSup.mean) |> pivot_wider(id_cols = c(ORF, length), values_from=pSup, names_from=Temperature, names_prefix = "pSup.")
+
+fit_enh = fit_wide |> mutate(
+  pse.30C=psup_curve(length, beta = beta_fit, chi = chi_fit, mu = 0, nu = 0, baseline=0),
+  pse.42C=psup_curve(length, beta = beta_fit, chi = chi_fit, mu = mu_fit_42C, nu = nu_fit_42C, baseline=0),
+  pse.46C=psup_curve(length, beta = beta_fit, chi = chi_fit, mu = mu_fit_46C, nu = nu_fit_46C, baseline=0),
+  pse.42C.nomu=psup_curve(length, beta = beta_fit, chi = chi_fit, mu = 0, nu = nuonly_fit_42C, baseline=0),
+  pse.46C.nomu=psup_curve(length, beta = beta_fit, chi = chi_fit, mu = 0, nu = nuonly_fit_46C, baseline=0))
+
+# rmse_30 = with(fit_enh, sqrt(sum((pse.30C-pSup.30C)^2, na.rm=T)/(nrow(fit_enh)-2)))
+# rmse_42 = with(fit_enh, sqrt(sum((pse.42C-pSup.42C)^2, na.rm=T)/(nrow(fit_enh)-2)))
+# rmse_46 = with(fit_enh, sqrt(sum((pse.46C-pSup.46C)^2, na.rm=T)/(nrow(fit_enh)-2)))
+# rmse_42_nomu = with(fit_enh, sqrt(sum((pse.42C.nomu-pSup.42C)^2, na.rm=T)/(nrow(fit_enh)-1)))
+# rmse_46_nomu = with(fit_enh, sqrt(sum((pse.46C.nomu-pSup.46C)^2, na.rm=T)/(nrow(fit_enh)-1)))
+# RMSE goodness of fit: root mean squared error, where denominator is number of datapoints N - number of estimated parameters M
+rmse_30 = with(fit_enh, sqrt(sum((logodds(pse.30C)-logodds(pSup.30C))^2, na.rm=T)/(nrow(fit_enh)-2)))
+rmse_42 = with(fit_enh, sqrt(sum((logodds(pse.42C)-logodds(pSup.42C))^2, na.rm=T)/(nrow(fit_enh)-2)))
+rmse_46 = with(fit_enh, sqrt(sum((logodds(pse.46C)-logodds(pSup.46C))^2, na.rm=T)/(nrow(fit_enh)-2)))
+rmse_42_nomu = with(fit_enh, sqrt(sum((logodds(pse.42C.nomu)-logodds(pSup.42C))^2, na.rm=T)/(nrow(fit_enh)-1)))
+rmse_46_nomu = with(fit_enh, sqrt(sum((logodds(pse.46C.nomu)-logodds(pSup.46C))^2, na.rm=T)/(nrow(fit_enh)-1)))
+
+rmse_42/rmse_42_nomu
+rmse_46/rmse_46_nomu
 
 lengths = 10^seq(log10(300),log10(15000), length.out=1000)
 
