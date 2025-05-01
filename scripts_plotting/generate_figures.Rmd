@@ -601,6 +601,13 @@ nuonly_fit_46C  <- coef(nls_fitnuonly_46C)["nu_param"]
 fit_wide = fit_data |> rename(pSup=pSup.treatment.window.mean.mean) |> pivot_wider(id_cols = c(ORF, length), values_from=pSup, names_from=Temperature, names_prefix = "pSup.")
 fit_wide = fit_data |> rename(pSup=pSup.mean) |> pivot_wider(id_cols = c(ORF, length), values_from=pSup, names_from=Temperature, names_prefix = "pSup.")
 
+psup_curve = function(length, beta, chi, mu, nu, baseline=0.0) {
+  res = sapply(length, function(L) {
+    baseline + exp(-mu)*exp(-nu*L)*max(1-beta*L^chi,0)
+  })
+  res
+}
+
 fit_enh = fit_wide |> mutate(
   pse.30C=psup_curve(length, beta = beta_fit, chi = chi_fit, mu = 0, nu = 0, baseline=0),
   pse.42C=psup_curve(length, beta = beta_fit, chi = chi_fit, mu = mu_fit_42C, nu = nu_fit_42C, baseline=0),
@@ -626,12 +633,7 @@ rmse_46/rmse_46_nomu
 lengths = 10^seq(log10(300),log10(15000), length.out=1000)
 
 # Theory
-psup_curve = function(length, beta, chi, mu, nu, baseline=0.0) {
-  res = sapply(length, function(L) {
-    baseline + exp(-mu)*exp(-nu*L)*max(1-beta*L^chi,0)
-  })
-  res
-}
+
 
 s_nlsfit =
   list('30C' =
@@ -5464,7 +5466,13 @@ df_30C_occ <- df_Occ_mean_minfilt %>%
   filter(Treatment%in%c("none","mock"),Temperature=="30C") %>%
   group_by(ORF) %>%
   summarise(Occ.odds.mean = exp(mean(log(Occ.odds.mean))))
-df <- df_hairpins %>% full_join(df_30C_occ,by="ORF") %>%
+df <- df_Zsup_mean %>% filter(Treatment_group=="hairpinReporters") %>%
+  group_by(ORF,gene,Temperature,LengthTxEst) %>%
+  summarise(SP.mean = exp(mean(log(SP.mean))),
+            pSup.mean = mean(pSup.mean),
+            TPM.mean = exp(mean(log(Total.TPM.mean))),
+            RelSed.mean = mean(RelSed.mean),
+            Zsup.mean = mean(Zsup.mean)) %>% full_join(df_30C_occ,by="ORF") %>%
   left_join(df_Weinberg,by="ORF") %>%
   filter(Occ.odds.mean>0) %>%
   mutate(gene_label = if_else(gene%in%genes_to_label,gene,""))
