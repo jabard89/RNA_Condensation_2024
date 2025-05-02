@@ -4529,60 +4529,93 @@ ggsave("../figures/Supplemental/HAC1_equiv_length.pdf",
 
 ## zsup 30 vs 42 hsf1
 ```{r}
-genes_to_lab <- c("SSA4")
-upper<-4.7
-lower<-(-4.7)
-df <- df_Zsup_mean %>% filter(Treatment_group=="EW_TSPP") %>%
-  select(ORF,Temperature,gene,label,Zsup.mean) %>%
-  pivot_wider(names_from=Temperature,values_from=Zsup.mean,names_prefix="Zsup.") %>%
-  mutate(target = if_else(label=="HSF1","HSF1 targets","other")) %>%
+# genes_to_lab <- c("SSA4")
+# upper<-4.7
+# lower<-(-4.7)
+# df <- df_Zsup_mean %>% filter(Treatment_group=="EW_TSPP") %>%
+#   select(ORF,Temperature,gene,label,Zsup.mean) %>%
+#   pivot_wider(names_from=Temperature,values_from=Zsup.mean,names_prefix="Zsup.") %>%
+#   mutate(target = if_else(label=="HSF1","HSF1 targets","other")) %>%
+#   mutate(target=factor(target,levels=c("other","MSN2/4 targets","HSF1 targets"))) %>%
+#   arrange(target) %>%
+#   mutate(Zsup.30C=case_when(Zsup.30C>upper~upper,
+#                             Zsup.30C<lower~lower,
+#                             TRUE~Zsup.30C),
+#          Zsup.42C=case_when(Zsup.42C>upper~upper,
+#                             Zsup.42C<lower~lower,
+#                             TRUE~Zsup.42C)) %>%
+#   mutate(gene_lab = if_else(gene%in%genes_to_lab,gene,""))
+# df_corr <- df %>%
+#   correlate(method="pearson")
+# corr <- (df_corr %>% filter(term=="Zsup.30C") %>% pull(Zsup.42C))^2
+# p_zsup <- ggplot(df,
+#        aes(x=Zsup.30C,y=Zsup.42C))+
+#   geom_abline(slope=1,linetype="dotted")+
+#   ggrastr::rasterize(dpi = 600, geom_point(data=df%>%filter(target=="other"),alpha=0.2,shape=16,color="grey50", size = 0.5)) +
+#   ggrastr::rasterize(dpi = 600, geom_point(data=df%>%filter(target!="other"),aes(color=target),size=0.8,shape=16,alph=0.3)) +
+#   scale_x_continuous(breaks=c(-4,0,4))+scale_y_continuous(breaks=c(-4,0,4))+
+#   scale_color_manual(values=target.cols)+
+#   coord_cartesian(xlim=c(lower,upper),ylim=c(lower,upper),expand=F)+
+#   theme(legend.position = "none")+
+#   # geom_text(data=df_corr%>%filter(term=="Zsup.30C"),
+#   #      aes(x=-3,y=3,label=paste0("r^2=",round(Zsup.42C^2,digits=2))),
+#   #      size=12*0.35)+
+#   labs(x="",y="")
+# p_zsup
+# ggsave("../figures/Supplemental/Zsup.pdf",
+#        egg::set_panel_size(p=p_zsup,width=unit(30,"mm"),height=unit(30,"mm")),
+#        bg="transparent",width=50,height=50,units="mm")
+# 
+# p_zsup_46C <- ggplot(df,
+#        aes(x=Zsup.30C,y=Zsup.46C))+
+#   geom_abline(slope=1,linetype="dotted")+
+#   ggrastr::rasterize(dpi = 600, geom_point(data=df%>%filter(target=="other"),alpha=0.2,shape=16,color="grey50", size = 0.5)) +
+#   ggrastr::rasterize(dpi = 600, geom_point(data=df%>%filter(target!="other"),aes(color=target),size=0.8,shape=16,alph=0.3)) +
+#   scale_x_continuous(breaks=c(-4,0,4))+scale_y_continuous(breaks=c(-4,0,4))+
+#   scale_color_manual(values=target.cols)+
+#   coord_cartesian(xlim=c(lower,upper),ylim=c(lower,upper),expand=F)+
+#   theme(legend.position = "none")+
+#   # geom_text(data=df_corr%>%filter(term=="Zsup.30C"),
+#   #      aes(x=-3,y=3,label=paste0("r^2=",round(Zsup.42C^2,digits=2))),
+#   #      size=12*0.35)+
+#   labs(x="",y="")
+# p_zsup_46C
+# ggsave("../figures/Supplemental/Zsup_30vs46.pdf",
+#        egg::set_panel_size(p=p_zsup_46C,width=unit(30,"mm"),height=unit(30,"mm")),
+#        bg="transparent",width=50,height=50,units="mm")
+```
+## esc hsf1 msn24 fc
+```{r}
+upper<-4 
+lower<-(-3)
+df <- df_Zsup_Poly_minfilt %>% filter(Stress_group == "Heat Shock") %>%
+  mutate(target = if_else(label=="HSF1 targets","HSF1 targets",
+                          if_else(label == "MSN2/4 targets","MSN2/4 targets","other"))) %>%
   mutate(target=factor(target,levels=c("other","MSN2/4 targets","HSF1 targets"))) %>%
   arrange(target) %>%
-  mutate(Zsup.30C=case_when(Zsup.30C>upper~upper,
-                            Zsup.30C<lower~lower,
-                            TRUE~Zsup.30C),
-         Zsup.42C=case_when(Zsup.42C>upper~upper,
-                            Zsup.42C<lower~lower,
-                            TRUE~Zsup.42C)) %>%
-  mutate(gene_lab = if_else(gene%in%genes_to_lab,gene,""))
-df_corr <- df %>%
-  correlate(method="pearson")
-corr <- (df_corr %>% filter(term=="Zsup.30C") %>% pull(Zsup.42C))^2
-p_zsup <- ggplot(df,
-       aes(x=Zsup.30C,y=Zsup.42C))+
-  geom_abline(slope=1,linetype="dotted")+
-  ggrastr::rasterize(dpi = 600, geom_point(data=df%>%filter(target=="other"),alpha=0.2,shape=16,color="grey50", size = 0.5)) +
-  ggrastr::rasterize(dpi = 600, geom_point(data=df%>%filter(target!="other"),aes(color=target),size=0.8,shape=16,alph=0.3)) +
-  scale_x_continuous(breaks=c(-4,0,4))+scale_y_continuous(breaks=c(-4,0,4))+
-  scale_color_manual(values=target.cols)+
-  coord_cartesian(xlim=c(lower,upper),ylim=c(lower,upper),expand=F)+
-  theme(legend.position = "none")+
-  # geom_text(data=df_corr%>%filter(term=="Zsup.30C"),
-  #      aes(x=-3,y=3,label=paste0("r^2=",round(Zsup.42C^2,digits=2))),
-  #      size=12*0.35)+
-  labs(x="",y="")
-p_zsup
-ggsave("../figures/Supplemental/Zsup.pdf",
-       egg::set_panel_size(p=p_zsup,width=unit(30,"mm"),height=unit(30,"mm")),
-       bg="transparent",width=50,height=50,units="mm")
+  ungroup %>%
+  mutate(esc.compress =case_when(esc.mean>upper~upper,
+                            esc.mean<lower~lower,
+                            TRUE~esc.mean)) %>%
+  mutate(gene_lab = if_else(gene%in%genes_to_lab,gene,"")) %>%
+  filter(Temperature %in% c("42C","46C"))
 
-p_zsup_46C <- ggplot(df,
-       aes(x=Zsup.30C,y=Zsup.46C))+
-  geom_abline(slope=1,linetype="dotted")+
-  ggrastr::rasterize(dpi = 600, geom_point(data=df%>%filter(target=="other"),alpha=0.2,shape=16,color="grey50", size = 0.5)) +
-  ggrastr::rasterize(dpi = 600, geom_point(data=df%>%filter(target!="other"),aes(color=target),size=0.8,shape=16,alph=0.3)) +
-  scale_x_continuous(breaks=c(-4,0,4))+scale_y_continuous(breaks=c(-4,0,4))+
+p_esc_FC <- ggplot(df,
+       aes(x=TPM.FC.SedSeq,y=esc.mean, color = target))+
+  geom_hline(yintercept=0,linetype="dotted")+
+  ggrastr::rasterize(dpi = 600, geom_point(data = df %>% filter(target == "other"),shape=16,alpha=0.5, size = 0.5)) +
+  ggrastr::rasterize(dpi = 600, geom_point(data = df %>% filter(target == "MSN2/4 targets"),shape=16,alpha=0.5, size = 1)) +
+  ggrastr::rasterize(dpi = 600, geom_point(data = df %>% filter(target == "HSF1 targets"),shape=16,alpha=0.5, size = 1)) +
   scale_color_manual(values=target.cols)+
-  coord_cartesian(xlim=c(lower,upper),ylim=c(lower,upper),expand=F)+
-  theme(legend.position = "none")+
-  # geom_text(data=df_corr%>%filter(term=="Zsup.30C"),
-  #      aes(x=-3,y=3,label=paste0("r^2=",round(Zsup.42C^2,digits=2))),
-  #      size=12*0.35)+
-  labs(x="",y="")
-p_zsup_46C
-ggsave("../figures/Supplemental/Zsup_30vs46.pdf",
-       egg::set_panel_size(p=p_zsup_46C,width=unit(30,"mm"),height=unit(30,"mm")),
-       bg="transparent",width=50,height=50,units="mm")
+  scale_x_log10nice() +
+  coord_cartesian(y=c(lower,upper))+
+  labs(x="",y="eSed (SDs)")+
+  facet_grid(.~Temperature) +
+  no.legend
+p_esc_FC
+ggsave("../figures/Supplemental/TPM_FC_esc_hsf1_msn24.pdf",
+       egg::set_panel_size(p=p_esc_FC,width=unit(30,"mm"),height=unit(30,"mm")),
+       bg="transparent",width=100,height=50,units="mm")
 ```
 
 ## esc hsf msn24 box
@@ -5517,65 +5550,65 @@ ggsave("../figures/Supplemental/HAC1_GCN4_Occupancy.pdf",egg::set_panel_size(p=p
 
 #Figure S2A
 ```{r}
-genes_to_lab <- c("SSB1","SSA4","HSP104","HSP26","PMU1","ADD66")
-df <- df_Zsup_Poly_minfilt %>% filter(Stress_group=="Heat Shock",Temperature%in%c("42C","46C")) %>%
-  mutate(target = if_else(str_detect(label,"HSF1"),"HSF1 targets",
-                          if_else(str_detect(label,"MSN2"),"MSN2/4 targets","other"))) %>%
-  mutate(target=factor(target,levels=c("other","MSN2/4 targets","HSF1 targets"))) %>%
-  arrange(target) %>%
-  mutate(gene_lab=if_else(gene%in%genes_to_lab,gene,""))
-plot_hs <- function(df,xmin,xmax,ymin,ymax,xscale,xbreaks,yscale,ybreaks) {
-  df <-  df %>%
-    mutate(TPM.FC.SedSeq.plot = if_else(TPM.FC.SedSeq<xmin,xmin,
-                                        if_else(TPM.FC.SedSeq>xmax,xmax,TPM.FC.SedSeq)),
-           deltaZ.plot = if_else(deltaZ<ymin,ymin,
-                               if_else(deltaZ>ymax,ymax,deltaZ)))
-  p_scatter <- ggplot(df,aes(x=TPM.FC.SedSeq,y=deltaZ,color=target))+
-    geom_hline(yintercept=0,linetype="dotted")+geom_vline(xintercept=1,linetype="dotted")+
-    ggrastr::rasterize(dpi = 600, geom_point(data=df%>%filter(target=="other"),aes(x=TPM.FC.SedSeq.plot,y=deltaZ.plot),
-               alpha=0.8,color="gray80",shape=16,size=0.8)) +
-    ggrastr::rasterize(dpi = 600, geom_point(data=df%>%filter(target!="other"),aes(x=TPM.FC.SedSeq.plot,y=deltaZ.plot),
-               alpha=0.8,shape=16,size=1)) +
-    coord_cartesian(xlim=c(xmin,xmax),ylim=c(ymin,ymax),expand=F)+
-    scale_color_manual(values=c("HSF1 targets"=unname(target.cols["HSF1 targets"]),
-                                "MSN2/4 targets"=unname(target.cols["MSN2/4 targets"]),
-                                "other"="black"))+
-    geom_cross(data=df%>%filter(target%in%c("HSF1 targets")),grouping="target",x="TPM.FC.SedSeq",y="deltaZ")+
-    geom_point(data=df%>%filter(gene%in%genes_to_lab),aes(x=TPM.FC.SedSeq.plot,y=deltaZ.plot),
-               alpha=1,size=2,shape=16)
-   if (xscale=="log2"){
-    p_scatter <- p_scatter+scale_x_log2nice(omag=xbreaks)  
-  } else if (xscale=="log10"){
-    p_scatter <- p_scatter+scale_x_log10nice(omag=xbreaks)
-  } else {
-    p_scatter <- p_scatter+scale_x_continuous(breaks=xbreaks)
-  }
-  if (yscale=="log2"){
-    p_scatter <- p_scatter+scale_y_log2nice(omag=ybreaks)  
-  } else if (yscale=="log10"){
-    p_scatter <- p_scatter+scale_y_log10nice(omag=ybreaks)
-  } else {
-    p_scatter <- p_scatter+scale_y_continuous(breaks=ybreaks)
-  }
-  
-  # Overlay the density plots onto the main plot using annotation_custom
-  p_combined <- p_scatter +
-    geom_text_repel(aes(label=gene_lab),
-                    max.overlaps = 10000,min.segment.length = 0,
-                    size=8*0.35,color="black")+
-    labs(x="",y="")+
-    theme(plot.margin = margin(0, 0, 0, 0, "pt"))+
-    theme(legend.position="nonoe")
-}
-p_42C <- plot_hs(df%>%filter(Temperature=="42C"), 0.5,60,-2.5,3.5,"log2",c(-2,0,2,4),"linear",c(-2,0,2))
-p_42C
-ggsave(file.path(github_dir,"figures/Supplemental/42C_zoom.pdf"),egg::set_panel_size(p_42C,width=unit(50,"mm"),height=unit(50,"mm")),
-       width=75,height=75,units="mm")
-p_46C <- plot_hs(df%>%filter(Temperature=="46C"),0.4,8,-2.5,3.5,"log2",c(0,1,2),"linear",c(-2,0,2))+
-  theme(axis.text.y=element_blank())
-p_46C
-ggsave(file.path(github_dir,"figures/Supplemental/46C_zoom.pdf"),egg::set_panel_size(p_46C,width=unit(50,"mm"),height=unit(50,"mm")),
-       width=75,height=75,units="mm",bg="transparent")
+# genes_to_lab <- c("SSB1","SSA4","HSP104","HSP26","PMU1","ADD66")
+# df <- df_Zsup_Poly_minfilt %>% filter(Stress_group=="Heat Shock",Temperature%in%c("42C","46C")) %>%
+#   mutate(target = if_else(str_detect(label,"HSF1"),"HSF1 targets",
+#                           if_else(str_detect(label,"MSN2"),"MSN2/4 targets","other"))) %>%
+#   mutate(target=factor(target,levels=c("other","MSN2/4 targets","HSF1 targets"))) %>%
+#   arrange(target) %>%
+#   mutate(gene_lab=if_else(gene%in%genes_to_lab,gene,""))
+# plot_hs <- function(df,xmin,xmax,ymin,ymax,xscale,xbreaks,yscale,ybreaks) {
+#   df <-  df %>%
+#     mutate(TPM.FC.SedSeq.plot = if_else(TPM.FC.SedSeq<xmin,xmin,
+#                                         if_else(TPM.FC.SedSeq>xmax,xmax,TPM.FC.SedSeq)),
+#            deltaZ.plot = if_else(deltaZ<ymin,ymin,
+#                                if_else(deltaZ>ymax,ymax,deltaZ)))
+#   p_scatter <- ggplot(df,aes(x=TPM.FC.SedSeq,y=deltaZ,color=target))+
+#     geom_hline(yintercept=0,linetype="dotted")+geom_vline(xintercept=1,linetype="dotted")+
+#     ggrastr::rasterize(dpi = 600, geom_point(data=df%>%filter(target=="other"),aes(x=TPM.FC.SedSeq.plot,y=deltaZ.plot),
+#                alpha=0.8,color="gray80",shape=16,size=0.8)) +
+#     ggrastr::rasterize(dpi = 600, geom_point(data=df%>%filter(target!="other"),aes(x=TPM.FC.SedSeq.plot,y=deltaZ.plot),
+#                alpha=0.8,shape=16,size=1)) +
+#     coord_cartesian(xlim=c(xmin,xmax),ylim=c(ymin,ymax),expand=F)+
+#     scale_color_manual(values=c("HSF1 targets"=unname(target.cols["HSF1 targets"]),
+#                                 "MSN2/4 targets"=unname(target.cols["MSN2/4 targets"]),
+#                                 "other"="black"))+
+#     geom_cross(data=df%>%filter(target%in%c("HSF1 targets")),grouping="target",x="TPM.FC.SedSeq",y="deltaZ")+
+#     geom_point(data=df%>%filter(gene%in%genes_to_lab),aes(x=TPM.FC.SedSeq.plot,y=deltaZ.plot),
+#                alpha=1,size=2,shape=16)
+#    if (xscale=="log2"){
+#     p_scatter <- p_scatter+scale_x_log2nice(omag=xbreaks)  
+#   } else if (xscale=="log10"){
+#     p_scatter <- p_scatter+scale_x_log10nice(omag=xbreaks)
+#   } else {
+#     p_scatter <- p_scatter+scale_x_continuous(breaks=xbreaks)
+#   }
+#   if (yscale=="log2"){
+#     p_scatter <- p_scatter+scale_y_log2nice(omag=ybreaks)  
+#   } else if (yscale=="log10"){
+#     p_scatter <- p_scatter+scale_y_log10nice(omag=ybreaks)
+#   } else {
+#     p_scatter <- p_scatter+scale_y_continuous(breaks=ybreaks)
+#   }
+#   
+#   # Overlay the density plots onto the main plot using annotation_custom
+#   p_combined <- p_scatter +
+#     geom_text_repel(aes(label=gene_lab),
+#                     max.overlaps = 10000,min.segment.length = 0,
+#                     size=8*0.35,color="black")+
+#     labs(x="",y="")+
+#     theme(plot.margin = margin(0, 0, 0, 0, "pt"))+
+#     theme(legend.position="nonoe")
+# }
+# p_42C <- plot_hs(df%>%filter(Temperature=="42C"), 0.5,60,-2.5,3.5,"log2",c(-2,0,2,4),"linear",c(-2,0,2))
+# p_42C
+# ggsave(file.path(github_dir,"figures/Supplemental/42C_zoom.pdf"),egg::set_panel_size(p_42C,width=unit(50,"mm"),height=unit(50,"mm")),
+#        width=75,height=75,units="mm")
+# p_46C <- plot_hs(df%>%filter(Temperature=="46C"),0.4,8,-2.5,3.5,"log2",c(0,1,2),"linear",c(-2,0,2))+
+#   theme(axis.text.y=element_blank())
+# p_46C
+# ggsave(file.path(github_dir,"figures/Supplemental/46C_zoom.pdf"),egg::set_panel_size(p_46C,width=unit(50,"mm"),height=unit(50,"mm")),
+#        width=75,height=75,units="mm",bg="transparent")
 ```
 
 
