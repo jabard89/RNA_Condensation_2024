@@ -206,7 +206,7 @@ df_Zsup_sed_esc_filt_mean <- df_Zsup_sed_esc %>%
             pSup.ctrl.window.mean.mean=invlogodds(mean(logodds(pSup.ctrl.windowmean.mean))),
             pSup.treatment.window.mean.mean=invlogodds(mean(logodds(pSup.lysate.windowmean))),
             lopSup.treatment.sd.mean=mean(pSup.lysate.sd),
-            lopSup.ctrl.sd.mean=mean(pSup.ctrl.sd))
+            lopSup.ctrl.sd.mean=mean(pSup.ctrl.sd)
   ) %>%
   write_tsv(file.path(github_dir,"data_processed","sedseq_filt_mean.tsv.gz"))
 
