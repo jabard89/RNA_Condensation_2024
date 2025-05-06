@@ -152,7 +152,9 @@ df_Zsup_sed_esc <- df_Zsup %>% ungroup %>%
          esc = ((logodds(pSup) - logodds(pSup.lysate.windowmean)) - (logodds(pSup.ctrl.mean) - logodds(pSup.ctrl.windowmean.mean))) / pSup.ctrl.sd,
          RelSed = (logodds(pSup) - logodds(pSup.lysate.windowmean)) / pSup.lysate.sd,
          pSup.ctrl.window.mean=pSup.ctrl.windowmean.mean,
-         pSup.treatment.window.mean=pSup.lysate.windowmean)
+         pSup.treatment.window.mean=pSup.lysate.windowmean,
+         lopSup.treatment.sd=pSup.lysate.sd,
+         lopSup.ctrl.sd=pSup.ctrl.sd)
 
 
 write_tsv(df_Zsup_sed_esc,file.path(github_dir,"data_processed","sedseq_out.tsv.gz"))
@@ -202,7 +204,9 @@ df_Zsup_sed_esc_filt_mean <- df_Zsup_sed_esc %>%
             esc.mean = mean(esc),
             RelSed.mean = mean(RelSed),
             pSup.ctrl.window.mean.mean=invlogodds(mean(logodds(pSup.ctrl.windowmean.mean))),
-            pSup.treatment.window.mean.mean=invlogodds(mean(logodds(pSup.lysate.windowmean)))
+            pSup.treatment.window.mean.mean=invlogodds(mean(logodds(pSup.lysate.windowmean))),
+            lopSup.treatment.sd.mean=mean(pSup.lysate.sd),
+            lopSup.ctrl.sd.mean=mean(pSup.ctrl.sd)
   ) %>%
   write_tsv(file.path(github_dir,"data_processed","sedseq_filt_mean.tsv.gz"))
 
