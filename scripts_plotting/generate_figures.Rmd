@@ -934,33 +934,33 @@ ggsave(file.path(github_dir, "figures/Figure2/46C_zoom_esc.pdf"), egg::set_panel
 
 HS/Azide/EtOH SG quant plot
 ```{r}
-# hs <- read_csv(file.path(github_dir,"data_processed/sg_quant/hs_sgs.csv"))
-# azide <- read_csv(file.path(github_dir,"data_processed/sg_quant/azide_sgs.csv"))
-# etoh <- read_csv(file.path(github_dir,"data_processed/sg_quant/etoh_sgs.csv"))
-# 
-# common_columns <- Reduce(intersect, list(names(hs), names(azide), names(etoh)))
-# 
-# # Subset each data frame to keep only the common columns
-# hs_subset <- hs %>% select(all_of(common_columns))
-# azide_subset <- azide %>% select(all_of(common_columns))
-# etoh_subset <- etoh %>% select(all_of(common_columns))
-# 
-# # Combine the subsetted data frames using rbind
-# stress_sg_data <- bind_rows(hs_subset, azide_subset, etoh_subset) %>% mutate(Treatment = factor(Treatment, levels = c( "30C" , "42C" , "46C" ,"0_0", "0_5" ,  "0_8"  ,"1_0" , "0%"  , "7.5%" ,"15%")))
-# 
-# 
-# sg_plot <- ggplot(data =stress_sg_data%>% filter(Treatment != "1_0"), aes(x = Treatment, y = Cell_Parent_Children_stress_granule_Count, color = Treatment))+
-#   ggrastr::rasterize(dpi = 600, geom_point(aes(group = Stress), position=position_jitterdodge(dodge.width = 0.9, jitter.width = 4, jitter.height = 0.3), alpha = 0.2, shape = 16))+
-#   geom_boxplot(aes(fill = Treatment), alpha = 1, color = "black", size = 0.7, outlier.colour = NA)+ 
-#   ylab("SGs/cell")+
-#   scale_color_manual(values = c("#7F7F7F", "#7F7F7F", "#7F7F7F", "#7F7F7F", "#7F7F7F", "#7F7F7F", "#7F7F7F", "#7F7F7F", "#7F7F7F"))+
-#   scale_fill_manual(values = c("grey50", RColorBrewer::brewer.pal(n=7,"Oranges")[4], RColorBrewer::brewer.pal(n=7,"Oranges")[6],"grey50", RColorBrewer::brewer.pal(n=5,"Greens")[3], RColorBrewer::brewer.pal(n=5,"Greens")[5], "grey50", RColorBrewer::brewer.pal(n=7,"Purples")[5],RColorBrewer::brewer.pal(n=7,"Purples")[7]) )+
-#   scale_x_discrete(labels = c("30°C", "42°C", "46°C", "0% \nNaN3", "0.5% \nNaN3", "0.8% \nNaN3",  "0% \nEtOH", "7.5% \nEtOH", "15% \nEtOH"))+
-#   theme(legend.position = "none", axis.title.x = element_blank())
-# 
-# sg_plot
-# 
-# ggsave("../figures/Figure3/sg_comparison_plot.pdf", sg_plot, width = 7, height = 3, create.dir = TRUE)
+hs <- read_csv(file.path(github_dir,"data_processed/sg_quant/hs_sgs.csv"))
+azide <- read_csv(file.path(github_dir,"data_processed/sg_quant/azide_sgs.csv"))
+etoh <- read_csv(file.path(github_dir,"data_processed/sg_quant/etoh_sgs.csv"))
+
+common_columns <- Reduce(intersect, list(names(hs), names(azide), names(etoh)))
+
+# Subset each data frame to keep only the common columns
+hs_subset <- hs %>% select(all_of(common_columns))
+azide_subset <- azide %>% select(all_of(common_columns))
+etoh_subset <- etoh %>% select(all_of(common_columns))
+
+# Combine the subsetted data frames using rbind
+stress_sg_data <- bind_rows(hs_subset, azide_subset, etoh_subset) %>% mutate(Treatment = factor(Treatment, levels = c( "30C" , "42C" , "46C" ,"0_0", "0_5" ,  "0_8"  ,"1_0" , "0%"  , "7.5%" ,"15%")))
+
+
+sg_plot <- ggplot(data =stress_sg_data%>% filter(Treatment != "1_0"), aes(x = Treatment, y = Cell_Parent_Children_stress_granule_Count, color = Treatment))+
+  ggrastr::rasterize(dpi = 600, geom_point(aes(group = Stress), position=position_jitterdodge(dodge.width = 0.9, jitter.width = 4, jitter.height = 0.3), alpha = 0.2, shape = 16))+
+  geom_boxplot(aes(fill = Treatment), alpha = 1, color = "black", size = 0.7, outlier.colour = NA)+
+  ylab("SGs/cell")+
+  scale_color_manual(values = c("#7F7F7F", "#7F7F7F", "#7F7F7F", "#7F7F7F", "#7F7F7F", "#7F7F7F", "#7F7F7F", "#7F7F7F", "#7F7F7F"))+
+  scale_fill_manual(values = c("grey50", RColorBrewer::brewer.pal(n=7,"Oranges")[4], RColorBrewer::brewer.pal(n=7,"Oranges")[6],"grey50", RColorBrewer::brewer.pal(n=5,"Greens")[3], RColorBrewer::brewer.pal(n=5,"Greens")[5], "grey50", RColorBrewer::brewer.pal(n=7,"Purples")[5],RColorBrewer::brewer.pal(n=7,"Purples")[7]) )+
+  scale_x_discrete(labels = c("30°C", "42°C", "46°C", "0% \nNaN3", "0.5% \nNaN3", "0.8% \nNaN3",  "0% \nEtOH", "7.5% \nEtOH", "15% \nEtOH"))+
+  theme(legend.position = "none", axis.title.x = element_blank())
+
+sg_plot
+
+ggsave("../figures/Figure3/sg_comparison_plot.pdf", sg_plot, width = 7, height = 3, create.dir = TRUE)
 ```
 
 ## stress SP violins
@@ -1675,9 +1675,15 @@ df_heatEtOHStress_summary <- df_heatEtOHStress_long %>%
   unique()
 
 #plotting means +/-standard error
-p_stressSpecificEscape_heatEtOH <- ggplot(data = df_heatEtOHStress_long %>% filter(Stress %in% c('42°C','7.5% Ethanol')),
-       aes(y = esed, x = inducedCategory, fill = inducedCategory)) +
-  geom_jitter(shape=16, height = 0, alpha = 0.03) +
+p_stressSpecificEscape_heatEtOH <- ggplot(
+  data = df_heatEtOHStress_long %>% 
+    filter(Stress %in% c('42°C','7.5% Ethanol')),
+  aes(y = esed, x = inducedCategory, fill = inducedCategory)
+) +
+  geom_jitter(data = df_heatEtOHStress_long %>% filter(Stress %in% c('42°C','7.5% Ethanol'), inducedCategory == "other"),
+    shape = 16,height = 0,alpha = 0.05, size = 0.5) +
+ geom_jitter(data = df_heatEtOHStress_long %>% filter(Stress %in% c('42°C','7.5% Ethanol'), inducedCategory != "other"),
+    shape = 16,height = 0,alpha = 0.3, size = 0.5, aes(color = inducedCategory), width = 0.25) +
   geom_hline(yintercept = 0, linetype = 'dashed') +
   geom_col(data = df_heatEtOHStress_summary,
            aes(y = mean_esed),
@@ -1700,13 +1706,14 @@ p_stressSpecificEscape_heatEtOH <- ggplot(data = df_heatEtOHStress_long %>% filt
   scale_y_continuous(name = 'Escape score (stress)',
                      limits = c(-2,3)) +
   scale_fill_manual(values = c('grey','orange','#A155B9','brown')) +
+  scale_color_manual(values = c('orange','#A155B9','brown')) +
   facet_grid(cols = vars(Stress)) +
   theme(legend.position = 'none')
 p_stressSpecificEscape_heatEtOH
 
 ggsave(file.path(github_dir,"figures","Figure3/stressSpecificEscape_heatEtoh.pdf"),
        p_stressSpecificEscape_heatEtOH,
-       width=150,height=100,units="mm",bg="transparent", device = cairo_pdf)
+       width=70,height=50,units="mm",bg="transparent")
 ```
 
 # Try azide again, this time with escape scores and top 100 transcripts.
@@ -3700,7 +3707,7 @@ p_chx <- ggplot(df,
    scale_alpha_manual(values = c(0.9, 0.9))+
   guides(alpha = "none", linetype = "none")
 p_chx
-ggsave(file.path(github_dir,"figures/Figure7/CHX_violin.pdf"),p_chx,width=60,height=50,units="mm",bg="white")
+#ggsave(file.path(github_dir,"figures/Figure7/CHX_violin.pdf"),p_chx,width=60,height=50,units="mm",bg="white")
 
 sedMax <- 12
 sedMin <- (-1)
@@ -3731,13 +3738,14 @@ p_chx_sed_bytreat <- ggplot(df_42_46,
 
 p_chx_sed_bytreat
 
-ggsave(file.path(github_dir,"figures/Figure7/CHX_violin_sed_normbytreat.pdf"),p_chx_sed_bytreat,width=60,height=50,units="mm",bg="white")
+#ggsave(file.path(github_dir,"figures/Figure7/CHX_violin_sed_normbytreat.pdf"),p_chx_sed_bytreat,width=60,height=50,units="mm",bg="white")
 
 p_chx_sed_compMock <- ggplot(df,
                 aes(x = Temperature, y = sed.mean.compMock,
                     fill = Temperature, group = interaction(Temperature, Treatment), pattern = Treatment)) +
   ggrastr::rasterize(dpi = 600, geom_point(aes(y = sed.mean.compMock.compress),
              alpha = 0.3, position = position_jitterdodge(jitter.width = 0.15, dodge.width = 0.9), color = "grey50", size = 0.2, shape = 16)) +
+   geom_hline(yintercept = 0, linetype = "dashed", size = 0.25)+
   geom_violin(aes(alpha = Treated, color = Treated), 
               draw_quantiles = c(0.5), color = "black", size = 0.4, scale = "width", width = 0.9, trim = TRUE) +
   scale_fill_manual(values = stress.cols) +
@@ -3749,6 +3757,7 @@ p_chx_sed_compMock <- ggplot(df,
     limits = c(12, -2),    
     oob = scales::oob_keep 
   ) +
+
   scale_alpha_manual(values = c(0.9, 0.9)) +
   guides(alpha = "none", linetype = "none") +
   theme(
@@ -3795,6 +3804,7 @@ p_3b_violin_sed <- ggplot(df %>% filter(Treatment_group == "eIF3b_deplete"),
                     fill = Temperature, group = interaction(Temperature, Treatment), pattern = Treatment)) +
   ggrastr::rasterize(dpi = 600, geom_point(aes(y = sed.mean.compMock.compress),
              alpha = 0.3, position = position_jitterdodge(jitter.width = 0.15, dodge.width = 0.9), color = "grey50", size = 0.2, shape = 16)) +
+     geom_hline(yintercept = 0, linetype = "dashed", size = 0.25)+
   geom_violin(aes(alpha = Treated, color = Treated), draw_quantiles = c(0.5), color = "black", size = 0.4, scale = "width", width = 0.9, trim = TRUE) +
   scale_fill_manual(values = stress.cols) +
   labs(x = "", y = "Sedimentation score (SDs)") +
