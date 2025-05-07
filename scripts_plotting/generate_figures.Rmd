@@ -1170,7 +1170,8 @@ p_violin <- ggplot(df,
   geom_violin(aes(fill=Stress_label,alpha=Stress_label), linewidth = 0, width = 1)+
   geom_violin(fill=NA,alpha=1,draw_quantiles = c(0.5),size=0.25, width = 1)+
   scale_x_discrete(labels=plot_group_labels)+
-  scale_y_continuous(limits = c(sedMax,sedMin), breaks = c(10,5,0), transform = "reverse") +
+  #scale_y_continuous(limits = c(sedMax,sedMin), breaks = c(10,5,0), transform = "reverse") +
+  scale_y_continuous(limits = c(sedMin,sedMax), breaks = c(0, 5, 10))+
   scale_fill_manual(values=stress.cols)+
   scale_alpha_manual(values=c("mock"=0.8,
                    "42C"=0.8,
@@ -1700,15 +1701,19 @@ p_stressSpecificEscape_heatEtOH <- ggplot(
                               'temp,etoh,azide' = 'Temp Ethanol Azide')) +
   scale_y_continuous(name = 'Escape score (stress)',
                      limits = c(-2,3)) +
-  scale_fill_manual(values = c('grey','orange','#A155B9','brown')) +
-  scale_color_manual(values = c('orange','#A155B9','brown')) +
+  scale_fill_manual(values = c('grey',RColorBrewer::brewer.pal(n=7,"Oranges")[4],
+                               RColorBrewer::brewer.pal(n=7,"Purples")[5],
+                               '#AD3D6F')) +
+  scale_color_manual(values = c(RColorBrewer::brewer.pal(n=7,"Oranges")[4],RColorBrewer::brewer.pal(n=7,"Purples")[5],'#AD3D6F')) +
   facet_grid(cols = vars(Stress)) +
   theme(legend.position = 'none')
+
 p_stressSpecificEscape_heatEtOH
 
 ggsave(file.path(github_dir,"figures","Figure3/stressSpecificEscape_heatEtoh.pdf"),
        p_stressSpecificEscape_heatEtOH,
        width=70,height=50,units="mm",bg="transparent")
+
 ```
 
 # Try azide again, this time with escape scores and top 100 transcripts.
