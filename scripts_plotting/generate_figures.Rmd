@@ -634,16 +634,16 @@ rmse_46/rmse_46_nomu
 
 # Build results table
 fit_table = tibble(
-  Temperature=c('30C','42C','46C'),
-  beta = c(paste(format(beta_fit, digits=3)),paste(format(beta_fit, digits=3),'*'),paste(format(beta_fit, digits=3),'*')),
-  chi = c(paste(format(chi_fit, digits=3)),paste(format(chi_fit, digits=3),'*'),paste(format(chi_fit, digits=3),'*')),
-  mu=c("NA",paste(format(mu_fit_42C, digits=3)), paste(format(mu_fit_46C, digits=3))),
-  nu=c("NA",paste(format(nu_fit_42C, digits=3, sci=F)), paste(format(nu_fit_46C, digits=3))),
-  fit.rmse=c(paste(format(rmse_30, digits=3, sci=F)), paste(format(rmse_42, digits=3, sci=F)), paste(format(rmse_46, digits=3))),
-  fit.rmse.nomu.rel=c(paste(format(1.0, digits=3, sci=F)),paste(format(rmse_42_nomu/rmse_42, digits=3, sci=F)), paste(format(rmse_46_nomu/rmse_46, digits=3))),
-#  L.half=c("NA",paste(round(log(2)/nu_fit_42C, digits=3)), paste(round(log(2)/nu_fit_46C, digits=3))),
+  Temperature=c('30C','42C','46C', '42C ($nu$ only)', '46C ($nu$ only)'),
+  beta = c(paste(format(beta_fit, digits=3)),'"', '"', '"', '"'),
+  chi = c(paste(format(chi_fit, digits=3)),'"', '"', '"', '"'),
+  mu=c("NA",paste(format(mu_fit_42C, digits=3)), paste(format(mu_fit_46C, digits=3)),"0", "0"),
+  nu=c("NA",paste(format(nu_fit_42C, digits=3, sci=F)), paste(format(nu_fit_46C, digits=3)), paste(format(nuonly_fit_42C, digits=3)), paste(format(nuonly_fit_46C, digits=3))),
+  #fit.rmse=c(paste(format(rmse_30, digits=3, sci=F)), paste(format(rmse_42, digits=3, sci=F)), paste(format(rmse_46, digits=3))),
+  #fit.rmse.nomu.rel=c(paste(format(1.0, digits=3, sci=F)),paste(format(rmse_42_nomu/rmse_42, digits=3, sci=F)), paste(format(rmse_46_nomu/rmse_46, digits=3))),
 # L.equiv = length at which observed nu generates same probability of interaction as observed mu
-  L.equiv=c("NA",paste(round(mu_fit_42C/nu_fit_42C, digits=0)), paste(round(mu_fit_46C/nu_fit_46C, digits=0)))
+  L.equiv=c("NA",paste(round(mu_fit_42C/nu_fit_42C, digits=0)), paste(round(mu_fit_46C/nu_fit_46C, digits=0)),"NA","NA"),
+  P.L.equiv=c("NA",paste(format(1-ecdf(fit_enh$length)(mu_fit_42C/nu_fit_42C), digits=3)),paste(format(1-ecdf(fit_enh$length)(mu_fit_46C/nu_fit_46C), digits=3)),"NA","NA")
 )
 
 lengths = 10^seq(log10(300),log10(15000), length.out=1000)
@@ -712,6 +712,8 @@ ggsave(file.path(github_dir, "figures/Figure1/Fig1_psup_vs_model.pdf"),
        height = fig.width*fig.asp*fig.vs.panel.ratio,
        units = "mm", bg = "transparent", create.dir=TRUE)
 ```
+
+
 
 # Figure S1
 
