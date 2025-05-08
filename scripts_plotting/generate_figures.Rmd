@@ -24,6 +24,7 @@ library(devtools)
 library(cat.extras) #has nicely formatted log scales
 library(flextable)
 library(patchwork)
+library(FlexParamCurve)
 library(zoo)
 library(here)
 `%!in%` = Negate(`%in%`)
@@ -623,14 +624,14 @@ fit_enh = fit_wide |> mutate(
 # rmse_42_nomu = with(fit_enh, sqrt(sum((pse.42C.nomu-pSup.42C)^2, na.rm=T)/(nrow(fit_enh)-1)))
 # rmse_46_nomu = with(fit_enh, sqrt(sum((pse.46C.nomu-pSup.46C)^2, na.rm=T)/(nrow(fit_enh)-1)))
 # RMSE goodness of fit: root mean squared error, where denominator is number of datapoints N - number of estimated parameters M
-rmse_30 = with(fit_enh, sqrt(sum((logodds(pse.30C)-logodds(pSup.30C))^2, na.rm=T)/(nrow(fit_enh)-2)))
-rmse_42 = with(fit_enh, sqrt(sum((logodds(pse.42C)-logodds(pSup.42C))^2, na.rm=T)/(nrow(fit_enh)-2)))
-rmse_46 = with(fit_enh, sqrt(sum((logodds(pse.46C)-logodds(pSup.46C))^2, na.rm=T)/(nrow(fit_enh)-2)))
-rmse_42_nomu = with(fit_enh, sqrt(sum((logodds(pse.42C.nomu)-logodds(pSup.42C))^2, na.rm=T)/(nrow(fit_enh)-1)))
-rmse_46_nomu = with(fit_enh, sqrt(sum((logodds(pse.46C.nomu)-logodds(pSup.46C))^2, na.rm=T)/(nrow(fit_enh)-1)))
-
-rmse_42/rmse_42_nomu
-rmse_46/rmse_46_nomu
+# rmse_30 = with(fit_enh, sqrt(sum((logodds(pse.30C)-logodds(pSup.30C))^2, na.rm=T)/(nrow(fit_enh)-2)))
+# rmse_42 = with(fit_enh, sqrt(sum((logodds(pse.42C)-logodds(pSup.42C))^2, na.rm=T)/(nrow(fit_enh)-2)))
+# rmse_46 = with(fit_enh, sqrt(sum((logodds(pse.46C)-logodds(pSup.46C))^2, na.rm=T)/(nrow(fit_enh)-2)))
+# rmse_42_nomu = with(fit_enh, sqrt(sum((logodds(pse.42C.nomu)-logodds(pSup.42C))^2, na.rm=T)/(nrow(fit_enh)-1)))
+# rmse_46_nomu = with(fit_enh, sqrt(sum((logodds(pse.46C.nomu)-logodds(pSup.46C))^2, na.rm=T)/(nrow(fit_enh)-1)))
+# 
+# rmse_42/rmse_42_nomu
+# rmse_46/rmse_46_nomu
 
 # Build results table
 fit_table = tibble(
@@ -645,6 +646,11 @@ fit_table = tibble(
   L.equiv=c("NA",paste(round(mu_fit_42C/nu_fit_42C, digits=0)), paste(round(mu_fit_46C/nu_fit_46C, digits=0)),"NA","NA"),
   P.L.equiv=c("NA",paste(format(1-ecdf(fit_enh$length)(mu_fit_42C/nu_fit_42C), digits=3)),paste(format(1-ecdf(fit_enh$length)(mu_fit_46C/nu_fit_46C), digits=3)),"NA","NA")
 )
+
+# F-test for nested models:
+ftest42 = extraF.nls(nls_fitnuonly_42C, nls_fit_42C)
+ftest46 = extraF.nls(nls_fitnuonly_46C, nls_fit_46C)
+
 
 lengths = 10^seq(log10(300),log10(15000), length.out=1000)
 
@@ -726,15 +732,15 @@ pskho = dat_azide |> filter(Treatment=='Azide_0.8%_pH6.8') |> select(ORF, length
 pskho_mock = dat_azide |> filter(Treatment=='mock') |> select(ORF, length, pSup.mean, sed.mean, esc.mean) |> left_join(kho |> select(-gene, -length), by='ORF') 
 
 p_khong_vs_sed = ggplot(pskho, aes(x=foldchange.sg.total, y=sed.mean, colour=sg.classification)) + 
-  geom_point(shape=shap, alpha=alph) + 
+  ggrastr::rasterize(geom_point(shape=shap, alpha=alph),dpi=600) +
   scale_y_continuous("Differential sedimentation (Δsed)", limits=c(-2,6.5)) + 
   scale_x_log2nice("Stress granule enrichment (Khong *et al.*)", limits=c(0.125,8)) +
   scale_colour_manual(values=sg_enrichment_colors) +
   guides(colour = guide_legend(override.aes = list(alpha = 1))) + no.legend + larger_labels +
   theme(axis.title.x = ggtext::element_markdown())
 p_khong_vs_pSup_mock = ggplot(pskho_mock, aes(x=foldchange.sg.total, y=1-pSup.mean, colour=sg.classification)) + 
-  geom_point(shape=shap, alpha=alph) + 
-  scale_y_log2nice("Proportion in pellet (1-pSup),\nmock treatment", limits=2^c(-4.5,0)) + 
+  ggrastr::rasterize(geom_point(shape=shap, alpha=alph),dpi=600) + 
+  scale_y_log2nice(expression(paste("Proportion in pellet ", (1-pSup),"\nmock treatment")), limits=2^c(-4.5,0)) + 
   scale_x_log2nice("Stress granule enrichment (Khong *et al.*)", limits=c(0.125,8)) +
   scale_colour_manual(values=sg_enrichment_colors) +
   guides(colour = guide_legend(override.aes = list(alpha = 1))) + no.legend + larger_labels +
@@ -746,7 +752,7 @@ p_khong = p_khong_vs_sed + p_khong_vs_pSup_mock
 print(p_khong)
 
 fig.asp = 7/14
-fig.width = 200
+fig.width = 150
 fig.vs.panel.ratio = 1/0.7
 
 ggsave(file.path(github_dir, "figures/FigureS1/FigS1_khong_comparison.pdf"),
@@ -1719,7 +1725,7 @@ p_stressSpecificEscape_heatEtOH
 
 ggsave(file.path(github_dir,"figures","Figure3/stressSpecificEscape_heatEtoh.pdf"),
        p_stressSpecificEscape_heatEtOH,
-       width=70,height=50,units="mm",bg="transparent")
+       width=100,height=70,units="mm",bg="transparent")
 
 ```
 
