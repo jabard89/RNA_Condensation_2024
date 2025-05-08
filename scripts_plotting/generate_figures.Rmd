@@ -1717,7 +1717,7 @@ p_stressSpecificEscape_heatEtOH
 
 ggsave(file.path(github_dir,"figures","Figure3/stressSpecificEscape_heatEtoh.pdf"),
        p_stressSpecificEscape_heatEtOH,
-       width=70,height=50,units="mm",bg="transparent")
+       width=100,height=70,units="mm",bg="transparent")
 
 ```
 
