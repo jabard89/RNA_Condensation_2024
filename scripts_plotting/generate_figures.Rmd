@@ -4664,7 +4664,6 @@ df <- df_Zsup_mean %>% filter(Treatment_group=="EW_TSPP") %>%
   mutate(esc.compress =case_when(esc.mean>upper~upper,
                             esc.mean<lower~lower,
                             TRUE~esc.mean)) %>%
-  mutate(gene_lab = if_else(gene%in%genes_to_lab,gene,"")) %>%
   filter(Temperature %in% c("42C","46C"))
 
 p_esc_boxes <- ggplot(df,
@@ -4804,11 +4803,7 @@ khong_induced <- ggplot(pskho %>% filter(Stress_label == "Azide 0.8%"),
   ggrastr::rasterize(dpi = 600, geom_point(data = pskho %>% 
                filter(Stress_label == "Azide 0.8%" & gene %in% gene_to_lab), 
              aes(x = LengthTxEst, y = 1/foldchange.sg.total), 
-             shape = 16, size = 1, color = "black")) +
-  ggrastr::rasterize(dpi = 600, geom_point(data = pskho %>% 
-               filter(Stress_label == "Azide 0.8%" & gene %in% gene_to_lab), 
-             aes(x = LengthTxEst, y = 1/foldchange.sg.total), 
-             shape = 16, size = 0.5, color = "white")) +
+             shape = 21, color = "black", fill = "white")) +
     guides(colour = guide_legend(override.aes = list(alpha = 1)))+
    theme(panel.spacing.x = grid::unit(0, "mm"),
         strip.placement = "outside",
@@ -4818,7 +4813,7 @@ khong_induced <- ggplot(pskho %>% filter(Stress_label == "Azide 0.8%"),
   theme(legend.position = "none")
 
 ggsave("../figures/Supplemental/khong_induced.pdf",
-        egg::set_panel_size(p=khong_induced,width=unit(20,"mm"),height=unit(20,"mm")),
+        egg::set_panel_size(p=khong_induced,width=unit(40,"mm"),height=unit(40,"mm")),
        width=100,height=100,units="mm",bg="transparent")
 khong_induced
 ```
@@ -4873,7 +4868,8 @@ ggsave("../figures/Supplemental/species_comp.pdf",
 ```
 
 ```{r}
-
+minSed <- (-2)
+maxSed <- (12)
 df <- df_Zsup_mean %>%
   filter(Temperature!="42CR",
          Treatment!="KCl_1M") %>%
@@ -4897,7 +4893,9 @@ df <- df_Zsup_mean %>%
   mutate(Stress_label=factor(Stress_label,
                              levels=c("mock","42C","46C","Azide 0.5%","Azide 0.8%",
                                       "Ethanol 5%","Ethanol 7.5%","Ethanol 10%","Ethanol 15%"))) %>%
-  filter(Stress_label != "mock")
+  filter(Stress_label != "mock") %>%
+  mutate(sed.compress = if_else(sed.mean>maxSed,maxSed,
+                                   if_else(sed.mean<minSed,minSed,sed.mean)))
 stress_labels <- c("mock"="mock",
                    "42C"="42°C",
                    "46C"="46°C",
@@ -4909,15 +4907,15 @@ stress_labels <- c("mock"="mock",
                    "Ethanol 15%"="15%")
 
 p_length_hs <- ggplot(df %>% filter(Stress_label %in% c("42C", "46C")),
-                   aes(x=LengthTxEst,y=SP.FC,color=Stress_label))+
-  geom_hline(yintercept=1,linetype="dotted")+
-  ggrastr::rasterize(dpi = 600, geom_point(alpha=0.2, shape = 16, size = 0.3)) +
+                   aes(x=LengthTxEst,y=sed.mean,color=Stress_label))+
+  geom_hline(yintercept=0,linetype="dotted")+
+  ggrastr::rasterize(dpi = 600, geom_point(aes(y=sed.compress),alpha=0.2, shape = 16, size = 0.3)) +
   scale_color_manual(values=stress.cols)+
   facet_grid(.~Stress_label,
              labeller=labeller(Stress_label=stress_labels))+
-  scale_x_log10nice()+scale_y_log10nice()+
+  scale_x_log10nice()+
   geom_smooth(method="lm",se=F,na.rm=T,color="black")+
-  coord_cartesian(ylim=c(0.005,2.5),xlim=c(200,20000))+
+  coord_cartesian(xlim=c(200,20000), ylim = c(minSed,maxSed)) +
   theme(panel.spacing.x = grid::unit(0, "mm"),
         strip.placement = "outside",
         strip.background = element_blank(),
@@ -4927,15 +4925,15 @@ p_length_hs <- ggplot(df %>% filter(Stress_label %in% c("42C", "46C")),
 p_length_hs
 
 p_length_N3 <- ggplot(df %>% filter(Stress_label %in% c("Azide 0.5%", "Azide 0.8%")),
-                   aes(x=LengthTxEst,y=SP.FC,color=Stress_label))+
-  geom_hline(yintercept=1,linetype="dotted")+
-  ggrastr::rasterize(dpi = 600, geom_point(alpha=0.2, shape = 16, size = 0.3)) +
+                   aes(x=LengthTxEst,y=sed.mean,color=Stress_label))+
+  geom_hline(yintercept=0,linetype="dotted")+
+  ggrastr::rasterize(dpi = 600, geom_point(aes(y=sed.compress),alpha=0.2, shape = 16, size = 0.3)) +
   scale_color_manual(values=stress.cols)+
   facet_grid(.~Stress_label,
              labeller=labeller(Stress_label=stress_labels))+
-  scale_x_log10nice()+scale_y_log10nice()+
+  scale_x_log10nice()+
   geom_smooth(method="lm",se=F,na.rm=T,color="black")+
-  coord_cartesian(ylim=c(0.005,2.5),xlim=c(200,20000))+
+  coord_cartesian(xlim=c(200,20000), ylim = c(minSed,maxSed)) +
   theme(panel.spacing.x = grid::unit(0, "mm"),
         strip.placement = "outside",
         strip.background = element_blank(),
@@ -4946,15 +4944,15 @@ p_length_N3
 
 p_length_EtOH <- ggplot(df %>% filter(Stress_label %in% c("Ethanol 5%", "Ethanol 7.5%",
                                                           "Ethanol 10%","Ethanol 15%")),
-                   aes(x=LengthTxEst,y=SP.FC,color=Stress_label))+
-  geom_hline(yintercept=1,linetype="dotted")+
-  ggrastr::rasterize(dpi = 600, geom_point(alpha=0.2, shape = 16, size = 0.3)) +
+                   aes(x=LengthTxEst,y=sed.mean,color=Stress_label))+
+  geom_hline(yintercept=0,linetype="dotted")+
+  ggrastr::rasterize(dpi = 600, geom_point(aes(y=sed.compress),alpha=0.2, shape = 16, size = 0.3)) +
   scale_color_manual(values=stress.cols)+
   facet_grid(.~Stress_label,
              labeller=labeller(Stress_label=stress_labels))+
-  scale_x_log10nice()+scale_y_log10nice()+
+  scale_x_log10nice()+
   geom_smooth(method="lm",se=F,na.rm=T,color="black")+
-  coord_cartesian(ylim=c(0.005,2.5),xlim=c(200,20000))+
+  coord_cartesian(xlim=c(200,20000), ylim = c(minSed,maxSed)) +
   theme(panel.spacing.x = grid::unit(0, "mm"),
         strip.placement = "outside",
         strip.background = element_blank(),
@@ -5096,6 +5094,8 @@ ggsave("../figures/Supplemental/Muhlhofer_upr.pdf",
 
 ## FC plots boxes
 ```{r}
+minEsc <- (-4)
+maxEsc <- 4
 df <- df_Zsup_Poly_minfilt %>% 
   filter(Control == FALSE) %>%
   filter(Stress_group=="Heat Shock"&Temperature%in%c("30C","42C","46C")|
@@ -5104,13 +5104,18 @@ df <- df_Zsup_Poly_minfilt %>%
   group_by(Stress_group,Stress_label) %>%
   mutate(Induction_cat = case_when(TPM.FC.SedSeq < quantile(TPM.FC.SedSeq,0.1) ~ "down",
                                    TPM.FC.SedSeq > quantile(TPM.FC.SedSeq,0.9) ~ "up",
+                                   TRUE ~ "other")) %>%
+  mutate(esc.compress = if_else(esc.mean>maxEsc,maxEsc,
+                                   if_else(esc.mean<minEsc,minEsc,esc.mean))) %>%
+  mutate(TE_cat = case_when(FC.vs.ctrl_TE < quantile(FC.vs.ctrl_TE,0.1) ~ "down",
+                                   FC.vs.ctrl_TE > quantile(FC.vs.ctrl_TE,0.9) ~ "up",
                                    TRUE ~ "other"))
 
-df_wilcox <- df %>%
+df_wilcox_esc_induct <- df %>%
   group_by(Stress_group,Stress_label) %>%
   nest %>%
   mutate(p_value = map(data,function(df){
-    pairwise_results <- pairwise.wilcox.test(df$deltaZ, df$Induction_cat, p.adjust.method = "bonferroni")
+    pairwise_results <- pairwise.wilcox.test(df$esc.mean, df$Induction_cat, p.adjust.method = "bonferroni")
     broom::tidy(pairwise_results)
   })) %>%
   select(-data) %>%
@@ -5125,15 +5130,15 @@ df_wilcox <- df %>%
   filter((group1 == "other" & group2 == "down") | 
            (group1 == "up" & group2 == "other"))
 
-annotation_df <- df_wilcox %>%
+annotation_df_esc_induct <- df_wilcox_esc_induct %>%
   add_column(x_start = c(1,2,1,2,1,2,1,2),
              x_end = c(2,3,2,3,2,3,2,3),
              y_pos = rep(3,8)) %>%
   mutate(id = row_number())
-p_box <- ggplot(df,
-                aes(x=Induction_cat,y=deltaZ,fill=Stress_label))+
+p_box_esc_induct <- ggplot(df,
+                aes(x=Induction_cat,y=esc.mean,fill=Stress_label))+
   geom_hline(yintercept=0,linetype="dotted")+
-  ggrastr::rasterize(dpi = 600, geom_point(shape=16,alpha=0.5,size=0.5,color="grey50",
+  ggrastr::rasterize(dpi = 600, geom_point(aes(y=esc.compress), shape=16,alpha=0.5,size=0.5,color="grey50",
              position=position_jitter(width=0.2,seed=1))) +
   geom_boxplot(outlier.shape=NA,alpha=0.5,size=0.5)+
   geom_boxplot(fill=NA,outlier.shape=NA,size=0.5)+
@@ -5141,33 +5146,21 @@ p_box <- ggplot(df,
              labeller=labeller(Stress_label=stress_labs))+
   scale_fill_manual(values=stress.cols)+
   labs(x="",y="")+
-  coord_cartesian(ylim=c(-4,4))+
+  coord_cartesian(ylim=c(minEsc,maxEsc))+
   scale_y_continuous(breaks=c(-3,0,3))+
   guides(fill="none")+
   ggsignif::geom_signif(
     manual = T,
-    data = annotation_df,
+    data = annotation_df_esc_induct,
     aes(xmin = x_start, xmax = x_end, annotations = p_label, y_position = y_pos, group = id),
     textsize = 8*0.35
   )
-p_box
-ggsave("../figures/Supplemental/FC_comp_deltaZ_induction_box.pdf",
-       egg::set_panel_size(p_box,width=unit(30,"mm"),height=unit(30,"mm")),
+p_box_esc_induct
+ggsave("../figures/Supplemental/FC_comp_esc_induction_box.pdf",
+       egg::set_panel_size(p_box_esc_induct,width=unit(30,"mm"),height=unit(30,"mm")),
        width=300,height=75,units="mm",bg="transparent",dpi=600)
-```
 
-```{r}
-df <- df_Zsup_Poly_minfilt %>% 
-  filter(Control == FALSE) %>%
-  filter(Stress_group=="Heat Shock"&Temperature%in%c("30C","42C","46C")|
-           Stress_group=="Ethanol 7.5%" | 
-           Stress_group == "Azide 0.8%") %>%
-  group_by(Stress_group,Stress_label) %>%
-  mutate(Induction_cat = case_when(TPM.FC.SedSeq < quantile(TPM.FC.SedSeq,0.1) ~ "down",
-                                   TPM.FC.SedSeq > quantile(TPM.FC.SedSeq,0.9) ~ "up",
-                                   TRUE ~ "other"))
-
-df_wilcox <- df %>%
+df_wilcox_TE_induct <- df %>%
   group_by(Stress_group,Stress_label) %>%
   nest %>%
   mutate(p_value = map(data,function(df){
@@ -5186,12 +5179,12 @@ df_wilcox <- df %>%
   filter((group1 == "other" & group2 == "down") | 
            (group1 == "up" & group2 == "other"))
 
-annotation_df <- df_wilcox %>%
+annotation_df_TE_induct <- df_wilcox_TE_induct %>%
   add_column(x_start = c(1,2,1,2,1,2,1,2),
              x_end = c(2,3,2,3,2,3,2,3),
              y_pos = rep(0.5,8))%>%
   mutate(id = row_number())
-p_box <- ggplot(df,
+p_box_TE_induct <- ggplot(df,
                 aes(x=Induction_cat,y=FC.vs.ctrl_TE,fill=Stress_label))+
   geom_hline(yintercept=1,linetype="dotted")+
   ggrastr::rasterize(dpi = 600, geom_point(shape=16,alpha=0.5,size=0.5,color="grey50",
@@ -5207,32 +5200,20 @@ p_box <- ggplot(df,
   guides(fill="none")+
   ggsignif::geom_signif(
     manual = T,
-    data = annotation_df,
+    data = annotation_df_TE_induct,
     aes(xmin = x_start, xmax = x_end, annotations = p_label, y_position = y_pos, group = id),
     textsize = 8*0.35
   )
-p_box
+p_box_TE_induct
 ggsave("../figures/Supplemental/FC_comp_FCTE_induction_box.pdf",
-       egg::set_panel_size(p_box,width=unit(30,"mm"),height=unit(30,"mm")),
+       egg::set_panel_size(p_box_TE_induct,width=unit(30,"mm"),height=unit(30,"mm")),
        width=300,height=75,units="mm",bg="transparent",dpi=600)
-```
 
-```{r}
-df <- df_Zsup_Poly_minfilt %>% 
-  filter(Control == FALSE) %>%
-  filter(Stress_group=="Heat Shock"&Temperature%in%c("30C","42C","46C")|
-           Stress_group=="Ethanol 7.5%" | 
-           Stress_group == "Azide 0.8%") %>%
-  group_by(Stress_group,Stress_label) %>%
-  mutate(TE_cat = case_when(FC.vs.ctrl_TE < quantile(FC.vs.ctrl_TE,0.1) ~ "down",
-                                   FC.vs.ctrl_TE > quantile(FC.vs.ctrl_TE,0.9) ~ "up",
-                                   TRUE ~ "other"))
-
-df_wilcox <- df %>%
+df_wilcox_esc_TE <- df %>%
   group_by(Stress_group,Stress_label) %>%
   nest %>%
   mutate(p_value = map(data,function(df){
-    pairwise_results <- pairwise.wilcox.test(df$deltaZ, df$TE_cat, p.adjust.method = "bonferroni")
+    pairwise_results <- pairwise.wilcox.test(df$esc.mean, df$TE_cat, p.adjust.method = "bonferroni")
     broom::tidy(pairwise_results)
   })) %>%
   select(-data) %>%
@@ -5247,34 +5228,35 @@ df_wilcox <- df %>%
   filter((group1 == "other" & group2 == "down") | 
            (group1 == "up" & group2 == "other"))
 
-annotation_df <- df_wilcox %>%
+annotation_df_esc_TE <- df_wilcox_esc_TE %>%
   add_column(x_start = c(1,2,1,2,1,2,1,2),
              x_end = c(2,3,2,3,2,3,2,3),
              y_pos = rep(3,8)) %>%
   mutate(id = row_number())
-p_box <- ggplot(df,
-                aes(x=TE_cat,y=deltaZ,fill=Stress_label))+
+
+p_box_esc_TE <- ggplot(df,
+                aes(x=TE_cat,y=esc.mean,fill=Stress_label))+
   geom_hline(yintercept=0,linetype="dotted")+
-  ggrastr::rasterize(dpi = 600, geom_point(shape=16,alpha=0.5,size=0.5,color="grey50",
+  ggrastr::rasterize(dpi = 600, geom_point(aes(y = esc.compress),shape=16,alpha=0.5,size=0.5,color="grey50",
              position=position_jitter(width=0.2,seed=1))) +
-  geom_boxplot(outlier.shape=NA,alpha=0.5,size=0.5)+
+  geom_boxplot(outlier.shape=NA,alpha=0.5,size=0)+
   geom_boxplot(fill=NA,outlier.shape=NA,size=0.5)+
   facet_grid(.~Stress_label,
              labeller=labeller(Stress_label=stress_labs))+
   scale_fill_manual(values=stress.cols)+
   labs(x="",y="")+
-  coord_cartesian(ylim=c(-4,4))+
   scale_y_continuous(breaks=c(-3,0,3))+
+  coord_cartesian(ylim=c(minEsc,maxEsc)) +
   guides(fill="none")+
   ggsignif::geom_signif(
     manual = T,
-    data = annotation_df,
+    data = annotation_df_esc_TE,
     aes(xmin = x_start, xmax = x_end, annotations = p_label, y_position = y_pos, group = id),
     textsize = 8*0.35
   )
-p_box
-ggsave("../figures/Supplemental/FC_comp_FCTE_deltaZ_box.pdf",
-       egg::set_panel_size(p_box,width=unit(30,"mm"),height=unit(30,"mm")),
+p_box_esc_TE
+ggsave("../figures/Supplemental/FC_comp_FCTE_esc_box.pdf",
+       egg::set_panel_size(p_box_esc_TE,width=unit(30,"mm"),height=unit(30,"mm")),
        width=300,height=75,units="mm",bg="transparent",dpi=600)
 ```
 
