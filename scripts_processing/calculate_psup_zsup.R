@@ -150,7 +150,7 @@ df_Zsup_sed_esc <- df_Zsup %>% ungroup %>%
   ungroup %>%
   mutate(sed = (logodds(pSup.ctrl.mean) - logodds(pSup)) / pSup.ctrl.sd,
          esc = ((logodds(pSup) - logodds(pSup.lysate.windowmean)) - (logodds(pSup.ctrl.mean) - logodds(pSup.ctrl.windowmean.mean))) / pSup.ctrl.sd,
-         RelSed = (logodds(pSup) - logodds(pSup.lysate.windowmean)) / pSup.lysate.sd,
+         RelSed = (logodds(pSup.lysate.windowmean) - logodds(pSup)) / pSup.lysate.sd,
          pSup.ctrl.window.mean=pSup.ctrl.windowmean.mean,
          pSup.treatment.window.mean=pSup.lysate.windowmean,
          lopSup.treatment.sd=pSup.lysate.sd,
