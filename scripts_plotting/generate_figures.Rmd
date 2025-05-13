@@ -355,10 +355,15 @@ dr = df |> select(ORF, Temperature, pSup.mean) |> mutate(Treatment=paste('rna',T
 dp = df_agg |> select(ORF, Temperature, pSup) |> mutate(Treatment=paste('prot',Temperature,sep='.'))
 drp = bind_rows(dr,dp)
 temps = c('30\u00b0C','42\u00b0C','46\u00b0C')
+highlight = c('PAB1')
+highlight_orfs = unique(df |> filter(gene %in% highlight) |> pull(ORF))
 p_prot_vs_mRNA_condensation = ggplot(drp, aes(x=Treatment, y=pSup, group=Treatment, color=Temperature)) +
   ggrastr::rasterize(geom_jitter(position=position_jitternormal(sd_y=0, sd_x=0.1), alpha=alph, shape=16),dpi=600) +
   #geom_jitter(position=position_jitternormal(sd_y=0, sd_x=0.1), alpha=alph, shape=16) +
   geom_violin(aes(fill=Temperature), color=blackcol, alpha=0.7, draw_quantiles = c(0.5)) +
+  geom_line(data=drp |> filter(ORF %in% highlight_orfs, Treatment %in% paste('prot',Temperature,sep='.')), 
+            aes(x=factor(Treatment), group=1), colour=blackcol, linewidth=1) +
+  geom_point(data=drp |> filter(ORF %in% highlight_orfs, Treatment %in% paste('prot',Temperature,sep='.')), fill="white", colour=blackcol, size=3, shape=21) +
   scale_color_manual(values=stress.cols) +
   scale_fill_manual(values=stress.cols) + 
   scale_x_discrete(labels=c(temps,temps)) +
