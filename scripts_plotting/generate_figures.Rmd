@@ -1970,8 +1970,8 @@ p_native_SPFC_stats <- df_stats_SPFC_native %>%
                           Temperature == "46C" ~ (-2))
   )
 dodge_wid <- 0.9
-SP.FC.breaks <- c(-2,0)
-SP.FC.labels <- c(expression(10^{-2}),
+SP.FC.breaks <- c(-2,-1,0)
+SP.FC.labels <- c(expression(10^{-2}), expression(10^{-1}),
                   expression(10^{0}))
 SP.FC.ylims <- c(-2.75,0.4)
 
@@ -2051,16 +2051,16 @@ native_rep_comb_plot <- ggplot(df_combined_plot,  # Set the order of Reporter_ag
   ylab("deltapSup (odds)")+
   labs(x="",y="")+
   coord_cartesian(ylim=SP.FC.ylims)+
-  scale_y_continuous(breaks=SP.FC.breaks,labels=SP.FC.labels)
+  scale_y_continuous(breaks=SP.FC.breaks, labels=SP.FC.labels)
 native_rep_comb_plot 
 
   
 ggsave(file.path(github_dir,"figures","Figure4/reporters_SPFC.pdf"),
-       egg::set_panel_size(p=native_rep_comb_plot,width=unit(30,"mm"),height=unit(30,"mm")),
+       egg::set_panel_size(p=native_rep_comb_plot,width=unit(25,"mm"),height=unit(30,"mm")),
        width=100,height=100,units="mm",bg="transparent")
 
 ggsave(file.path(github_dir,"figures","Figure4/native_SPFC.pdf"),
-       egg::set_panel_size(p=p_native_SPFC,width=unit(30,"mm"),height=unit(30,"mm")),
+       egg::set_panel_size(p=p_native_SPFC,width=unit(25,"mm"),height=unit(30,"mm")),
        width=100,height=100,units="mm",bg="transparent")
 ```
 ## reporter stats
@@ -2684,7 +2684,7 @@ p_esc_byTPMbyTE_up <- ggplot(df %>% filter(TPM_cat == "up"),
 p_esc_byTPMbyTE_up
 ggsave(file.path(github_dir,"figures","Figure4/esc_byTE_TPMup_HS_EtOH.pdf"),
        egg::set_panel_size(p=p_esc_byTPMbyTE_up,
-                           width=unit(35,"mm"),height=unit(35,"mm")),bg="transparent")
+                           width=unit(30,"mm"),height=unit(35,"mm")),bg="transparent")
 ```
 
 # Figure 5
