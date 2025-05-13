@@ -81,7 +81,8 @@ df_Zsup_Poly_minfilt <- df_Zsup_mean  %>%
             pSup.mean = SP.mean/(1+SP.mean),
             Zsup.mean = mean(Zsup.mean),
             esc.mean = mean(esc.mean),
-            sed.mean = mean(sed.mean)) %>%
+            sed.mean = mean(sed.mean),
+            RelSed.mean = mean(RelSed.mean)) %>%
   group_by(ORF,Stress,Stress_group) %>%
   filter(length(ORF[Control==TRUE])==1) %>%
   mutate(SP.FC = SP.mean/SP.mean[Control==TRUE],
