@@ -394,6 +394,7 @@ mark_bounds = c(0.05, 0.98)
 length_marks = unlist(unique(df |> filter(gene %in% focal_genes) |> select(length)))
 mark_alpha = 0.4
 
+df30 = df |> filter(Temperature=='30C')
 ctrl_dat = df |> filter(gene==control_gene, Temperature=='42C')
 ctrl_gene_length = unlist(ctrl_dat$length)
 ctrl_gene_pSup = unlist(df |> filter(gene==control_gene, Temperature=='42C') |> select(pSup.mean))
@@ -419,6 +420,8 @@ g_trans = ggplot(df, aes(x=length, y=trans(pSup.mean), group=Temperature, colour
   geom_vline(xintercept = length_marks, alpha=mark_alpha, linetype=1, colour=blackcol) +
   ggrastr::rasterize(geom_point(shape=shap, alpha=0.2*alph),dpi=600) + 
   geom_line(aes(y=trans(pSup.treatment.window.mean.mean), group=Temperature), linewidth=0.5, linetype=1, colour=blackcol, alpha=0.7) +
+  geom_line(data=df30, aes(y=exp(logodds(pSup.ctrl.window.mean.mean)+lopSup.treatment.sd.mean), group=Temperature), linewidth=0.5, linetype=3, colour=blackcol, alpha=0.7) +
+  geom_line(data=df30, aes(y=exp(logodds(pSup.ctrl.window.mean.mean)-lopSup.treatment.sd.mean), group=Temperature), linewidth=0.5, linetype=3, colour=blackcol, alpha=0.7) +
   scale_colour_manual(values=stress.cols) + no.legend +
   geom_point(data=foci, size=2, colour=blackcol) + 
   geom_point(data=foci, size=1) + 
@@ -497,7 +500,7 @@ gsed = ggplot(res, aes(x=length, y=sed.mean, fill=cat)) + theme(plot.margin=unit
   scale_fill_manual(values=list("other"=blackcol, "focal"=orangecol, "control"=blackcol)) +
   scale_x_log10nice("mRNA length (nucleotides)") +
   scale_y_continuous("Differential sedimentation (SDs)", limits=c(-0.5,7)) + no.legend
-gsed = add_marginal_x(gsed, "sed.mean", "cat", reverse=T)
+gsed = add_marginal_x(gsed, "sed.mean", "cat", reverse=F)
 gesc = ggplot(res, aes(x=length, y=esc.mean, fill=cat)) + 
   theme(plot.margin=unit(c(1,0,1,1),'cm'), 
         panel.margin=unit(c(0,0,0,0),'null'),
