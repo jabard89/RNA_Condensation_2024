@@ -5775,3 +5775,33 @@ p_hac1
 ggsave("../figures/Supplemental/hac1_RelSed_Occ.pdf",egg::set_panel_size(p=p_hac1+labs(x="",y=""),width=unit(35,"mm"),height=unit(35,"mm")),
        width=75,height=75,units="mm",bg="transparent")
 ```
+
+# occupancy of condensing transcripts
+```{r}
+df <- df_Zsup_Poly_minfilt %>%
+  filter(Stress_group == "Heat Shock") %>%
+  group_by(ORF) %>%
+  filter(length(esc.mean[Temperature == "42C"]) == 1) %>%
+  mutate(esc.42C = esc.mean[Temperature == "42C"]) %>%
+  mutate(esc.42C = esc.mean[Temperature == "42C"]) %>%
+  ungroup %>%
+  mutate(esc.bin = cut_number(esc.42C, n = 5, labels = paste0("q",c(1:5))))
+df_sum <- df %>%
+  group_by(Temperature,esc.bin) %>%
+  summarise(Occ.mean = exp(mean(log(Occ.odds.mean),na.rm=T)))
+ggplot(df_sum,
+       aes(x=esc.bin, y = Occ.mean, color = Temperature)) +
+  geom_point()
+
+p_42C_Occ_pSup <- ggplot(df %>% filter(Temperature == "42C"),
+       aes(x=pSup.mean, y = Occ.odds.mean)) +
+  ggrastr::rasterize(dpi = 600, geom_point(alpha = 0.2, shape = 16, size = 0.5)) +
+  scale_y_log10nice() +
+  coord_cartesian(ylim = c(0.25,50)) +
+  labs(x = "Proportion in\Supernatant", y = "Ribosome Occupancy\n(odds)") +
+  geom_smooth(method = "lm", se= F)
+p_42C_Occ_pSup
+ggsave("../figures/Supplemental/42C_Occ_pSup.pdf",
+       egg::set_panel_size(p=p_42C_Occ_pSup,width=unit(35,"mm"),height=unit(35,"mm")))
+```
+

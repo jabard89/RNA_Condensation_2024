@@ -87,19 +87,23 @@ df_sum <- df %>%
 dodge_width <- 0.5
 p_points_mean <- ggplot(df,
        aes(x=Transcript,y=Zscore_filt,group=interaction(Transcript,Condition)))+
+   geom_hline(yintercept = 0, linetype = "dashed", size = 0.3)+
   geom_point(aes(color=Condition),
-             shape=16,alpha=0.3,position=position_jitterdodge(jitter.width=0.2,dodge.width = dodge_width))+
+             shape=16,alpha=0.3,position=position_jitterdodge(jitter.width=0.2,dodge.width = 0.8), size = 0.3)+
+  #geom_col(data = df_sum, aes(x = Transcript, y = mean, fill = Condition), position=position_dodge(dodge_width), color = "black")+
+  #geom_boxplot(aes(fill = Condition), alpha = 0.6, draw_quantiles = c(0.5),position=position_dodge(0.8), size = 0.3, outliers = FALSE)+
   geom_errorbar(data=df_sum,color="black",size=0.5,
                 aes(ymin=mean,y=mean,ymax=mean),
-                width=0.3, position=position_dodge(dodge_width))+
+                width=0.3, position=position_dodge(0.8))+
   geom_errorbar(data=df_sum,
     aes(ymin = mean - sem, y=mean, ymax = mean + sem),
-    width = 0,size=0.5, position=position_dodge(dodge_width)
+  width = 0,size=0.5, position=position_dodge(0.8)
   ) +
+
   scale_fill_manual(values=stress.cols)+
   scale_color_manual(values=stress.cols)+
-  #facet_grid(.~Transcript)+
-  coord_cartesian(ylim=c(ymin,ymax),xlim=c(0.5,4.5),expand=F)+
+ #facet_grid(.~Transcript)+
+  coord_cartesian(ylim=c(-1.75,2.1),xlim=c(0.5,4.5),expand=F)+
   labs(x="",y="")+
   theme(legend.position = 'none',
         axis.text.x = element_blank(),
@@ -110,10 +114,13 @@ p_mean <- ggplot(df_sum,
                  aes(x=Transcript,y=mean))+
   geom_errorbar(aes(color=Condition,ymin=mean-sem,y=mean,ymax=mean+sem),
                 width=0)+
-  geom_point(aes(color=Condition))+
+  geom_point(aes(color=Condition), size = 1)+
+  geom_errorbar(data=df_sum,
+                aes(ymin=mean,y=mean,ymax=mean, color = Condition),
+                width=0.3)+
   scale_color_manual(values=stress.cols)+
   labs(x="",y="")+
-  coord_cartesian(ylim=c(-0.1,0.8))+
+  coord_cartesian(ylim=c(-0.1,0.75))+
   scale_y_continuous(breaks=c(0,0.6))+
   theme(legend.position='none',
         axis.text.x = element_blank(),
@@ -121,11 +128,11 @@ p_mean <- ggplot(df_sum,
 p_mean
 ggsave(file.path(github_dir,"figures","Figure2","smFISH_Zscore_points.pdf"),
         egg::set_panel_size(p=p_points_mean,
-                            width=unit(50,"mm"),height=unit(20,"mm")),
+                            width=unit(100,"mm"),height=unit(30,"mm")),
        width=150,height=100,units="mm",bg = "transparent")
 ggsave(file.path(github_dir,"figures","Figure2","smFISH_Zscore_diff.pdf"),
         egg::set_panel_size(p=p_mean,
-                            width=unit(50,"mm"),height=unit(10,"mm")),
-       width=150,height=100,units="mm",bg = "transparent")
+                            width=unit(50,"mm"),height=unit(28,"mm")),
+       width=80,height=40,units="mm",bg = "transparent")
 ```
 
