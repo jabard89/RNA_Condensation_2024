@@ -8,7 +8,19 @@ output: html_document
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 
-ps_dt = read_tsv("./scer_aggregation_psup_long.txt", comment='#')
+gray50col = "#7F7F7F"
+graycol <- "#333333cc"
+orangecol <- "#cc5500cc"
+goldcol <- "#d4aa00cc"
+bluecol <- "#0000aacc"
+greencol <- "#55bb00cc"
+purplecol <- "#cc22cccc"
+cyancol <- "#2aa198cc"
+redcol <- "#dc322fcc"
+violetcol <- "#6c71c4cc"
+blackcol <- "#000000ff"
+
+ps_dt = read_tsv("../src/scer_aggregation_psup_long.txt", comment='#')
 
 splitstring = function(s) {
   # Take string formatted as "ribosomal=RPS1, RPS2; glycolytic=GLK1,TDH3" and split into a
@@ -165,16 +177,66 @@ plotgenes_categories = function(gene_cat_list,data=ps_dt,
 }
 ```
 
-## R Markdown
-
-This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
-
-When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
 
 ```{r plot}
 
-cats = list("Lsm"=c('LSM1','LSM2','LSM3','LSM4','LSM5','LSM6','LSM7'), 
+
+gene_cat_list = list("Lsm1-7"=c('LSM1','LSM2','LSM3','LSM4','LSM5','LSM6','LSM7'),
+                     "other PB"=c('PAT1','DHH1','EDC3','DCP1','DCP2','SCD6','XRN1'),
+                     "glycolytic"=c('PGK1','FBA1','TDH3','PGK1'),
+                     "membrane"=c('PMA1','POR1','SRP61'),
      "SG"=c('PAB1','OLA1','PBP1','PUB1','TEF4','TIF34','TIF35','PRT1','NIP1','RPG1','TIF4631','TIF4632'))
-plotgenes_categories(cats,errorbars = F,idType='gene')
+mygenes = unlist(gene_cat_list)
+idType = 'gene'
+
+
+tempexps=c("30C.rep2","37C.8min","42C.8min","46C.8min")
+temps=c(30,37,42,46)
+tempbreaks=temps
+timeexps=c("30C.rep1","46C.2min","46C.4min","46C.8min")
+times=c(0,2,4,8)
+timeexps=c("30C.rep1","46C.2min","46C.4min","46C.8min")
+
+names(temps) = tempexps
+names(times) = timeexps
+
+ps_dt_temp = ps_dt |> filter(gene %in% mygenes & experiment %in% tempexps)
+ps_dt_time = ps_dt |> filter(gene %in% mygenes & experiment %in% timeexps)
+
+ps_dt_temp_all = bind_rows(lapply(names(gene_cat_list), function(cat) {
+    mygenes = gene_cat_list[[cat]]
+    ps_dt |> filter(.data[[idType]] %in% mygenes & experiment %in% tempexps) |> mutate(category=cat)
+ }))
+
+ps_dt_time_all = bind_rows(lapply(names(gene_cat_list), function(cat) {
+    mygenes = gene_cat_list[[cat]]
+    ps_dt |> filter(.data[[idType]] %in% mygenes & experiment %in% timeexps) |> mutate(category=cat)
+ }))
+
+ps_dt_time = ps_dt_time_all |> group_by(experiment, category) |> summarise(sd=sd(psup,na.rm=T), se=sd/sqrt(n()), psup=mean(psup), psup.lo=psup-sd, psup.hi=psup+sd, category=first(category))
+
+# Summarize by category
+ps_dt_temp = ps_dt_temp_all |> group_by(experiment, category) |> summarise(sd=sd(psup,na.rm=T), se=sd/sqrt(n()), psup=mean(psup), psup.lo=psup-sd, psup.hi=psup+sd, category=first(category))
+ps_dt_time = ps_dt_time_all |> group_by(experiment, category) |> summarise(sd=sd(psup,na.rm=T), se=sd/sqrt(n()), psup=mean(psup), psup.lo=psup-sd, psup.hi=psup+sd, category=first(category))
+
+ps_dt_temp$temp = temps[ps_dt_temp$experiment ]
+
+ps_dt_time$time = times[ps_dt_time$experiment ]
+ps_dt_time_all$time = times[ps_dt_time_all$experiment ]
+
+plot_time = ggplot(data=ps_dt_time, 
+                   aes(x=.data[["time"]],y=.data[["psup"]],
+                       ymin=.data[["psup.lo"]],ymax=.data[["psup.hi"]],
+                       colour=category,label=category)) +
+    geom_line(data=ps_dt_time_all, aes(group=gene), alpha=0.2, linewidth=0.5) + 
+    geom_line(size=1) +
+    geom_text_repel(size=4,data=subset(ps_dt_time,time==max(times)),
+              aes(x=max(times)+0.1,y=psup), xlim=c(8,12)) +
+    scale_colour_manual(values=c("Lsm1-7"=orangecol, "other PB"=violetcol, "SG"=purplecol, "membrane"=gray50col, "glycolytic"=greencol)) +
+    scale_y_pSup("Proportion\nin\nsupernatant") + scale_time() 
+plot_time
+
+
+
 ```
 
