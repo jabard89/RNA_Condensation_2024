@@ -325,7 +325,7 @@ df_agg = read_tsv(file.path(github_dir,"src/scer_aggregation_psup.txt"), comment
 
 ```
 
-```{r}
+```{r rnafold, dependson='setup'}
 cutoff <- 0.05
 df_vienna_utrs <- read_csv(file.path(github_dir,"RNAfold/Scerevisiae_UTR5plus20.csv"),
                           comment="#") %>%
@@ -2695,86 +2695,92 @@ ggsave(file.path(github_dir,"figures","Figure4/esc_byTE_TPMup_HS_EtOH.pdf"),
 ```
 
 # Figure 5
-## A: Occ vs Zsup
+## E: rSed vs Occ
 
-```{r}
-# set.seed(100)
-# df_hairpins <- df_Zsup_mean %>% filter(Treatment_group=="hairpinReporters") %>%
-#   group_by(ORF) %>%
-#   summarise(SP.mean = exp(mean(log(SP.mean))),
-#             Zsup.mean = mean(Zsup.mean),
-#             TPM.mean = exp(mean(log(Total.TPM.mean))))
-# df_30C_occ <- df_Occ_mean_minfilt %>%
-#   filter(Treatment%in%c("none","mock"),Temperature=="30C") %>%
-#   group_by(ORF) %>%
-#   summarise(Occ.odds.mean = exp(mean(log(Occ.odds.mean))))
-# df <- df_hairpins %>% full_join(df_30C_occ,by="ORF") %>%
-#   filter(!is.na(Zsup.mean),!is.na(Occ.odds.mean),!is.infinite(Occ.odds.mean),Occ.odds.mean>0) %>%
-#   left_join(gene_labels,by="ORF") %>%
-#   left_join(df_Weinberg,by="ORF") %>%
-#   filter(Occ.odds.mean>0) %>%
-#   left_join(df_rnafold %>%
-#               select(ORF,EnergyBin),by="ORF") %>%
-#   mutate(EnergyBin=if_else(EnergyBin=="uORF","other",EnergyBin)) %>%
-#   mutate(EnergyBin=factor(EnergyBin,levels=c("least structured 5'UTR","other","most structured 5'UTR"),
-#                           labels=c("least","other","most"))) %>% 
-#   arrange(EnergyBin)
-# df_corr <- df %>% 
-#   nest() %>%
-#   mutate(corr = map(data,function(df){
-#     df %>% column_to_rownames(var="ORF") %>% correlate(method="spearman")
-#   })) %>%
-#   select(-data) %>%
-#   unnest(corr) 
-# genes_to_label <- c("HAC1","GCN4")
-# energy_color_scale <- c("least" = RColorBrewer::brewer.pal(12,"Paired")[4], 
-#                               "other" = "grey50", 
-#                               "most" = RColorBrewer::brewer.pal(12,"Paired")[10])
-# p_Occ <- ggplot(df,
-#        aes(x=Occ.odds.mean,y=Zsup.mean))+
-#   geom_hline(yintercept=0,linetype="dotted")+
-#   geom_vline(xintercept=median(df$Occ.odds.mean,na.rm=T),linetype="dotted")+
-#   ggrastr::rasterize(dpi = 600, geom_point(data=df%>%filter(EnergyBin=="other"),alpha=0.5, shape = 16, size = 0.8, color = "grey")) +
-#   ggrastr::rasterize(dpi = 600, geom_point(data=df%>%filter(EnergyBin!="other"),alpha=0.75,aes(color=EnergyBin), shape = 16, size = 0.8)) +
-#   scale_color_manual(values=energy_color_scale)+
-#   #scale_x_log10nice()+#coord_cartesian(xlim=c(0.2,50))+
-#   scale_x_log10nice()+
-#   geom_text(data=df_corr %>% filter(term=="Occ.odds.mean"),
-#              aes(label=paste0("r = ",round(Zsup.mean,digits=2)),
-#                  x=1,y=2.8),
-#             size=10*0.35)+
-#   geom_smooth(method="lm",se=F,color="black")+
-#   #geom_point(data=df %>% filter(gene%in%genes_to_label),size=2,color="red")+
-#   #geom_label_repel(data=df %>% filter(gene%in%genes_to_label),size=4.2,aes(label=gene))+
-#   labs(x="",y="")+
-#   theme(legend.position="none")
-# p_Occ
-# p_zsup_box <- ggplot(df %>% filter(!is.na(EnergyBin)),
-#          aes(x=EnergyBin,y=Zsup.mean,fill=EnergyBin))+
-#     ggrastr::rasterize(dpi = 600, geom_point(position=position_jitterdodge(jitter.width=1.5),
-#                aes(color=EnergyBin,alpha=EnergyBin), shape =16, size = 0.75)) +
-#   scale_color_manual(values=energy_color_scale)+
-#     scale_alpha_manual(values=c("least" = 0.6, "other" = 0.1, "most" = 0.6)) +
-#   geom_violin(fill=NA,draw_quantiles = c(0.5),size=0.5,color="black")+
-#     theme(legend.position="none")+
-#   ggsignif::geom_signif(na.rm=T,
-#                         map_signif_level=T,
-#                         test="wilcox.test",
-#               y_position=c(2,2),
-#               textsize = 4.2,
-#               comparisons=list(
-#                 c("least","other"),
-#                 c("other","most")
-#               ))+
-#   labs(x="",y="")+
-#   theme(axis.text.x = element_text(angle=45,hjust=1))
-# p_zsup_box
-# ggsave("../figures/Figure5/Zsup_Occ_left.pdf",
-#        egg::set_panel_size(p=p_Occ,width=unit(30,"mm"),height=unit(30,"mm")),
-#        width=75,height=75,units="mm",bg="transparent")
-# ggsave("../figures/Figure5/Zsup_Occ_right.pdf",
-#        egg::set_panel_size(p=p_zsup_box+theme(axis.title.y=element_blank()),width=unit(30,"mm"),height=unit(30,"mm")),
-#        width=75,height=75,units="mm",bg="transparent")
+```{r fig5, dependson="rnafold"}
+set.seed(100)
+df_hairpins <- df_Zsup_mean |> filter(Treatment_group=="hairpinReporters") |>
+  group_by(ORF) |>
+  summarise(SP.mean = exp(mean(log(SP.mean))),
+            Zsup.mean = mean(Zsup.mean),
+            RelSed.mean = mean(RelSed.mean),
+            TPM.mean = exp(mean(log(Total.TPM.mean))))
+df_30C_occ = df_Occ_mean_minfilt |>
+  filter(Treatment %in% c("none","mock"),Temperature=="30C") |>
+  group_by(ORF) |>
+  summarise(Occ.odds.mean = exp(mean(log(Occ.odds.mean))))
+df = df_hairpins |> full_join(df_30C_occ,by="ORF") |>
+  filter(!is.na(Zsup.mean),!is.na(Occ.odds.mean),!is.infinite(Occ.odds.mean),Occ.odds.mean>0) |>
+  left_join(gene_labels,by="ORF") |>
+  left_join(df_Weinberg,by="ORF") |>
+  filter(Occ.odds.mean>0) |>
+  left_join(df_rnafold |>
+              select(ORF,EnergyBin),by="ORF") |>
+  mutate(EnergyBin=if_else(EnergyBin=="uORF","other",EnergyBin)) |>
+  mutate(EnergyBin=factor(EnergyBin,levels=c("least structured 5'UTR","other","most structured 5'UTR"),
+                          labels=c("least","other","most"))) |>
+  arrange(EnergyBin)
+df_corr <- df |>
+  nest() |>
+  mutate(corr = map(data,function(df){
+    df |> column_to_rownames(var="ORF") |> correlate(method="spearman")
+  })) |>
+  select(-data) |>
+  unnest(corr)
+genes_to_label = c("HAC1","GCN4")
+energy_color_scale = c("least" = paste(RColorBrewer::brewer.pal(12,"Paired")[4],'AA',sep=''),
+                              "other" = "#aaaaaaaa",
+                              "most" = paste(RColorBrewer::brewer.pal(12,"Paired")[10],'AA',sep=''))
+p_Occ = ggplot(df,
+       aes(x=Occ.odds.mean,y=RelSed.mean))+
+  geom_hline(yintercept=0,linetype="dotted")+
+  geom_vline(xintercept=median(df$Occ.odds.mean,na.rm=T),linetype="dotted")+
+  ggrastr::rasterize(dpi = 600, geom_point(data=df|>filter(EnergyBin=="other"),alpha=0.5, shape = 16, size = 0.8, color = "grey")) +
+  ggrastr::rasterize(dpi = 600, geom_point(data=df|>filter(EnergyBin!="other"),alpha=0.75,aes(color=EnergyBin), shape = 16, size = 0.8)) +
+  scale_color_manual(values=energy_color_scale)+
+  #scale_x_log10nice()+#coord_cartesian(xlim=c(0.2,50))+
+  scale_x_log10nice()+
+  coord_cartesian(ylim=c(-2,3)) +
+  geom_text(data=df_corr |> filter(term=="Occ.odds.mean"),
+             aes(label=paste0("r = ",round(Zsup.mean,digits=2)),
+                 x=1,y=2.8),
+            size=10*0.35)+
+  geom_smooth(method="lm",se=F,color="black", linewidth=0.5)+
+  #geom_point(data=df |> filter(gene%in%genes_to_label),size=2,color="red")+
+  #geom_label_repel(data=df |> filter(gene%in%genes_to_label),size=4.2,aes(label=gene))+
+  labs(x="",y="")+
+  theme(legend.position="none")
+p_Occ
+
+p_zsup_box = ggplot(df |> filter(!is.na(EnergyBin)),
+         aes(x=EnergyBin,y=RelSed.mean,fill=EnergyBin))+
+    ggrastr::rasterize(dpi = 600, geom_point(position=position_jitterdodge(jitter.width=1.5),
+               aes(color=EnergyBin,alpha=EnergyBin), shape=16, size=0.75)) +
+  scale_fill_manual(values=energy_color_scale) + #, function(x){if (!x=='grey50'){paste(x,"AA",sep='')}else{x}})) +
+  scale_color_manual(values=energy_color_scale) +
+  scale_alpha_manual(values=c("least"=0.6, "other"=0.6, "most"=0.6)) +
+  coord_cartesian(ylim=c(-2,3)) +
+  geom_violin(draw_quantiles=c(0.5), size=0.5, color="black", trim=F) +
+    theme(legend.position="none") +
+  ggsignif::geom_signif(na.rm=T,
+                        map_signif_level=T,
+                        test="wilcox.test",
+              y_position=c(2,2),
+              textsize = 4.2,
+              comparisons=list(
+                c("least","other"),
+                c("other","most")
+              ))+
+  labs(x="",y="")+
+  theme(axis.text.x = element_text(angle=45,hjust=1))
+p_zsup_box
+
+ggsave("../figures/Figure5/Zsup_Occ_left.pdf",
+       egg::set_panel_size(p=p_Occ,width=unit(30,"mm"),height=unit(30,"mm")),
+       width=75,height=75,units="mm",bg="transparent")
+ggsave("../figures/Figure5/Zsup_Occ_right.pdf",
+       egg::set_panel_size(p=p_zsup_box+theme(axis.title.y=element_blank()),width=unit(30,"mm"),height=unit(30,"mm")),
+       width=75,height=75,units="mm",bg="transparent")
 ```
 
 
