@@ -5614,7 +5614,7 @@ plot_time = ggplot(data=ps_dt_time,
     geom_line(data=ps_dt_time_all, aes(group=gene), alpha=0.2, linewidth=0.5) + 
     geom_line(size=1) +
     geom_text_repel(size=4,data=subset(ps_dt_time,time==max(times)),
-              aes(x=max(times)+0.1,y=psup), xlim=c(8,12)) +
+              aes(x=max(times)+0.1,y=psup), xlim=c(8,12), show.legend=F) +
     scale_colour_manual(values=c("Lsm1-7"=orangecol, "other PB"=violetcol, "SG"=purplecol, "membrane"=gray50col, "glycolytic"=greencol)) +
     scale_y_pSup("Proportion\nin\nsupernatant") + scale_time() 
 plot_time
