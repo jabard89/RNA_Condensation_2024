@@ -2942,12 +2942,13 @@ p_TPM_TE <- ggplot(df,
   labs(x="mRNA Abundance",y="Translation\nEfficiency")
 p_TPM_TE
 
-p_RelSed_box <- ggplot(df,
+df_unstress = df_Zsup_mean |> filter(Treatment_group=='EW_TSPP', Temperature=='30C')
+p_RelSed_box <- ggplot(df_unstress,
                   aes(x=1,y=RelSed.mean))+
-  ggrastr::rasterize(dpi = 600, geom_point(data=df%>%filter(gene%!in%genes_to_label),position=position_jitter(width=0.43),alpha=0.03, size = 0.09)) +
+  ggrastr::rasterize(dpi = 600, geom_point(data=df_unstress%>%filter(gene%!in%genes_to_label),position=position_jitter(width=0.43),alpha=0.03, size = 0.09)) +
   #geom_boxplot(fill=NA,outlier.shape=NA)+
   geom_violin(fill="grey70", alpha = 0.6, draw_quantiles = c(0.5))+
-  ggrastr::rasterize(dpi = 600, geom_point(data=df%>%filter(gene%in%genes_to_label),alpha=1,color="red",size=1)) +
+  ggrastr::rasterize(dpi = 600, geom_point(data=df_unstress%>%filter(gene%in%genes_to_label),alpha=1,color="red",size=1)) +
   #geom_text_repel(data=df%>%filter(gene=="GCN4"),size=4.2,aes(label=gene_label),max.overlaps = 10000,min.segment.length = 0,nudge_y=2.5,nudge_x=0.25)+
   #geom_text_repel(data=df%>%filter(gene=="HAC1"),size=4.2,aes(label=gene_label),max.overlaps = 10000,min.segment.length = 0,nudge_y=-2.5 ,nudge_x=0.25)+
   labs(x="",y="")+
@@ -3193,9 +3194,9 @@ ggsave(file.path(github_dir,"figures","Figure5","HAC1_temp_gel.pdf"),
 
 ## hac1 violin
 ```{r}
-min <- (-6)
-max <- 6
-df <- df_Zsup_mean %>%
+min = (-6)
+max = 6
+df = df_Zsup_mean %>%
   left_join(df_stress_samples,by=c("Temperature","Treatment_group","Treatment")) %>%
   filter(Stress_group=="DTT 10mM"&Stress_label%in%c("DTT 10mM") | 
            Stress_group == "Heat Shock"&Stress_label%in%c("42C","46C")) |>
@@ -3208,7 +3209,7 @@ df <- df_Zsup_mean %>%
 
 names(stress.cols)[names(stress.cols) == "DTT.reddishpurple"] <- "DTT"
 
-p_dtt <- ggplot(df,
+p_dtt = ggplot(df,
                 aes(x=lab,y=esc.mean)) +
   ggrastr::rasterize(dpi = 600, geom_point(data=df%>%filter(gene!="HAC1"),aes(y=esc_compress),
              position=position_jitter(width=0.4),alpha=0.1,shape=16,
@@ -3228,6 +3229,26 @@ ggsave(file.path(github_dir,"figures","Figure5","DTT_esc.pdf"),
                  p_dtt+labs(x="",y=""),
        width=42.55,height=42.55,units="mm",bg="transparent")
 ```
+## rSed vs. occupancy
+# Fig. S5A
+```{r dependson="setup"}
+target_genes = c('HAC1','GCN4')
+
+df = df_unstress |> left_join(df_30C_occ)
+with(df, cor.test(Occ.odds.mean, RelSed.mean, method='s'))
+g_occ_rsed = ggplot(df, aes(x=Occ.odds.mean, y=RelSed.mean)) + 
+  ggrastr::rasterize(dpi = 600, geom_point(alpha=0.2, size = 0.5, shape = 16)) +
+  scale_x_log10nice("Ribosome occupancy (odds)") + 
+  geom_point(data=df |> filter(gene %in% target_genes), size=2, colour=redcol, alpha=1, shape=16) +
+  geom_text_repel(data=df |> filter(gene %in% target_genes), aes(label=gene)) +
+  ylab("Relative sedimentation (rSed)")
+g_occ_rsed
+ggsave(file.path(github_dir,"figures","Figure5","Occ-vs-rSed.pdf"),
+                g_occ_rsed,
+       width=50,height=50,units="mm",bg="transparent")
+
+```
+
 
 
 #Figure 6
@@ -5422,7 +5443,8 @@ ggplot(df_Occ %>% filter(Group!="native"),
 
 ```
 
-```{r}
+# TPM vs. occupancy, Fig. S5A
+```{r occ_vs_tpm, dependson="setup"}
 genes_to_label <- c("HAC1","GCN4")
 df_30C_occ <- df_Occ_mean_minfilt %>%
   filter(Treatment%in%c("none","mock"),Temperature=="30C") %>%
@@ -5450,31 +5472,34 @@ p_TPM_Occ <- ggplot(df,
   scale_x_log10nice()+
   scale_y_log10nice()+
   coord_cartesian(xlim=c(1,1e4),ylim=c(0.1,50))+
-  ggrastr::rasterize(dpi = 600, geom_point(alpha=0.2, size = 0.3, shape = 16)) +
+  ggrastr::rasterize(dpi = 600, geom_point(alpha=0.2, size = 0.5, shape = 16)) +
   geom_point(data=df %>% filter(gene%in%genes_to_label),size=2,color="red")+
   geom_text_repel(data=df,size=4.2,aes(label=gene_label),max.overlaps = 10000,min.segment.length = 0)+
-  labs(x="mRNA Abundance",y="Rib. Occ.\n(odds)")
+  labs(x="mRNA abundance (TPM)",y="Ribosome occupancy (odds)")
 p_TPM_Occ
 
-p_Z_box <- ggplot(df,
-                  aes(x=1,y=Zsup.mean))+
-  geom_hline(yintercept=0,linetype="dotted")+
-  ggrastr::rasterize(dpi = 600, geom_point(data=df%>%filter(gene%!in%genes_to_label),position=position_jitter(width=0.43),alpha=0.08, size = 1, shape = 16)) +
-  #geom_boxplot(fill=NA,outlier.shape=NA)+
-  geom_violin(fill=NA)+
-  geom_point(data=df%>%filter(gene%in%genes_to_label),alpha=1,color="red",size=3, shape = 16)+
-  #geom_text_repel(data=df%>%filter(gene=="GCN4"),size=4.2,aes(label=gene_label),max.overlaps = 10000,min.segment.length = 0,nudge_y=2.5,nudge_x=0.25)+
-  #geom_text_repel(data=df%>%filter(gene=="HAC1"),size=4.2,aes(label=gene_label),max.overlaps = 10000,min.segment.length = 0,nudge_y=-2.5 ,nudge_x=0.25)+
-  labs(x="",y="zSup (30°C)")+
-  theme(axis.title.x=element_blank(),  # Removes x-axis label
-        axis.text.x=element_blank(),   # Removes x-axis tick labels
-        axis.ticks.x=element_blank(),   # Removes x-axis ticks
-        axis.title.y = element_text(margin = margin(t = 0, r = 0, b = 0, l = 0, unit = "pt"))
-        )
-p_Z_box
-p_3B_occ <- plot_grid(p_TPM_Occ,p_Z_box,align="hv",rel_widths=c(1,0.7 ))
-p_3B_occ
-ggsave("../figures/Supplemental/HAC1_GCN4_Occupancy.pdf",egg::set_panel_size(p=p_TPM_Occ+labs(x="",y=""),width=unit(50,"mm"),height=unit(50,"mm")),bg="transparent",dpi=600)
+# p_Z_box <- ggplot(df,
+#                   aes(x=1,y=Zsup.mean))+
+#   geom_hline(yintercept=0,linetype="dotted")+
+#   ggrastr::rasterize(dpi = 600, geom_point(data=df%>%filter(gene%!in%genes_to_label),position=position_jitter(width=0.43),alpha=0.08, size = 1, shape = 16)) +
+#   #geom_boxplot(fill=NA,outlier.shape=NA)+
+#   geom_violin(fill=NA)+
+#   geom_point(data=df%>%filter(gene%in%genes_to_label),alpha=1,color="red",size=3, shape = 16)+
+#   #geom_text_repel(data=df%>%filter(gene=="GCN4"),size=4.2,aes(label=gene_label),max.overlaps = 10000,min.segment.length = 0,nudge_y=2.5,nudge_x=0.25)+
+#   #geom_text_repel(data=df%>%filter(gene=="HAC1"),size=4.2,aes(label=gene_label),max.overlaps = 10000,min.segment.length = 0,nudge_y=-2.5 ,nudge_x=0.25)+
+#   labs(x="",y="zSup (30°C)")+
+#   theme(axis.title.x=element_blank(),  # Removes x-axis label
+#         axis.text.x=element_blank(),   # Removes x-axis tick labels
+#         axis.ticks.x=element_blank(),   # Removes x-axis ticks
+#         axis.title.y = element_text(margin = margin(t = 0, r = 0, b = 0, l = 0, unit = "pt"))
+#         )
+# p_Z_box
+# p_3B_occ <- plot_grid(p_TPM_Occ,p_Z_box,align="hv",rel_widths=c(1,0.7 ))
+# p_3B_occ
+ggsave(file.path(github_dir,"figures","Figure5","Occ-vs-TPM.pdf"),
+                p_TPM_Occ,
+       width=60,height=60,units="mm",bg="transparent")
+#ggsave("../figures/FigureS5/HAC1_GCN4_Occupancy.pdf",egg::set_panel_size(p=p_TPM_Occ+labs(x="",y=""),width=unit(50,"mm"),height=unit(50,"mm")),bg="transparent",dpi=600)
 ```
 
 #Figure S2A
@@ -5542,7 +5567,7 @@ ggsave("../figures/Supplemental/HAC1_GCN4_Occupancy.pdf",egg::set_panel_size(p=p
 
 # P-bodies, TIICs, SGs
 
-Lsm1-7 proteins do not condense during heat shock at 46C, indicating that they 
+Lsm1-7 proteins do not condense during heat shock at 46C.
 
 ```{r tiics_vs_pbs_vs_sgs, dependson='setup'}
 ps_dt = read_tsv("../src/scer_aggregation_psup_long.txt", comment='#')
