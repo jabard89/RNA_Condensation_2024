@@ -2699,19 +2699,22 @@ ggsave(file.path(github_dir,"figures","Figure4/esc_byTE_TPMup_HS_EtOH.pdf"),
 
 ```{r fig5, dependson="rnafold"}
 set.seed(100)
-df_hairpins <- df_Zsup_mean |> filter(Treatment_group=="hairpinReporters") |>
+df_bg <- df_Zsup_mean |> filter(Treatment_group=="hairpinReporters") |>
   group_by(ORF) |>
   summarise(SP.mean = exp(mean(log(SP.mean))),
             Zsup.mean = mean(Zsup.mean),
             RelSed.mean = mean(RelSed.mean),
-            TPM.mean = exp(mean(log(Total.TPM.mean))))
+            TPM.mean = exp(mean(log(Total.TPM.mean)))) |>
+  left_join(gene_labels,by="ORF")
+#df_bg <- df_Zsup_mean |> filter(Treatment_group=="EW_TSPP", Temperature=='30C') |>
+#  rename(TPM.mean = Total.TPM.mean)
 df_30C_occ = df_Occ_mean_minfilt |>
   filter(Treatment %in% c("none","mock"),Temperature=="30C") |>
   group_by(ORF) |>
   summarise(Occ.odds.mean = exp(mean(log(Occ.odds.mean))))
-df = df_hairpins |> full_join(df_30C_occ,by="ORF") |>
+df = df_bg |> full_join(df_30C_occ,by="ORF") |>
   filter(!is.na(Zsup.mean),!is.na(Occ.odds.mean),!is.infinite(Occ.odds.mean),Occ.odds.mean>0) |>
-  left_join(gene_labels,by="ORF") |>
+  #left_join(gene_labels,by="ORF") |>
   left_join(df_Weinberg,by="ORF") |>
   filter(Occ.odds.mean>0) |>
   left_join(df_rnafold |>
@@ -2731,6 +2734,11 @@ genes_to_label = c("HAC1","GCN4")
 energy_color_scale = c("least" = paste(RColorBrewer::brewer.pal(12,"Paired")[4],'AA',sep=''),
                               "other" = "#aaaaaaaa",
                               "most" = paste(RColorBrewer::brewer.pal(12,"Paired")[10],'AA',sep=''))
+dsum = df |> filter(EnergyBin %in% c('least','most'))
+dstat = dsum |> group_by(EnergyBin) |> 
+  summarise(mrsed=mean(RelSed.mean,na.rm=T), sdrsed=sd(RelSed.mean,na.rm=T), n=n(),
+                                                 mocc=mean(Occ.odds.mean,na.rm=T), sdocc=sd(Occ.odds.mean,na.rm=T)) |>
+  mutate(sersed=sdrsed/sqrt(n), seocc=sdocc/sqrt(n))
 p_Occ = ggplot(df,
        aes(x=Occ.odds.mean,y=RelSed.mean))+
   geom_hline(yintercept=0,linetype="dotted")+
@@ -2738,19 +2746,51 @@ p_Occ = ggplot(df,
   ggrastr::rasterize(dpi = 600, geom_point(data=df|>filter(EnergyBin=="other"),alpha=0.5, shape = 16, size = 0.8, color = "grey")) +
   ggrastr::rasterize(dpi = 600, geom_point(data=df|>filter(EnergyBin!="other"),alpha=0.75,aes(color=EnergyBin), shape = 16, size = 0.8)) +
   scale_color_manual(values=energy_color_scale)+
+  scale_fill_manual(values=energy_color_scale)+
+  #stat_ellipse(data=df |> filter(EnergyBin %in% c('least','most')), aes(fill=EnergyBin), alpha=0.3, level=0.95, type='norm') +
   #scale_x_log10nice()+#coord_cartesian(xlim=c(0.2,50))+
   scale_x_log10nice()+
-  coord_cartesian(ylim=c(-2,3)) +
+  coord_cartesian(ylim=c(-2.1,3.5)) +
   geom_text(data=df_corr |> filter(term=="Occ.odds.mean"),
              aes(label=paste0("r = ",round(Zsup.mean,digits=2)),
                  x=1,y=2.8),
             size=10*0.35)+
-  geom_smooth(method="lm",se=F,color="black", linewidth=0.5)+
+  #geom_smooth(method="lm",se=F,color="black", linewidth=0.5)+
   #geom_point(data=df |> filter(gene%in%genes_to_label),size=2,color="red")+
-  #geom_label_repel(data=df |> filter(gene%in%genes_to_label),size=4.2,aes(label=gene))+
+  geom_label_repel(data=df |> filter(gene%in%genes_to_label),size=4.2,aes(label=gene))+
   labs(x="",y="")+
   theme(legend.position="none")
 p_Occ
+
+
+p_Occ_vs_rSed = ggplot(df,
+       aes(x=Occ.odds.mean,y=RelSed.mean))+
+  geom_hline(yintercept=0,linetype="dotted")+
+  geom_vline(xintercept=median(df$Occ.odds.mean,na.rm=T),linetype="dotted")+
+  ggrastr::rasterize(dpi = 600, geom_point(alpha=0.3, shape = 16, size = 1, color="black")) +
+  scale_x_log10nice()+
+  coord_cartesian(ylim=c(-2.1,3.5)) +
+  geom_point(data=df |> filter(gene%in%genes_to_label),size=2,color="red")+
+  geom_text_repel(data=df |> filter(gene%in%genes_to_label),size=3,aes(label=gene))+
+  labs(x="",y="")+
+  theme(legend.position="none")
+p_Occ_vs_rSed
+
+# Isolate transcripts with high TPM
+df_high = df |> filter(TPM.mean>1000) # median
+p_Occ_vs_rSed_tpm = ggplot(df_high,
+       aes(x=Occ.odds.mean,y=RelSed.mean))+
+  geom_hline(yintercept=0,linetype="dotted")+
+  geom_vline(xintercept=median(df_high$Occ.odds.mean,na.rm=T),linetype="dotted")+
+  ggrastr::rasterize(dpi = 600, geom_point(alpha=0.3, shape = 16, size = 1, color="black")) +
+  scale_x_log10nice()+
+  coord_cartesian(ylim=c(-2.1,3.5)) +
+  geom_point(data=df_high |> filter(gene%in%genes_to_label),size=2,color="red")+
+  geom_text_repel(data=df_high |> filter(gene%in%genes_to_label),size=3,aes(label=gene))+
+  labs(x="",y="")+
+  theme(legend.position="none")
+p_Occ_vs_rSed_tpm
+
 
 p_zsup_box = ggplot(df |> filter(!is.na(EnergyBin)),
          aes(x=EnergyBin,y=RelSed.mean,fill=EnergyBin))+
@@ -2759,7 +2799,7 @@ p_zsup_box = ggplot(df |> filter(!is.na(EnergyBin)),
   scale_fill_manual(values=energy_color_scale) + #, function(x){if (!x=='grey50'){paste(x,"AA",sep='')}else{x}})) +
   scale_color_manual(values=energy_color_scale) +
   scale_alpha_manual(values=c("least"=0.6, "other"=0.6, "most"=0.6)) +
-  coord_cartesian(ylim=c(-2,3)) +
+  coord_cartesian(ylim=c(-2.1,3.5)) +
   geom_violin(draw_quantiles=c(0.5), size=0.5, color="black", trim=F) +
     theme(legend.position="none") +
   ggsignif::geom_signif(na.rm=T,
@@ -2777,6 +2817,9 @@ p_zsup_box
 
 ggsave("../figures/Figure5/Zsup_Occ_left.pdf",
        egg::set_panel_size(p=p_Occ,width=unit(30,"mm"),height=unit(30,"mm")),
+       width=75,height=75,units="mm",bg="transparent")
+ggsave("../figures/Figure5/rSed-vs-occ.pdf",
+       egg::set_panel_size(p=p_Occ_vs_rSed,width=unit(50,"mm"),height=unit(50,"mm")),
        width=75,height=75,units="mm",bg="transparent")
 ggsave("../figures/Figure5/Zsup_Occ_right.pdf",
        egg::set_panel_size(p=p_zsup_box+theme(axis.title.y=element_blank()),width=unit(30,"mm"),height=unit(30,"mm")),
@@ -3231,7 +3274,7 @@ ggsave(file.path(github_dir,"figures","Figure5","DTT_esc.pdf"),
 ```
 ## rSed vs. occupancy
 # Fig. S5A
-```{r dependson="setup"}
+```{r rsed_vs_occ, dependson="setup"}
 target_genes = c('HAC1','GCN4')
 
 df = df_unstress |> left_join(df_30C_occ)
@@ -3245,6 +3288,36 @@ g_occ_rsed = ggplot(df, aes(x=Occ.odds.mean, y=RelSed.mean)) +
 g_occ_rsed
 ggsave(file.path(github_dir,"figures","Figure5","Occ-vs-rSed.pdf"),
                 g_occ_rsed,
+       width=50,height=50,units="mm",bg="transparent")
+
+```
+
+## Transcriptional induction of HAC1
+# Fig. S5B
+```{r dependson="setup"}
+target_genes = c('HAC1','SSA4')
+
+df = df_Zsup_mean |> filter(Treatment_group %in% c('EW_TSPP','uprInduction'), !(Treatment %in%c('42CR','mock'))) |> select(ORF, gene, Treatment, Temperature, Total.TPM.mean)
+df = bind_rows(df_Zsup_mean |> filter(Treatment_group %in% c('EW_TSPP'), !(Treatment %in%c('42CR'))) |> select(ORF, gene, Temperature, Total.TPM.mean) |> rename(Treatment=Temperature),
+               df_Zsup_mean |> filter(Treatment_group %in% c('uprInduction')) |> select(ORF, gene, Treatment, Total.TPM.mean))
+
+dfw = df |> pivot_wider(id_cols=c(ORF,gene), values_from=Total.TPM.mean, names_from=Treatment,names_prefix = 'tpm.') |> mutate(`42C`=tpm.42C/tpm.30C, `46C`=tpm.46C/tpm.30C, DTT=tpm.DTT_10mM/tpm.mock)
+
+dat = dfw |> pivot_longer(cols=c('42C','46C','DTT'), values_to="fc", names_to='Treatment') # |> select(-tpm.30C, -tpm.42C, -tpm.46C, -tpm.mock, -tpm.DTT_10mM)
+
+dg_fc_heat = ggplot(dat, aes(x=Treatment, y=fc)) + 
+  ggrastr::rasterize(dpi = 600, geom_jitter(alpha=0.2, size = 0.5, shape = 16, width=0.25)) +
+  geom_violin(aes(fill=Treatment), alpha=0.9) +
+  scale_x_discrete(labels=c('42°C','46°C','DTT'))+
+  scale_y_log2nice("mRNA fold change vs. untreated", lim=c(0.25,64)) + 
+  geom_point(data=dat |> filter(gene %in% target_genes), size=2, colour=blackcol, alpha=1, shape=16) +
+  geom_label_repel(data=dat |> filter(gene %in% target_genes), aes(label=gene), nudge_x = 0.3, min.segment.length = 0.1, size=3, alpha=0.8, label.size=0) +
+  scale_fill_manual(values=stress.cols) +
+  xlab("Treatment") +
+  no.legend
+dg_fc_heat
+ggsave(file.path(github_dir,"figures","FigureS5","tpm-fc-HAC1.pdf"),
+                dg_fc_heat,
        width=50,height=50,units="mm",bg="transparent")
 
 ```
