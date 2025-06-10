@@ -65,9 +65,12 @@ sedseq_compTemp_bygroup <- read_tsv(file.path(github_dir,"data_processed/deseq_r
 sedseq_azide0dot5_deseq <-  read_tsv(file.path(github_dir,"data_processed/deseq_results","azide0dot5_deseq2_230525.tsv")) %>%
   rename("TPM.FC.SedSeq"="FC.vs.mock") %>%
   mutate(Temperature="30C")
+sedseq_DTT_deseq <-  read_tsv(file.path(github_dir,"data_processed/deseq_results","compTreat_uprInduction_deseq2.tsv")) %>%
+  rename("TPM.FC.SedSeq"="FC.vs.mock") %>%
+  mutate(Temperature="30C")
 deseq_polyseq <- bind_rows(polyseq_azide_deseq,polyseq_etoh_deseq,poly10_deseq) %>%
   select(-padj)
-deseq_sedseq <- bind_rows(sedseq_azide3_deseq,sedseq_milderEtOH2_deseq,sedseq_compTemp_bygroup,sedseq_azide0dot5_deseq) %>%
+deseq_sedseq <- bind_rows(sedseq_azide3_deseq,sedseq_milderEtOH2_deseq,sedseq_compTemp_bygroup,sedseq_azide0dot5_deseq,sedseq_DTT_deseq) %>%
   select(-padj)
 
 
