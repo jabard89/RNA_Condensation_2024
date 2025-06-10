@@ -181,10 +181,10 @@ library(tidyverse)
 library(DESeq2)
 library(tximport)
 library(conflicted)
-library(here)
+
 conflicts_prefer(dplyr::filter)
 conflicts_prefer(dplyr::rename)
-github_dir <- here::here()
+github_dir <- c("../")
 
 gene_labels <- read_tsv(paste0(github_dir,"/src/annotations/230508_labeled_genes_scer.tsv"))
 verified_orfs <- gene_labels %>% dplyr::filter(classification=="Verified") %>% pull(ORF)
