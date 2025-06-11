@@ -3236,6 +3236,7 @@ ggsave(file.path(github_dir,"figures","Figure5","HAC1_temp_gel.pdf"),
 ```
 
 ## hac1 violin
+## Figure S5B, escape of HAC1 in stress, transcriptional induction.
 ```{r}
 min = (-6)
 max = 6
@@ -3293,25 +3294,29 @@ ggsave(file.path(github_dir,"figures","Figure5","Occ-vs-rSed.pdf"),
 ```
 
 ## Transcriptional induction of HAC1
-# Fig. S5B
+# Fig. S5A
 ```{r dependson="setup"}
 target_genes = c('HAC1','SSA4')
 
-df = df_Zsup_mean |> filter(Treatment_group %in% c('EW_TSPP','uprInduction'), !(Treatment %in%c('42CR','mock'))) |> select(ORF, gene, Treatment, Temperature, Total.TPM.mean)
-df = bind_rows(df_Zsup_mean |> filter(Treatment_group %in% c('EW_TSPP'), !(Treatment %in%c('42CR'))) |> select(ORF, gene, Temperature, Total.TPM.mean) |> rename(Treatment=Temperature),
-               df_Zsup_mean |> filter(Treatment_group %in% c('uprInduction')) |> select(ORF, gene, Treatment, Total.TPM.mean))
+dfdtt = df_Zsup_Poly_minfilt |> filter(Stress_group=='DTT 10mM', Treatment=='DTT_10mM')
 
-dfw = df |> pivot_wider(id_cols=c(ORF,gene), values_from=Total.TPM.mean, names_from=Treatment,names_prefix = 'tpm.') |> mutate(`42C`=tpm.42C/tpm.30C, `46C`=tpm.46C/tpm.30C, DTT=tpm.DTT_10mM/tpm.mock)
+df = df_Zsup_mean |> filter(Treatment_group %in% c('EW_TSPP'), !(Treatment %in%c('42CR'))) |> select(ORF, gene, Treatment, Temperature, Total.TPM.mean)
+#df = bind_rows(df_Zsup_mean |> filter(Treatment_group %in% c('EW_TSPP'), !(Treatment %in%c('42CR'))) |> select(ORF, gene, Temperature, Total.TPM.mean) |> rename(Treatment=Temperature),
+#               df_Zsup_mean |> filter(Treatment_group %in% c('uprInduction')) |> select(ORF, gene, Treatment, Total.TPM.mean))
 
-dat = dfw |> pivot_longer(cols=c('42C','46C','DTT'), values_to="fc", names_to='Treatment') # |> select(-tpm.30C, -tpm.42C, -tpm.46C, -tpm.mock, -tpm.DTT_10mM)
+dfw = df |> pivot_wider(id_cols=c(ORF,gene), values_from=Total.TPM.mean, names_from=Temperature,names_prefix = 'tpm.') |> 
+  mutate(`42C`=tpm.42C/tpm.30C, `46C`=tpm.46C/tpm.30C)
+dat = dfdtt |> rename(DTT=TPM.FC.SedSeq) |> left_join(dfw |> select(ORF, `42C`,`46C`))
 
-dg_fc_heat = ggplot(dat, aes(x=Treatment, y=fc)) + 
+datfc = dat |> select(ORF, gene, DTT, `46C`,`42C`) |> pivot_longer(cols=c('42C','46C','DTT'), values_to="fc", names_to='Treatment') # |> select(-tpm.30C, -tpm.42C, -tpm.46C, -tpm.mock, -tpm.DTT_10mM)
+
+dg_fc_heat = ggplot(datfc, aes(x=Treatment, y=fc)) + 
   ggrastr::rasterize(dpi = 600, geom_jitter(alpha=0.2, size = 0.5, shape = 16, width=0.25)) +
   geom_violin(aes(fill=Treatment), alpha=0.9) +
   scale_x_discrete(labels=c('42°C','46°C','DTT'))+
   scale_y_log2nice("mRNA fold change vs. untreated", lim=c(0.25,64)) + 
-  geom_point(data=dat |> filter(gene %in% target_genes), size=2, colour=blackcol, alpha=1, shape=16) +
-  geom_label_repel(data=dat |> filter(gene %in% target_genes), aes(label=gene), nudge_x = 0.3, min.segment.length = 0.1, size=3, alpha=0.8, label.size=0) +
+  geom_point(data=datfc |> filter(gene %in% target_genes), size=2, colour=blackcol, alpha=1, shape=16) +
+  geom_label_repel(data=datfc |> filter(gene %in% target_genes), aes(label=gene), nudge_x = 0.3, min.segment.length = 0.1, size=3, alpha=0.8, label.size=0) +
   scale_fill_manual(values=stress.cols) +
   xlab("Treatment") +
   no.legend
@@ -5666,7 +5671,7 @@ gene_cat_list = list("Lsm1-7"=c('LSM1','LSM2','LSM3','LSM4','LSM5','LSM6','LSM7'
                      "other PB"=c('PAT1','DHH1','EDC3','DCP1','DCP2','SCD6','XRN1'),
                      "glycolytic"=c('PGK1','FBA1','TDH3','PGK1'),
                      "membrane"=c('PMA1','POR1','SRP61'),
-     "SG"=c('PAB1','OLA1','PBP1','PUB1','TEF4','TIF34','TIF35','PRT1','NIP1','RPG1','TIF4631','TIF4632'))
+     "SG"=c('PAB1','OLA1','PBP1','PUB1','TIF34','TIF35','PRT1','NIP1','RPG1','TIF4631','TIF4632'))
 mygenes = unlist(gene_cat_list)
 idType = 'gene'
 
@@ -5721,7 +5726,7 @@ fig.asp = 7/9
 fig.width = 97
 fig.vs.panel.ratio = 1/0.7
 
-ggsave(file.path(github_dir, "figures/FigureS2/FigS2_tiics_vs_pbs_vs_sgs.pdf"),
+ggsave(file.path(github_dir, "figures/FigureS7/FigS7_tiics_vs_pbs_vs_sgs.pdf"),
        egg::set_panel_size(plot_time, width = unit(fig.width, "mm"), height = unit(fig.width*fig.asp, "mm")),
        width = fig.width*fig.vs.panel.ratio,
        height = fig.width*fig.asp*fig.vs.panel.ratio,
