@@ -2204,6 +2204,118 @@ ggsave(file.path(github_dir,"figures","Figure4/native_Occ.pdf"),
 
 ```
 
+## reporter abundance
+```{r}
+df_46C_pSup <- read_tsv(file.path(github_dir,"data_processed/230817_46C_TSP.tsv")) %>%
+  mutate(Reporter_age=if_else(Induction=="pre","Old","New")) %>%
+  mutate(Reporter_age=factor(Reporter_age,levels=c("Old","New"))) %>%
+  mutate(Experiment_group="46C")
+
+df_42C_pSup <- read_tsv(file.path(github_dir,"data_processed/230316_TSP_reporters_42C.tsv")) %>%
+  filter(Experiment=="Occ_TSP") %>%
+  rename("SP"="pSup_odds") %>%
+  mutate(Experiment_group="42C")
+
+df_reporter_pSup_total <- df_42C_pSup %>% rename("Abund.norm.PGK1" = "mixSum_norm_PGK1") %>%
+  select(Probe,UTR5,Reporter_age,Biorep,Temperature,Abund.norm.PGK1,Experiment_group) %>%
+  bind_rows(df_46C_pSup %>%
+             select(Probe,UTR5,Reporter_age,Biorep,Temperature,Abund.norm.PGK1,Experiment_group))
+df_total <- df_reporter_pSup_total %>%
+  mutate(Group=case_when(Probe!="YONL"~"native",
+                         UTR5=="PMU1"&Reporter_age=="New"~"PMU1_New",
+                         UTR5=="PMU1"&Reporter_age=="Old"~"PMU1_Old",
+                         UTR5=="HSP26"&Reporter_age=="New"~"HSP26_New",
+                         UTR5=="HSP26"&Reporter_age=="Old"~"HSP26_Old")) %>%
+  mutate(Skip=if_else(Probe=="PMU1"&UTR5=="PMU1",TRUE,FALSE)) %>%
+  filter(Skip!=TRUE) %>%
+  group_by(Group,Probe,Experiment_group) %>%
+  mutate(Reporter_age = factor(Reporter_age, levels = c("Old", "New"))) %>% mutate(Probe =factor(Probe, levels = c("PMU1", "HSP26", "YONL", "BEM2", "PGK1")))
+
+df_total_sum <- df_total %>%
+  group_by(Temperature,Experiment_group,Group,Probe,UTR5,Reporter_age) %>%
+  summarise(Abund.norm.PGK1.mean = exp(mean(log(Abund.norm.PGK1))))
+
+df_total_sum_native <- df_total %>%
+  group_by(Temperature,Experiment_group,Group,Probe) %>%
+  summarise(Abund.norm.PGK1.mean = exp(mean(log(Abund.norm.PGK1))))
+
+p_rep_total_42C <- ggplot(df_total %>% filter(Group != "native", Probe == "YONL", Experiment_group == "42C"),
+                      aes(x = Temperature, y = Abund.norm.PGK1, color = Reporter_age)) +
+  geom_point(size = 1.5, alpha = 0.8, shape = 16,
+           position = position_dodge(width = 0.9)) +
+  geom_col(data = df_total_sum %>% filter(Group != "native", Probe == "YONL", Experiment_group == "42C"),
+           aes(x = Temperature, y = Abund.norm.PGK1.mean, fill = Reporter_age),
+           position = position_dodge(width = 0.9), alpha = 0.5) +
+  geom_point(size = 1.5, alpha = 0.8, shape = 16,
+             position = position_dodge(width = 0.9)) +
+             
+  geom_hline(yintercept = 1, linetype = "dashed") +
+  scale_color_manual(values = c("darkblue", "magenta3")) +
+  scale_fill_manual(values = c("darkblue", "magenta3")) +
+  scale_y_log10nice() +
+  #coord_cartesian(ylim = c(0.1, 6)) +
+  labs(x = "", y = "") +
+  facet_grid(. ~ UTR5)
+p_rep_total_42C
+
+p_rep_total_46C <- ggplot(df_total %>% filter(Group != "native", Probe == "YONL", Experiment_group == "46C"),
+                      aes(x = Temperature, y = Abund.norm.PGK1, color = Reporter_age)) +
+  geom_point(size = 1.5, alpha = 0.8, shape = 16,
+           position = position_dodge(width = 0.9)) +
+  geom_col(data = df_total_sum %>% filter(Group != "native", Probe == "YONL", Experiment_group == "46C"),
+           aes(x = Temperature, y = Abund.norm.PGK1.mean, fill = Reporter_age),
+           position = position_dodge(width = 0.9), alpha = 0.5) +
+  geom_point(size = 1.5, alpha = 0.8, shape = 16,
+             position = position_dodge(width = 0.9)) +
+             
+  geom_hline(yintercept = 1, linetype = "dashed") +
+  scale_color_manual(values = c("darkblue", "magenta3")) +
+  scale_fill_manual(values = c("darkblue", "magenta3")) +
+  scale_y_log10nice() +
+  #coord_cartesian(ylim = c(0.1, 6)) +
+  labs(x = "", y = "") +
+  facet_grid(. ~ UTR5)
+p_rep_total_46C
+
+p_native_total_42C <- ggplot(df_total %>% filter(Probe == "PMU1" | Probe == "HSP26", Experiment_group == "42C") %>% mutate(Probe = factor(Probe, levels = c("PMU1", "HSP26"))),
+                      aes(x = Temperature, y = Abund.norm.PGK1, color = Probe)) +
+  geom_point(size = 1.5, alpha = 0.8, shape = 16,
+           position = position_dodge(width = 0.9)) +
+  geom_col(data = df_total_sum_native %>% filter(Probe == "PMU1" | Probe == "HSP26", Experiment_group == "42C") %>% mutate(Probe = factor(Probe, levels = c("PMU1", "HSP26"))),
+           aes(x = Temperature, y = Abund.norm.PGK1.mean, fill = Probe),
+           position = position_dodge(width = 0.9), alpha = 0.5) +
+  geom_hline(yintercept = 1, linetype = "dashed") +
+  scale_fill_manual(values=c("PMU1"="green4","HSP26"="orange2"))+
+  scale_color_manual(values=c("PMU1"="green4","HSP26"="orange2"))+
+  scale_y_log10nice() +
+  #coord_cartesian(ylim = c(0.1, 6)) +
+  labs(x = "", y = "")
+p_native_total_42C
+
+p_native_total_46C <- ggplot(df_total %>% filter(Probe == "PMU1" | Probe == "HSP26", Experiment_group == "46C") %>% mutate(Probe = factor(Probe, levels = c("PMU1", "HSP26"))),
+                      aes(x = Temperature, y = Abund.norm.PGK1, color = Probe)) +
+  geom_point(size = 1.5, alpha = 0.8, shape = 16,
+           position = position_dodge(width = 0.9)) +
+  geom_col(data = df_total_sum_native %>% filter(Probe == "PMU1" | Probe == "HSP26", Experiment_group == "46C") %>% mutate(Probe = factor(Probe, levels = c("PMU1", "HSP26"))),
+           aes(x = Temperature, y = Abund.norm.PGK1.mean, fill = Probe),
+           position = position_dodge(width = 0.9), alpha = 0.5) +
+  geom_hline(yintercept = 1, linetype = "dashed") +
+  scale_fill_manual(values=c("PMU1"="green4","HSP26"="orange2"))+
+  scale_color_manual(values=c("PMU1"="green4","HSP26"="orange2"))+
+  scale_y_log10nice() +
+  #coord_cartesian(ylim = c(0.1, 6)) +
+  labs(x = "", y = "")
+p_native_total_46C
+
+
+ggsave(file.path(github_dir,"figures","Figure4/reporters_total_42C.pdf"),
+       egg::set_panel_size(p=p_rep_total_42C,width=unit(25,"mm"),height=unit(25,"mm")),
+       width=100,height=100,units="mm",bg="transparent")
+ggsave(file.path(github_dir,"figures","Figure4/reporters_total_46C.pdf"),
+       egg::set_panel_size(p=p_rep_total_46C,width=unit(25,"mm"),height=unit(25,"mm")),
+       width=100,height=100,units="mm",bg="transparent")
+```
+
 ##eIF3b esc
 ```{r}
 sedseq_compTemp_bygroup <- read_tsv(file.path(github_dir,"data_processed/deseq_results/TSP_DESeq_compTemp_byGroup_deseq2_230510.tsv")) %>%
@@ -5580,7 +5692,7 @@ ggsave(file.path(github_dir,"figures","Figure5","Occ-vs-TPM.pdf"),
 #ggsave("../figures/FigureS5/HAC1_GCN4_Occupancy.pdf",egg::set_panel_size(p=p_TPM_Occ+labs(x="",y=""),width=unit(50,"mm"),height=unit(50,"mm")),bg="transparent",dpi=600)
 ```
 
-#Figure S2A
+## Figure S2A
 ```{r}
 # genes_to_lab <- c("SSB1","SSA4","HSP104","HSP26","PMU1","ADD66")
 # df <- df_Zsup_Poly_minfilt %>% filter(Stress_group=="Heat Shock",Temperature%in%c("42C","46C")) %>%
@@ -5643,7 +5755,7 @@ ggsave(file.path(github_dir,"figures","Figure5","Occ-vs-TPM.pdf"),
 #        width=75,height=75,units="mm",bg="transparent")
 ```
 
-# P-bodies, TIICs, SGs
+## P-bodies, TIICs, SGs
 
 Lsm1-7 proteins do not condense during heat shock at 46C.
 
@@ -5731,6 +5843,63 @@ ggsave(file.path(github_dir, "figures/FigureS7/FigS7_tiics_vs_pbs_vs_sgs.pdf"),
        width = fig.width*fig.vs.panel.ratio,
        height = fig.width*fig.asp*fig.vs.panel.ratio,
        units = "mm", bg = "transparent", create.dir=TRUE)
+```
+## secretome analysis
+```{r}
+df_costa <- read_tsv(file.path(github_dir,"src/Costa_2018/NIHMS968272-supplement-Table_S3.txt"),comment="#",show_col_types = F) %>%
+  rename("ORF"="gene")
+df <- df_Zsup_Poly_minfilt %>% filter(Stress_group=="Heat Shock", Temperature == "30C") %>%
+  group_by(ORF,gene,Temperature,LengthTxEst) %>%
+  summarise(TPM.mean = exp(mean(log(TPM.SedSeq))),
+            RelSed.mean = mean(RelSed.mean),
+            Occ.mean = mean(Occ.mean)) %>%
+  left_join(df_costa %>% rename("Secretome" = "secretome") %>% select(ORF,Secretome),by="ORF") %>%
+  ungroup %>%
+  mutate(TPM_bin = cut_number(TPM.mean, n = 5, labels = paste0("q",seq(1,5))),
+         Occ_bin = cut_number(Occ.mean, n = 5, labels = paste0("q",seq(1,5))))
+p_secretome_TPM <- ggplot(df %>% filter(!is.na(Secretome)),
+                      aes(x = TPM_bin, y = RelSed.mean, fill = Secretome, group = interaction(TPM_bin,Secretome))) +
+  geom_hline(yintercept=0,linetype="dotted")+
+  ggrastr::rasterize(dpi = 600,
+                     geom_point(shape=16, alpha=0.2, size = 0.5, color="grey50", position=position_jitterdodge(jitter.width = 0.2, dodge.width = 0.75))) +
+  geom_violin(alpha = 0.5, linewidth = 0, width =0.5, position = position_dodge(width = 0.75)) +
+  scale_fill_manual(values = c("no" = "grey50", "yes" = purplecol)) +
+  geom_violin(fill=NA,alpha=1,draw_quantiles = c(0.5),size=0.25, width = 0.5, position = position_dodge(width = 0.75)) +
+  labs(x = "mRNA abundance quintile", y = "Relative\nsedimentation at 30°C\n(rSed, SDs)")
+p_secretome_TPM
+ggsave(file.path(github_dir,"figures/Supplemental/compare_secretome_relsed_TPM.pdf"),
+       egg::set_panel_size(p=p_secretome_TPM,width=unit(40,"mm"),height=unit(30,"mm")),bg="transparent")
+
+wilcox.test(RelSed.mean ~ Secretome, data = df %>% filter(!is.na(Secretome)) %>% mutate(Secretome = factor(Secretome, levels = c("no","yes"))), alternative = "greater")
+
+p_secretome_Occ <- ggplot(df %>% filter(!is.na(Secretome), !is.na(Occ_bin)),
+                      aes(x = Occ_bin, y = RelSed.mean, fill = Secretome, group = interaction(Occ_bin,Secretome))) +
+  geom_hline(yintercept=0,linetype="dotted")+
+  ggrastr::rasterize(dpi = 600,
+                     geom_point(shape=16, alpha=0.2, size = 0.5, color="grey50", position=position_jitterdodge(jitter.width = 0.2, dodge.width = 0.75))) +
+  geom_violin(alpha = 0.5, linewidth = 0, width = 0.6, position = position_dodge(width = 0.75)) +
+  scale_fill_manual(values = c("no" = "grey50", "yes" = purplecol)) +
+  geom_violin(fill=NA,alpha=1,draw_quantiles = c(0.5),size=0.25, width = 0.6, position = position_dodge(width = 0.75)) +
+  labs(x = "Ribosome occupancy quintile", y = "Relative\nsedimentation at 30°C\n(rSed, SDs)") +
+  ggsignif::geom_signif(
+    comparisons = list(c("no", "yes")),
+    map_signif_level = TRUE
+  )
+p_secretome_Occ
+ggsave(file.path(github_dir,"figures/Supplemental/compare_secretome_relsed_Occ.pdf"),
+       egg::set_panel_size(p=p_secretome_Occ,width=unit(40,"mm"),height=unit(30,"mm")),bg="transparent")
+
+p_secretome_Occ_facet <- ggplot(df %>% filter(!is.na(Secretome), !is.na(Occ_bin)),
+                      aes(x = Occ_bin, y = RelSed.mean, group = interaction(Occ_bin))) +
+  geom_hline(yintercept=0,linetype="dotted")+
+  ggrastr::rasterize(dpi = 600,
+                     geom_point(shape=16, alpha=0.2, size = 0.5, color="grey50", position=position_jitter(width = 0.2))) +
+  geom_violin(alpha = 0.5, linewidth = 0, width = 0.6) +
+  geom_violin(fill=NA,alpha=1,draw_quantiles = c(0.5),size=0.25, width = 0.6) +
+  labs(x = "Ribosome occupancy quintile", y = "Relative\nsedimentation at 30°C\n(rSed, SDs)") +
+  facet_grid(.~Secretome) +
+  ggsignif::geom_signif()
+p_secretome_Occ_facet
 ```
 
 #Figure S6
@@ -5973,6 +6142,7 @@ ggsave("../figures/Supplemental/hac1_RelSed_Occ.pdf",egg::set_panel_size(p=p_hac
        width=75,height=75,units="mm",bg="transparent")
 ```
 
+
 # occupancy of condensing transcripts
 ```{r}
 df <- df_Zsup_Poly_minfilt %>%
@@ -5986,9 +6156,6 @@ df <- df_Zsup_Poly_minfilt %>%
 df_sum <- df %>%
   group_by(Temperature,esc.bin) %>%
   summarise(Occ.mean = exp(mean(log(Occ.odds.mean),na.rm=T)))
-ggplot(df_sum,
-       aes(x=esc.bin, y = Occ.mean, color = Temperature)) +
-  geom_point()
 
 p_42C_Occ_pSup <- ggplot(df %>% filter(Temperature == "42C"),
        aes(x=pSup.mean, y = Occ.odds.mean)) +
@@ -6001,4 +6168,5 @@ p_42C_Occ_pSup
 ggsave("../figures/Supplemental/42C_Occ_pSup.pdf",
        egg::set_panel_size(p=p_42C_Occ_pSup,width=unit(35,"mm"),height=unit(35,"mm")))
 ```
+
 
