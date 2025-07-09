@@ -733,11 +733,11 @@ ggsave(file.path(github_dir, "figures/Figure1/Fig1_psup_vs_model.pdf"),
 
 ```{r khong_comparison, dependson="load_data", fig.asp=0.5, fig.width=8}
 # Khong et al. data (Parker lab)
-kho = read_tsv("../src/khong-parker-2017-yeast-sg-transcriptome-tableS2.txt", comment='#')
+kho = read_tsv(file.path(github_dir,"src/khong-parker-2017-yeast-sg-transcriptome-tableS2.txt"), comment='#')
 
 dat_azide = df_Zsup_mean |> filter(Treatment_group=='azide3') |> mutate(length=LengthTxEst)
-pskho = dat_azide |> filter(Treatment=='Azide_0.8%_pH6.8') |> select(ORF, length, pSup.mean, sed.mean, esc.mean) |> left_join(kho |> select(-gene, -length), by='ORF')
-pskho_mock = dat_azide |> filter(Treatment=='mock') |> select(ORF, length, pSup.mean, sed.mean, esc.mean) |> left_join(kho |> select(-gene, -length), by='ORF') 
+pskho = dat_azide |> filter(Treatment=='Azide_0.8%_pH6.8') |> select(ORF, gene, length, pSup.mean, sed.mean, esc.mean) |> left_join(kho |> select(-gene, -length), by='ORF')
+pskho_mock = dat_azide |> filter(Treatment=='mock') |> select(ORF, gene, length, pSup.mean, sed.mean, esc.mean) |> left_join(kho |> select(-gene, -length), by='ORF') 
 
 p_khong_vs_sed = ggplot(pskho, aes(x=foldchange.sg.total, y=sed.mean, colour=sg.classification)) + 
   ggrastr::rasterize(geom_point(shape=shap, alpha=alph),dpi=600) +
