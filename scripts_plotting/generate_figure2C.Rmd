@@ -84,6 +84,8 @@ df_sum <- df %>%
     n = n(),
     sem = sd / sqrt(n)) %>%
   arrange(Transcript,Condition)
+
+
 dodge_width <- 0.5
 p_points_mean <- ggplot(df,
        aes(x=Transcript,y=Zscore_filt,group=interaction(Transcript,Condition)))+
@@ -126,6 +128,24 @@ p_mean <- ggplot(df_sum,
         axis.text.x = element_blank(),
         axis.ticks.x = element_blank())
 p_mean
+```
+
+```{r}
+
+p_mean_46 <- ggplot(df_sum_46,
+                 aes(x=Transcript,y=mean))+
+  geom_col(aes(fill=Transcript), color = "black")+
+  geom_errorbar(aes(fill=Transcript,ymin=mean-sem,y=mean,ymax=mean+sem),
+                width=0.1)+
+  scale_color_manual(values=stress.cols)+
+  labs(y="Colocalization score (46°C)",y="Probe")+
+  coord_cartesian(ylim=c(0,0.75))+
+  scale_y_continuous(breaks=c(0,0.6))
+  #theme(legend.position='none',
+        #axis.text.x = element_blank(),
+        #axis.ticks.x = element_blank())
+p_mean_46
+
 ggsave(file.path(github_dir,"figures","Figure2","smFISH_Zscore_points.pdf"),
         egg::set_panel_size(p=p_points_mean,
                             width=unit(100,"mm"),height=unit(30,"mm")),
@@ -134,5 +154,89 @@ ggsave(file.path(github_dir,"figures","Figure2","smFISH_Zscore_diff.pdf"),
         egg::set_panel_size(p=p_mean,
                             width=unit(50,"mm"),height=unit(28,"mm")),
        width=80,height=40,units="mm",bg = "transparent")
+```
+```{r}
+# Pivot mean values
+df_mean_wide <- df_sum %>%
+  select(Transcript, Condition, mean) %>%
+  pivot_wider(names_from = Condition, values_from = mean)
+
+# Pivot sem values
+df_sem_wide <- df_sum %>%
+  select(Transcript, Condition, sem) %>%
+  pivot_wider(names_from = Condition, values_from = sem)
+
+df_diff <- df_mean_wide %>%
+  left_join(df_sem_wide, by = "Transcript", suffix = c("_mean", "_sem")) %>%
+  mutate(
+    diff = `46C_mean` - `30C_mean`,
+    sem_diff = sqrt(`30C_sem`^2 + `46C_sem`^2)
+  )
+
+df_diff <- df_diff %>%
+  mutate(
+    t_stat = diff / sem_diff,
+    p_value = 2 * pt(-abs(t_stat), df = Inf),  # assume large n
+    lower_CI = diff - 1.96 * sem_diff,
+    upper_CI = diff + 1.96 * sem_diff
+  )
+
+ggplot(df_diff, aes(x = Transcript, y = diff, fill = Transcript)) +
+  geom_col(color = "black", width = 0.7) +
+  geom_errorbar(aes(ymin = diff - sem_diff, ymax = diff + sem_diff), 
+                width = 0.2, color = "black") +
+  labs(
+    x = "Transcript (Probe)",
+    y = "Δ Colocalization score \n(46°C − 30°C)",
+   # title = "Difference in Colocalization score between 46°C and 30°C"
+  ) 
+```
+
+```{r}
+
+df_46 <- df %>% filter(Condition == "46C")
+
+pairwise.t.test(x=df_46$Zscore, g=df_46$Transcript, p.adjust.method = "holm")
+
+pw_46 <- pairwise.t.test(x = df_46$Zscore, g = df_46$Transcript, p.adjust.method = "holm")
+
+# Convert matrix to long data frame
+pvals_df <- as.data.frame(as.table(pw_46$p.value)) %>%
+  filter(!is.na(Freq)) %>%
+  rename(group1 = Var1, group2 = Var2, p.adj = Freq)
+
+pvals_df <- pvals_df %>%
+  arrange(-p.adj) %>%  # optional: order by p-value so stars stack nicely
+  mutate(
+    # assign increasing y positions spaced by 0.05 starting at 0.8
+    y.position = 0.68 + 0.05 * (row_number() - 1),
+    p.signif = case_when(
+      p.adj <= 0.001 ~ "***",
+      p.adj <= 0.01 ~ "**",
+      p.adj <= 0.05 ~ "*",
+      TRUE ~ "ns"
+    )) %>% 
+  filter(group1 != "ADD66" | group2 != "SSB1")
+
+p_mean_46_stats <-ggplot(df_sum_46, aes(x = Transcript, y = mean)) +
+  geom_col(aes(fill = Condition), color = "black") +
+  geom_errorbar(aes(fill=Transcript,ymin=mean-sem,y=mean,ymax=mean+sem),
+                width=0.1)+
+  stat_pvalue_manual(
+    pvals_df,
+    label = "p.signif",
+    y.position = "y.position",
+    tip.length = 0.01, size = 4
+  ) +
+  ylab("Colocalization score (46°C)")+
+  theme(legend.position = "none")+
+  scale_fill_manual(values = stress.cols)
+
+p_mean_46_stats
+
+ggsave(file.path(github_dir,"figures","Figure2","smFISH_Zscore_points_stats.pdf"),
+        egg::set_panel_size(p=p_mean_46_stats,
+                            width=unit(120,"mm"),height=unit(40,"mm")),
+       width=150,height=100,units="mm",bg = "transparent")
 ```
 
