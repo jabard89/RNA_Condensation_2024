@@ -4055,9 +4055,8 @@ CHX quantification plot
 ```{r}
 chx_hs_master_merge <- read_csv(file.path(github_dir,"data_processed/sg_quant/chx_merged.csv")) %>% mutate(CHX = factor(CHX, levels = c("mock", "CHX")))
 
-
-chx_sg_per_cell_plot <- ggplot(data = chx_hs_master_merge, aes(x = Temperature, y = Cell_Parent_Children_stress_granule_Count, fill=Temperature,group=interaction(Temperature,CHX)))+
-geom_point(alpha=0.2,position=position_jitterdodge(jitter.width=0.2,dodge.width = 0.75),color="grey50", size = 0.2, shape = 16)+  
+chx_sg_per_cell_plot <- ggplot(data = chx_hs_master_merge, aes(x = Temperature, y = Cell_Parent_Children_stress_granule_Count, fill=Temperature,group=interaction(Temperature,CHX))) +
+  ggrastr::rasterize(geom_point(alpha=0.2,position=position_jitterdodge(jitter.width=0.2,dodge.width = 0.75),color="grey50", size = 0.2, shape = 16),dpi=600)+  
   geom_boxplot(aes(alpha = CHX, fill  = Temperature, linetype = CHX), outlier.color = NA, size = 0.6, fatten = 1)+
   ylab("SGs/cell") +
   ylab("SGs/cell")+
@@ -4071,12 +4070,15 @@ chx_sg_per_cell_plot
 
 ggsave("../figures/Figure7/chx_sg_per_cell.pdf", chx_sg_per_cell_plot, height = 2, width = 2)
 ```
-eIF3b depletion plots 
+eIF3b depletion plots (Fig. 7B)
 ```{r}
 aid_hs_sg <- read_csv(file.path(github_dir,"data_processed/sg_quant/aid_hs.csv"))
+aid_hs_sg$Depletion = factor(aid_hs_sg$Depletion, levels=c('Mock','eIF3b depletion'))
+# Check statistics:
+# aid_hs_sg |> group_by(Temperature, Depletion) |> summarise(SG.cell=median(SG_per_cell_compressed), SG.cell2=median(Cell_Parent_Children_stress_granule_Count))
 
-aid_sg_per_cell_plot <-ggplot(data = aid_hs_sg , aes(x = Temperature, y = Cell_Parent_Children_stress_granule_Count, fill=Temperature,group=interaction(Temperature,Depletion)))+
-geom_point(aes(x = Temperature, y = SG_per_cell_compressed),alpha=0.2,position=position_jitterdodge(jitter.width=0.2,dodge.width = 0.75),color="grey50", size = 0.2, shape = 16)+  
+aid_sg_per_cell_plot <-ggplot(data = aid_hs_sg , aes(x = Temperature, y = Cell_Parent_Children_stress_granule_Count, fill=Temperature, group=interaction(Depletion, Temperature))) +
+  ggrastr::rasterize(geom_point(aes(x = Temperature, y = SG_per_cell_compressed),alpha=0.2,position=position_jitterdodge(jitter.width=0.2,dodge.width = 0.75),color="grey50", size = 0.2, shape = 16), dpi=600) +
   geom_boxplot(aes(alpha = Depletion, fill  = Temperature, linetype = Depletion), outlier.color = NA, fatten = 0.6, size = 0.5)+
   ylab("SGs/cell") +
   scale_fill_manual(values = c("grey50", RColorBrewer::brewer.pal(n=7,"Oranges")[2], RColorBrewer::brewer.pal(n=7,"Oranges")[3], RColorBrewer::brewer.pal(n=7,"Oranges")[6]))+
